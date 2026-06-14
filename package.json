@@ -1,0 +1,18 @@
+{
+  "name": "clan-siege-arena",
+  "version": "0.1.0",
+  "description": "Clan Siege Arena - browser MVP (Phase 0-1)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "phaser": "^3.80.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vite": "^5.2.0"
+  }
+}
