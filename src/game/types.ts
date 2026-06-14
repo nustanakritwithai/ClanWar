@@ -39,3 +39,34 @@ export interface MapDefinition {
   markers: MapMarker[];
   walls: WallRect[];
 }
+
+// --- Phase 2: centralized input state -------------------------------------
+
+export type InputMode = 'keyboard' | 'touch';
+
+// Action buttons. Phase 2 only reports "just pressed" edges; the actual
+// gameplay effects (damage, cooldowns, shop, war action context) arrive later.
+export type ActionKey =
+  | 'attack'
+  | 'skill1'
+  | 'skill2'
+  | 'skill3'
+  | 'ultimate'
+  | 'warAction'
+  | 'item1'
+  | 'item2';
+
+export interface InputState {
+  moveX: number;
+  moveY: number;
+  attackPressed: boolean;
+  skill1Pressed: boolean;
+  skill2Pressed: boolean;
+  skill3Pressed: boolean;
+  ultimatePressed: boolean;
+  warActionPressed: boolean;
+  item1Pressed: boolean;
+  item2Pressed: boolean;
+  lastAction: string;
+  inputMode: InputMode;
+}

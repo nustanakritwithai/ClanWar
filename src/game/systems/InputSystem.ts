@@ -1,33 +1,74 @@
 import Phaser from 'phaser';
+import type { ActionKey, InputState } from '../types';
+import { VirtualJoystick } from '../ui/VirtualJoystick';
+import { SkillButtons } from '../ui/SkillButtons';
 
-// InputSystem produces a single normalized movement vector per frame, merging
-// desktop (WASD + arrow keys) input with an optional mobile virtual joystick.
+export const ACTION_LABELS: Record<ActionKey, string> = {
+  attack: 'Attack',
+  skill1: 'Skill 1',
+  skill2: 'Skill 2',
+  skill3: 'Skill 3',
+  ultimate: 'Ultimate',
+  warAction: 'War Action',
+  item1: 'Item 1',
+  item2: 'Item 2',
+};
+
+function createInputState(): InputState {
+  return {
+    moveX: 0,
+    moveY: 0,
+    attackPressed: false,
+    skill1Pressed: false,
+    skill2Pressed: false,
+    skill3Pressed: false,
+    ultimatePressed: false,
+    warActionPressed: false,
+    item1Pressed: false,
+    item2Pressed: false,
+    lastAction: '',
+    inputMode: 'keyboard',
+  };
+}
+
+// InputSystem is the single source of truth for player input each frame.
+// It merges desktop (WASD/arrows + key bindings) and mobile (virtual
+// joystick + action buttons) into one `state` object that MatchScene reads.
 //
-// Phase 0-1 scope: WASD movement is fully implemented. The joystick is
-// scaffolded (a touch pad in the lower-left that reports a direction) so Phase 2
-// can build the polished ROV-style control on top without reworking the wiring.
+// Lifecycle: call `update()` once per frame, `handleResize()` on scale
+// resize, and `destroy()` on scene shutdown to remove all listeners and
+// avoid leaks/stuck joystick state across Menu<->Match transitions.
 export class InputSystem {
+  public readonly state: InputState = createInputState();
+
   private scene: Phaser.Scene;
-  private keys: {
-    up: Phaser.Input.Keyboard.Key;
-    down: Phaser.Input.Keyboard.Key;
-    left: Phaser.Input.Keyboard.Key;
-    right: Phaser.Input.Keyboard.Key;
-    upArrow: Phaser.Input.Keyboard.Key;
-    downArrow: Phaser.Input.Keyboard.Key;
-    leftArrow: Phaser.Input.Keyboard.Key;
-    rightArrow: Phaser.Input.Keyboard.Key;
+  private joystick: VirtualJoystick;
+  private buttons: SkillButtons;
+  private pendingActions = new Set<ActionKey>();
+
+  private keys: Record<string, Phaser.Input.Keyboard.Key>;
+
+  // Guards against the click that starts the Match scene (e.g. the Menu's
+  // "START" button) being re-delivered to this system's own pointerdown
+  // listener while it is still being registered, which would otherwise
+  // register a spurious Attack on scene entry.
+  private ready = false;
+
+  private onPointerDown = (p: Phaser.Input.Pointer) => {
+    if (!this.ready) return;
+    // Desktop mouse fallback for Attack: left click on empty ground (not on
+    // a UI button, which already handles its own pointerdown).
+    if (p.wasTouch || !p.leftButtonDown()) return;
+    if (this.scene.input.hitTestPointer(p).length > 0) return;
+    if (this.joystick.containsPointer(p)) return;
+    this.queueAction('attack', 'keyboard');
   };
 
-  // --- Mobile joystick scaffold (lower-left). Not the final ROV control. ---
-  private joystickActive = false;
-  private joystickPointerId = -1;
-  private joystickOrigin = new Phaser.Math.Vector2();
-  private joystickVector = new Phaser.Math.Vector2();
-  private readonly joystickMaxRadius = 90;
+  private onBlurOrHide = () => this.reset();
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
+
     const kb = scene.input.keyboard!;
     this.keys = {
       up: kb.addKey(Phaser.Input.Keyboard.KeyCodes.W),
@@ -38,62 +79,163 @@ export class InputSystem {
       downArrow: kb.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN),
       leftArrow: kb.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT),
       rightArrow: kb.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
+      attack: kb.addKey(Phaser.Input.Keyboard.KeyCodes.J),
+      skill1: kb.addKey(Phaser.Input.Keyboard.KeyCodes.Q),
+      skill2: kb.addKey(Phaser.Input.Keyboard.KeyCodes.E),
+      skill3: kb.addKey(Phaser.Input.Keyboard.KeyCodes.R),
+      ultimate: kb.addKey(Phaser.Input.Keyboard.KeyCodes.F),
+      warAction: kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE),
+      item1: kb.addKey(Phaser.Input.Keyboard.KeyCodes.ONE),
+      item2: kb.addKey(Phaser.Input.Keyboard.KeyCodes.TWO),
     };
 
-    this.setupTouchScaffold();
+    const { height } = scene.scale;
+    this.joystick = new VirtualJoystick(scene, { x: 110, y: height - 110 });
+    this.buttons = new SkillButtons(scene, (action) => this.queueAction(action, 'touch'));
+
+    scene.input.on('pointerdown', this.onPointerDown);
+    window.addEventListener('blur', this.onBlurOrHide);
+    document.addEventListener('visibilitychange', this.onBlurOrHide);
+
+    // Defer until the next frame so the click that started this scene
+    // (already mid-dispatch when the listener above was added) is ignored.
+    scene.time.delayedCall(0, () => {
+      this.ready = true;
+    });
   }
 
-  // Returns a normalized direction vector (length 0 or 1).
-  public getMoveVector(out = new Phaser.Math.Vector2()): Phaser.Math.Vector2 {
-    out.set(0, 0);
+  private queueAction(action: ActionKey, mode: InputState['inputMode']): void {
+    this.pendingActions.add(action);
+    this.state.inputMode = mode;
+  }
 
-    // Keyboard
-    if (this.keys.left.isDown || this.keys.leftArrow.isDown) out.x -= 1;
-    if (this.keys.right.isDown || this.keys.rightArrow.isDown) out.x += 1;
-    if (this.keys.up.isDown || this.keys.upArrow.isDown) out.y -= 1;
-    if (this.keys.down.isDown || this.keys.downArrow.isDown) out.y += 1;
+  /** Recompute input state for this frame. Call once per scene update(). */
+  public update(): void {
+    this.updateMovement();
+    this.updateActions();
+  }
 
-    // Joystick overrides keyboard when actively dragged.
-    if (this.joystickActive && this.joystickVector.lengthSq() > 0) {
-      out.copy(this.joystickVector);
+  private updateMovement(): void {
+    const joy = this.joystick.vector;
+    if (joy.lengthSq() > 0) {
+      this.state.moveX = joy.x;
+      this.state.moveY = joy.y;
+      this.state.inputMode = 'touch';
+      return;
     }
 
-    if (out.lengthSq() > 0) out.normalize();
-    return out;
+    let x = 0;
+    let y = 0;
+    if (this.keys.left.isDown || this.keys.leftArrow.isDown) x -= 1;
+    if (this.keys.right.isDown || this.keys.rightArrow.isDown) x += 1;
+    if (this.keys.up.isDown || this.keys.upArrow.isDown) y -= 1;
+    if (this.keys.down.isDown || this.keys.downArrow.isDown) y += 1;
+
+    if (x !== 0 || y !== 0) {
+      const len = Math.sqrt(x * x + y * y);
+      x /= len;
+      y /= len;
+      this.state.inputMode = 'keyboard';
+    }
+
+    this.state.moveX = x;
+    this.state.moveY = y;
   }
 
-  private setupTouchScaffold(): void {
-    const input = this.scene.input;
-    // Only treat touches in the lower-left quadrant as joystick input so the
-    // rest of the screen stays free for future buttons.
-    const inJoystickZone = (p: Phaser.Input.Pointer) =>
-      p.x < this.scene.scale.width * 0.45 && p.y > this.scene.scale.height * 0.4;
+  private updateActions(): void {
+    const s = this.state;
+    s.attackPressed = false;
+    s.skill1Pressed = false;
+    s.skill2Pressed = false;
+    s.skill3Pressed = false;
+    s.ultimatePressed = false;
+    s.warActionPressed = false;
+    s.item1Pressed = false;
+    s.item2Pressed = false;
 
-    input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (this.joystickActive || !inJoystickZone(p)) return;
-      this.joystickActive = true;
-      this.joystickPointerId = p.id;
-      this.joystickOrigin.set(p.x, p.y);
-      this.joystickVector.set(0, 0);
-    });
+    this.checkKey('attack', s);
+    this.checkKey('skill1', s);
+    this.checkKey('skill2', s);
+    this.checkKey('skill3', s);
+    this.checkKey('ultimate', s);
+    this.checkKey('warAction', s);
+    this.checkKey('item1', s);
+    this.checkKey('item2', s);
 
-    input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (!this.joystickActive || p.id !== this.joystickPointerId) return;
-      const dx = p.x - this.joystickOrigin.x;
-      const dy = p.y - this.joystickOrigin.y;
-      this.joystickVector.set(dx, dy);
-      if (this.joystickVector.length() > this.joystickMaxRadius) {
-        this.joystickVector.setLength(this.joystickMaxRadius);
-      }
-    });
+    for (const action of this.pendingActions) {
+      this.setActionPressed(s, action);
+      s.lastAction = ACTION_LABELS[action];
+    }
+    this.pendingActions.clear();
+  }
 
-    const release = (p: Phaser.Input.Pointer) => {
-      if (p.id !== this.joystickPointerId) return;
-      this.joystickActive = false;
-      this.joystickPointerId = -1;
-      this.joystickVector.set(0, 0);
-    };
-    input.on('pointerup', release);
-    input.on('pointerupoutside', release);
+  private checkKey(action: ActionKey, s: InputState): void {
+    if (Phaser.Input.Keyboard.JustDown(this.keys[action])) {
+      this.setActionPressed(s, action);
+      s.lastAction = ACTION_LABELS[action];
+      s.inputMode = 'keyboard';
+    }
+  }
+
+  private setActionPressed(s: InputState, action: ActionKey): void {
+    switch (action) {
+      case 'attack':
+        s.attackPressed = true;
+        break;
+      case 'skill1':
+        s.skill1Pressed = true;
+        break;
+      case 'skill2':
+        s.skill2Pressed = true;
+        break;
+      case 'skill3':
+        s.skill3Pressed = true;
+        break;
+      case 'ultimate':
+        s.ultimatePressed = true;
+        break;
+      case 'warAction':
+        s.warActionPressed = true;
+        break;
+      case 'item1':
+        s.item1Pressed = true;
+        break;
+      case 'item2':
+        s.item2Pressed = true;
+        break;
+    }
+  }
+
+  /** Convenience accessor for Player movement (Phase 0-1 API). */
+  public getMoveVector(out = new Phaser.Math.Vector2()): Phaser.Math.Vector2 {
+    return out.set(this.state.moveX, this.state.moveY);
+  }
+
+  /** Reposition joystick/buttons after a scale resize. */
+  public handleResize(): void {
+    const { height } = this.scene.scale;
+    this.joystick.reposition(110, height - 110);
+    this.buttons.reposition();
+  }
+
+  /**
+   * Stop all movement and release any held joystick/touch state. Called on
+   * window blur, tab hide, or pointer cancel so a player switching apps or
+   * lifting their finger off-screen doesn't leave the character walking.
+   */
+  public reset(): void {
+    this.joystick.reset();
+    this.pendingActions.clear();
+    this.state.moveX = 0;
+    this.state.moveY = 0;
+  }
+
+  /** Remove all listeners and destroy UI. Call on scene shutdown. */
+  public destroy(): void {
+    this.scene.input.off('pointerdown', this.onPointerDown);
+    window.removeEventListener('blur', this.onBlurOrHide);
+    document.removeEventListener('visibilitychange', this.onBlurOrHide);
+    this.joystick.destroy();
+    this.buttons.destroy();
   }
 }

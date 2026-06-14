@@ -17,6 +17,11 @@ export const MAP_HEIGHT = 4200;
 export const PLAYER_MOVE_SPEED = 320;
 export const PLAYER_RADIUS = 22;
 
+// Phase 2 input/debug overlay. Set to false to hide it once controls are
+// validated; safe to delete this flag and the overlay code in a later phase.
+export const SHOW_DEBUG_OVERLAY = true;
+export const CURRENT_PHASE_LABEL = 'Phase 2: Controls';
+
 // Team colors used for placeholder rendering.
 export const COLORS = {
   blue: 0x3b82f6,

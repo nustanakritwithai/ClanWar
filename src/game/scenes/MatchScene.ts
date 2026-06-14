@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS, SCENE_KEYS } from '../constants';
+import { COLORS, CURRENT_PHASE_LABEL, SCENE_KEYS, SHOW_DEBUG_OVERLAY } from '../constants';
 import { smallTwinFortress } from '../data/map-small-twin-fortress';
 import type { MapMarker } from '../types';
 import { Player } from '../entities/Player';
@@ -10,6 +10,10 @@ export class MatchScene extends Phaser.Scene {
   private movement!: InputSystem;
   private walls!: Phaser.Physics.Arcade.StaticGroup;
   private moveVec = new Phaser.Math.Vector2();
+
+  private menuButton!: Phaser.GameObjects.Text;
+  private debugText?: Phaser.GameObjects.Text;
+  private uiCamera!: Phaser.Cameras.Scene2D.Camera;
 
   constructor() {
     super(SCENE_KEYS.Match);
@@ -34,21 +38,41 @@ export class MatchScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player.sprite, true, 0.12, 0.12);
     this.cameras.main.setZoom(this.computeZoom());
 
-    // Movement input system (WASD + mobile joystick scaffold).
+    // Snapshot world objects before adding screen-fixed UI, so we can set up
+    // a dedicated UI camera below (scrollFactor(0) hit-testing is unreliable
+    // when the main camera is zoomed/scrolled, so UI lives on its own camera).
+    const worldObjects = [...this.children.list];
+
+    // Movement + action input (WASD/keys on desktop, joystick + buttons on touch).
     this.movement = new InputSystem(this);
 
-    this.drawHudHints();
+    this.drawHud();
+
+    // UI camera: fixed at zoom 1 / scroll (0,0), shows only screen-fixed UI.
+    // The main camera ignores UI objects and the UI camera ignores world
+    // objects, so each renders (and hit-tests) only its own layer.
+    const uiObjects = this.children.list.filter((o) => !worldObjects.includes(o));
+    this.uiCamera = this.cameras.add(0, 0, this.scale.width, this.scale.height);
+    this.uiCamera.ignore(worldObjects);
+    this.cameras.main.ignore(uiObjects);
 
     this.scale.on('resize', this.handleResize, this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.scale.off('resize', this.handleResize, this);
-    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
   }
 
   override update(): void {
+    this.movement.update();
+
     const dir = this.movement.getMoveVector(this.moveVec);
     this.player.move(dir);
     this.player.update();
+
+    this.updateDebugOverlay();
+  }
+
+  private handleShutdown(): void {
+    this.scale.off('resize', this.handleResize, this);
+    this.movement.destroy();
   }
 
   private computeZoom(): number {
@@ -60,6 +84,9 @@ export class MatchScene extends Phaser.Scene {
 
   private handleResize(): void {
     this.cameras.main.setZoom(this.computeZoom());
+    this.uiCamera.setSize(this.scale.width, this.scale.height);
+    this.movement.handleResize();
+    this.menuButton.setPosition(this.scale.width - 16, 16);
   }
 
   private drawGround(w: number, h: number): void {
@@ -113,11 +140,9 @@ export class MatchScene extends Phaser.Scene {
     return COLORS.neutral;
   }
 
-  private drawHudHints(): void {
-    const cam = this.cameras.main;
-
+  private drawHud(): void {
     this.add
-      .text(16, 16, 'WASD / Arrows to move • drag lower-left to move (touch)', {
+      .text(16, 16, 'WASD/Arrows or left joystick to move • J/Click/buttons for actions', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '16px',
         color: COLORS.text,
@@ -127,8 +152,8 @@ export class MatchScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(1000);
 
-    const back = this.add
-      .text(cam.width - 16, 16, '⮌ Menu', {
+    this.menuButton = this.add
+      .text(this.scale.width - 16, 16, '⮌ Menu', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '16px',
         color: COLORS.text,
@@ -139,6 +164,38 @@ export class MatchScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(1000)
       .setInteractive({ useHandCursor: true });
-    back.on('pointerdown', () => this.scene.start(SCENE_KEYS.Menu));
+    this.menuButton.on('pointerdown', () => {
+      this.scene.start(SCENE_KEYS.Menu);
+    });
+
+    if (SHOW_DEBUG_OVERLAY) {
+      // Top-left, below the control hint — kept clear of the joystick and
+      // gameplay center. Temporary for Phase 2; safe to remove later.
+      this.debugText = this.add
+        .text(16, 50, '', {
+          fontFamily: 'monospace',
+          fontSize: '13px',
+          color: COLORS.text,
+          backgroundColor: '#00000066',
+          padding: { x: 8, y: 6 },
+        })
+        .setOrigin(0, 0)
+        .setScrollFactor(0)
+        .setDepth(1000);
+    }
+  }
+
+  private updateDebugOverlay(): void {
+    if (!this.debugText) return;
+    const s = this.movement.state;
+    const move = `${s.moveX.toFixed(2)}, ${s.moveY.toFixed(2)}`;
+    this.debugText.setText(
+      [
+        CURRENT_PHASE_LABEL,
+        `input: ${s.inputMode}`,
+        `move: ${move}`,
+        `last: ${s.lastAction || '-'}`,
+      ].join('\n'),
+    );
   }
 }

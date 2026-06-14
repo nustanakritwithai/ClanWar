@@ -57,6 +57,33 @@
       <div style="font-size: 48px">↻</div>
       <div style="font-size: 18px">Please rotate your device to landscape</div>
     </div>
+    <script>
+      // Mobile browser requirement (doc 7.2): block double-tap-to-zoom, which
+      // `user-scalable=no` alone does not stop on every browser.
+      let lastTouchEnd = 0;
+      document.addEventListener(
+        'touchend',
+        (event) => {
+          const now = Date.now();
+          if (now - lastTouchEnd <= 300) {
+            event.preventDefault();
+          }
+          lastTouchEnd = now;
+        },
+        { passive: false },
+      );
+
+      // Block multi-touch pinch-zoom gestures.
+      document.addEventListener(
+        'touchmove',
+        (event) => {
+          if (event.touches.length > 1) {
+            event.preventDefault();
+          }
+        },
+        { passive: false },
+      );
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
