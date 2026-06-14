@@ -27,6 +27,25 @@ npm run preview  # serve the production build
 - Touch scaffold: dragging the lower-left quadrant moves the player (the polished
   ROV virtual joystick is Phase 2).
 
+## Deploy on Render
+
+This repo includes a `render.yaml` Blueprint that deploys the game as a free
+**Static Site** (Vite build → `dist/`).
+
+**Option A — Blueprint (recommended):**
+1. Push this branch to GitHub.
+2. In Render: **New → Blueprint**, pick this repo, choose the branch.
+3. Render reads `render.yaml` and creates the static site. Click **Apply**.
+
+**Option B — manual Static Site:**
+1. Render: **New → Static Site**, connect the repo/branch.
+2. Build command: `npm ci && npm run build`
+3. Publish directory: `dist`
+4. Add a rewrite rule: `/*` → `/index.html` (Redirects/Rewrites tab).
+
+Vite is configured with `base: './'`, so the built asset paths are relative and
+work under any Render URL.
+
 ## Project layout
 
 ```
