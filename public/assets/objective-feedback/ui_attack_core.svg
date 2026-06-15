@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="HUD attack core alert">
+  <!-- Compact HUD icon (UI-space, not map terrain) -->
+  <rect x="32" y="32" width="192" height="192" rx="36" fill="#1a2230" stroke="#0b0e13" stroke-width="10"/>
+  <defs>
+    <radialGradient id="uiAtkCore" cx="0.5" cy="0.45" r="0.55">
+      <stop offset="0" stop-color="#fff7d6"/>
+      <stop offset="0.6" stop-color="#f4d35e"/>
+      <stop offset="1" stop-color="#cfa14a"/>
+    </radialGradient>
+  </defs>
+  <!-- Enemy core target crystal -->
+  <path d="M128 108 L164 152 L128 176 L92 152 Z" fill="url(#uiAtkCore)" stroke="#0b0e13" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M128 80 L164 124 L128 148 L92 124 Z" fill="#cfa14a" stroke="#0b0e13" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Strike impact mark on core (offensive, not crack/warning) -->
+  <circle cx="128" cy="132" r="14" fill="#ef4444" stroke="#0b0e13" stroke-width="6"/>
+  <g stroke="#0b0e13" stroke-width="5" stroke-linecap="round">
+    <line x1="128" y1="114" x2="128" y2="104"/>
+    <line x1="114" y1="132" x2="104" y2="132"/>
+    <line x1="142" y1="132" x2="152" y2="132"/>
+    <line x1="128" y1="150" x2="128" y2="160"/>
+  </g>
+  <!-- Attack chevron striking downward at core -->
+  <path d="M128 52 L156 92 L140 92 L140 108 L116 108 L116 92 L100 92 Z"
+        fill="#ef4444" stroke="#0b0e13" stroke-width="8" stroke-linejoin="round"/>
+</svg>
