@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="HUD objective under attack alert">
+  <!-- Compact HUD warning (UI-space, not map terrain) -->
+  <rect x="32" y="32" width="192" height="192" rx="36" fill="#1a2230" stroke="#0b0e13" stroke-width="10"/>
+  <!-- Warning triangle -->
+  <path d="M128 56 L196 180 H60 Z" fill="#f59e0b" stroke="#0b0e13" stroke-width="10" stroke-linejoin="round"/>
+  <!-- Alert bar (drawn shape) -->
+  <rect x="116" y="108" width="24" height="40" rx="10" fill="#0b0e13"/>
+  <circle cx="128" cy="168" r="10" fill="#0b0e13"/>
+  <!-- Pulse corner ticks -->
+  <g stroke="#f59e0b" stroke-width="6" stroke-linecap="round" opacity="0.6">
+    <line x1="48" y1="48" x2="72" y2="48"/>
+    <line x1="184" y1="48" x2="208" y2="48"/>
+    <line x1="48" y1="208" x2="72" y2="208"/>
+    <line x1="184" y1="208" x2="208" y2="208"/>
+  </g>
+</svg>

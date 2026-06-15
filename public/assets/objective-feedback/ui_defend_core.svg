@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="HUD defend core alert">
+  <!-- Compact HUD icon (UI-space, not map terrain) -->
+  <rect x="32" y="32" width="192" height="192" rx="36" fill="#1a2230" stroke="#0b0e13" stroke-width="10"/>
+  <!-- Shield in front of core -->
+  <path d="M72 80 L184 80 L184 168 C184 196 160 212 128 220 C96 212 72 196 72 168 Z"
+        fill="#3b82f6" stroke="#0b0e13" stroke-width="10" stroke-linejoin="round"/>
+  <!-- Mini core behind shield -->
+  <path d="M128 148 L152 176 L128 188 L104 176 Z" fill="#f4d35e" stroke="#0b0e13" stroke-width="7" stroke-linejoin="round" opacity="0.85"/>
+  <!-- Defend cross guard -->
+  <g stroke="#dbeafe" stroke-width="10" stroke-linecap="round">
+    <line x1="128" y1="100" x2="128" y2="168"/>
+    <line x1="96" y1="134" x2="160" y2="134"/>
+  </g>
+</svg>

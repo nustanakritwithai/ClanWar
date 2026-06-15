@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="HUD capture now alert">
+  <!-- Compact HUD icon (UI-space, not map terrain) -->
+  <rect x="32" y="32" width="192" height="192" rx="36" fill="#1a2230" stroke="#0b0e13" stroke-width="10"/>
+  <!-- Capture ring -->
+  <circle cx="128" cy="128" r="68" fill="none" stroke="#9ca3af" stroke-width="8" stroke-dasharray="16 12"/>
+  <circle cx="128" cy="128" r="48" fill="#9ca3af" opacity="0.12"/>
+  <!-- Inward capture chevrons -->
+  <g fill="#4ade80" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round">
+    <path d="M128 56 L144 80 L112 80 Z"/>
+    <path d="M200 128 L176 144 L176 112 Z"/>
+    <path d="M128 200 L112 176 L144 176 Z"/>
+    <path d="M56 128 L80 112 L80 144 Z"/>
+  </g>
+  <!-- Center capture pip -->
+  <circle cx="128" cy="128" r="14" fill="#4ade80" stroke="#0b0e13" stroke-width="6"/>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Objective claimed by red team">
+  <!-- Ownership seal ring (ground overlay, not skill effect) -->
+  <circle cx="128" cy="140" r="88" fill="#ef4444" opacity="0.10"/>
+  <circle cx="128" cy="140" r="88" fill="none" stroke="#ef4444" stroke-width="8" stroke-dasharray="18 14"/>
+  <!-- Red pennant pole -->
+  <line x1="128" y1="200" x2="128" y2="52" stroke="#0b0e13" stroke-width="10" stroke-linecap="round"/>
+  <!-- Red pennant flag -->
+  <path d="M128 52 L188 72 L128 92 Z" fill="#ef4444" stroke="#0b0e13" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Claim seal (check in circle) -->
+  <circle cx="128" cy="156" r="34" fill="#dc2626" stroke="#0b0e13" stroke-width="9"/>
+  <path d="M108 156 L120 170 L150 138" fill="none" stroke="#fee2e2" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

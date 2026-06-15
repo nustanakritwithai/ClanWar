@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Objective successfully defended">
+  <!-- Defended halo ring -->
+  <circle cx="128" cy="132" r="92" fill="#4ade80" opacity="0.10"/>
+  <circle cx="128" cy="132" r="92" fill="none" stroke="#4ade80" stroke-width="7" stroke-dasharray="20 12"/>
+  <!-- Protective shield -->
+  <path d="M128 44 L204 76 V148 C204 194 172 218 128 232 C84 218 52 194 52 148 V76 Z"
+        fill="#4ade80" stroke="#0b0e13" stroke-width="11" stroke-linejoin="round"/>
+  <!-- Success checkmark -->
+  <path d="M88 140 L112 168 L172 104" fill="none" stroke="#ecfdf5" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
