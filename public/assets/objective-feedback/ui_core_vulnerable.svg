@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="HUD core vulnerable alert">
+  <!-- Compact HUD icon (UI-space, not map terrain) -->
+  <rect x="32" y="32" width="192" height="192" rx="36" fill="#1a2230" stroke="#0b0e13" stroke-width="10"/>
+  <defs>
+    <radialGradient id="uiVulnCore" cx="0.5" cy="0.45" r="0.55">
+      <stop offset="0" stop-color="#fff7d6"/>
+      <stop offset="0.6" stop-color="#f4d35e"/>
+      <stop offset="1" stop-color="#cfa14a"/>
+    </radialGradient>
+  </defs>
+  <!-- Mini cracked core crystal -->
+  <path d="M128 64 L172 128 L128 156 L84 128 Z" fill="url(#uiVulnCore)" stroke="#0b0e13" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M128 192 L172 128 L128 156 L84 128 Z" fill="#cfa14a" stroke="#0b0e13" stroke-width="9" stroke-linejoin="round"/>
+  <!-- Crack lines -->
+  <g stroke="#0b0e13" stroke-width="6" stroke-linecap="round">
+    <path d="M112 108 L122 128 L110 144"/>
+    <path d="M144 106 L134 128 L146 142"/>
+  </g>
+  <!-- Threat ring -->
+  <circle cx="128" cy="128" r="72" fill="none" stroke="#f59e0b" stroke-width="6" stroke-dasharray="10 8"/>
+</svg>

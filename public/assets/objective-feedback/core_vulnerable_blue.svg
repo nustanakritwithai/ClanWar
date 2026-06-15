@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Blue core vulnerable visual state">
+  <defs>
+    <radialGradient id="vulnBlueCore" cx="0.5" cy="0.45" r="0.55">
+      <stop offset="0" stop-color="#dbeafe"/>
+      <stop offset="0.6" stop-color="#60a5fa"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </radialGradient>
+  </defs>
+  <!-- Threat ring (visual only, not core HP logic) -->
+  <circle cx="128" cy="124" r="104" fill="none" stroke="#f59e0b" stroke-width="7" stroke-dasharray="14 10"/>
+  <circle cx="128" cy="124" r="88" fill="#f59e0b" opacity="0.08"/>
+  <!-- Blue crystal nexus -->
+  <path d="M128 36 L184 124 L128 160 L72 124 Z" fill="url(#vulnBlueCore)" stroke="#0b0e13" stroke-width="11" stroke-linejoin="round"/>
+  <path d="M128 212 L184 124 L128 160 L72 124 Z" fill="#2563eb" stroke="#0b0e13" stroke-width="11" stroke-linejoin="round"/>
+  <!-- Vulnerability crack lines -->
+  <g stroke="#0b0e13" stroke-width="7" stroke-linecap="round">
+    <path d="M108 100 L120 130 L104 150"/>
+    <path d="M148 96 L136 126 L152 148"/>
+    <line x1="128" y1="36" x2="128" y2="72"/>
+  </g>
+  <!-- Warning chevron above core -->
+  <path d="M128 16 L144 44 L112 44 Z" fill="#f59e0b" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round"/>
+</svg>

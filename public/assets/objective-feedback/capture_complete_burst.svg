@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Capture complete burst visual only">
+  <!-- Completion rings (objective feedback, not combat explosion) -->
+  <circle cx="128" cy="128" r="100" fill="none" stroke="#4ade80" stroke-width="6" opacity="0.35"/>
+  <circle cx="128" cy="128" r="78" fill="none" stroke="#4ade80" stroke-width="8" opacity="0.55"/>
+  <circle cx="128" cy="128" r="56" fill="#4ade80" opacity="0.15"/>
+  <!-- Radial completion spokes (geometric, not jagged combat burst) -->
+  <g stroke="#4ade80" stroke-width="8" stroke-linecap="round" opacity="0.7">
+    <line x1="128" y1="24" x2="128" y2="48"/>
+    <line x1="232" y1="128" x2="208" y2="128"/>
+    <line x1="128" y1="232" x2="128" y2="208"/>
+    <line x1="24" y1="128" x2="48" y2="128"/>
+    <line x1="202" y1="54" x2="186" y2="70"/>
+    <line x1="202" y1="202" x2="186" y2="186"/>
+    <line x1="54" y1="202" x2="70" y2="186"/>
+    <line x1="54" y1="54" x2="70" y2="70"/>
+  </g>
+  <!-- Center completion seal -->
+  <circle cx="128" cy="128" r="28" fill="#4ade80" stroke="#0b0e13" stroke-width="8"/>
+  <path d="M112 128 L122 142 L148 112" fill="none" stroke="#ecfdf5" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

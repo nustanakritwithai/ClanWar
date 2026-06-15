@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Objective contested by both teams">
+  <!-- Neutral contested zone ring -->
+  <circle cx="128" cy="128" r="96" fill="#9ca3af" opacity="0.08"/>
+  <circle cx="128" cy="128" r="96" fill="none" stroke="#9ca3af" stroke-width="7" stroke-dasharray="12 10"/>
+  <!-- Split ownership halves -->
+  <path d="M128 32 A96 96 0 0 0 128 224 Z" fill="#3b82f6" opacity="0.22" stroke="#0b0e13" stroke-width="6"/>
+  <path d="M128 32 A96 96 0 0 1 128 224 Z" fill="#ef4444" opacity="0.22" stroke="#0b0e13" stroke-width="6"/>
+  <!-- Clash bar (drawn shape, not text) -->
+  <rect x="118" y="72" width="20" height="112" rx="8" fill="#f59e0b" stroke="#0b0e13" stroke-width="7"/>
+  <!-- Opposing pennants -->
+  <path d="M72 108 L72 72 L104 84 L72 96 Z" fill="#3b82f6" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M184 108 L184 72 L152 84 L184 96 Z" fill="#ef4444" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round"/>
+  <!-- Clash sparks (static, not combat VFX) -->
+  <g fill="#f59e0b" stroke="#0b0e13" stroke-width="5">
+    <polygon points="128,56 136,72 120,72"/>
+    <polygon points="128,200 136,184 120,184"/>
+  </g>
+</svg>
