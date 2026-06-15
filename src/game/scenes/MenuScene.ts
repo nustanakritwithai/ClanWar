@@ -31,10 +31,12 @@ export class MenuScene extends Phaser.Scene {
     this.makeButton(cx, height * 0.55, 'START', async () => {
       await requestGameFullscreen();
       await tryLockLandscape();
-      this.scene.start(SCENE_KEYS.Match);
+      this.scene.start(SCENE_KEYS.ClassSelect);
     });
 
-    this.makeButton(cx, height * 0.55 + 70, 'SELECT CLASS', () => {
+    this.makeButton(cx, height * 0.55 + 70, 'SELECT CLASS', async () => {
+      await requestGameFullscreen();
+      await tryLockLandscape();
       this.scene.start(SCENE_KEYS.ClassSelect);
     });
 
@@ -47,7 +49,7 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(cx, height - 40, 'Phase 2.6: mobile UX hotfix (visual controls only)', {
+      .text(cx, height - 40, 'Phase 3A: class stats + skill runtime (no combat damage)', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '14px',
         color: '#5b6675',

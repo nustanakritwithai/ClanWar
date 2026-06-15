@@ -125,17 +125,13 @@ export class SkillButtons {
     });
   }
 
-  public showMockCooldown(action: ActionKey): void {
+  public showCooldown(action: ActionKey, durationMs: number): void {
     const handle = this.buttons.find((b) => b.action === action);
     if (!handle) return;
 
-    if (handle.cooldownOverlay) {
-      this.scene.tweens.killTweensOf(handle.cooldownOverlay);
-      handle.cooldownOverlay.destroy();
-      handle.cooldownOverlay = undefined;
-    }
+    // Skip if an overlay is already active (e.g. skill still on cooldown).
+    if (handle.cooldownOverlay) return;
 
-    const duration = SkillButtons.MOCK_COOLDOWN_MS[action] ?? 280;
     const overlay = this.scene.add
       .circle(handle.bg.x, handle.bg.y, handle.radius, 0x000000, 0.5)
       .setScrollFactor(0)
@@ -146,7 +142,7 @@ export class SkillButtons {
     this.scene.tweens.add({
       targets: overlay,
       alpha: 0,
-      duration,
+      duration: durationMs,
       ease: 'Linear',
       onComplete: () => {
         overlay.destroy();
@@ -155,6 +151,11 @@ export class SkillButtons {
         }
       },
     });
+  }
+
+  public showMockCooldown(action: ActionKey): void {
+    const duration = SkillButtons.MOCK_COOLDOWN_MS[action] ?? 280;
+    this.showCooldown(action, duration);
   }
 
   private getRadius(action: ActionKey, compact: boolean): number {

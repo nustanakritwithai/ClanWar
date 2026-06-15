@@ -195,3 +195,16 @@ export interface EdgeCaseRules {
   suddenDeathDuration: EdgeCaseRule;
   suddenDeathTiebreaker: EdgeCaseRule;
 }
+
+export interface MatchSceneData {
+  heroClass?: HeroClassId;
+}
+
+export type SkillUseFailReason = 'cooldown' | 'mana' | 'no-skill';
+
+export interface SkillUseResult {
+  ok: boolean;
+  reason?: SkillUseFailReason;
+  skillName?: string;
+  cooldown?: number;
+}

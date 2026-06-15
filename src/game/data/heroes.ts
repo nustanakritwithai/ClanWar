@@ -1,7 +1,7 @@
-import type { HeroDefinition } from '../types';
+import type { HeroClassId, HeroDefinition } from '../types';
 
-/** Base hero stats for Phase 3+. Not applied to the placeholder player yet. */
-export const HEROES: Record<string, HeroDefinition> = {
+/** Base hero stats for Phase 3+. Applied to Player at match start. */
+export const HEROES: Record<HeroClassId, HeroDefinition> = {
   guardian: {
     id: 'guardian',
     name: 'Guardian',
@@ -65,3 +65,24 @@ export const HEROES: Record<string, HeroDefinition> = {
     },
   },
 };
+
+export const HERO_CLASS_ORDER: HeroClassId[] = [
+  'guardian',
+  'warrior',
+  'ranger',
+  'mage',
+  'priest',
+];
+
+export const HERO_ROLE_LABEL: Record<HeroClassId, string> = {
+  guardian: 'Tank',
+  warrior: 'Breaker',
+  ranger: 'Ranged',
+  mage: 'AoE',
+  priest: 'Healer',
+};
+
+export function getHero(heroClass?: HeroClassId): HeroDefinition {
+  const id = heroClass ?? 'guardian';
+  return HEROES[id] ?? HEROES.guardian;
+}
