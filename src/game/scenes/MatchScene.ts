@@ -131,7 +131,8 @@ export class MatchScene extends Phaser.Scene {
 
     if (this.isInAttackRange(this.dummy.x, this.dummy.y, this.dummy.radius)) {
       const result = this.dummy.takeDamage(this.player.attack);
-      showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#ef4444');
+      const text = showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#ef4444');
+      this.registerWorldObject(text);
       this.setCombatResult(`Attack hit ${result.finalDamage}`);
       if (result.killed) {
         this.time.delayedCall(2100, () => {
@@ -181,7 +182,8 @@ export class MatchScene extends Phaser.Scene {
         this.isInSkillRange(this.dummy.x, this.dummy.y, this.dummy.radius, range)
       ) {
         const result = this.dummy.takeDamage(skill.damage);
-        showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#f87171');
+        const text = showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#f87171');
+        this.registerWorldObject(text);
         this.setCombatResult(`${name} hit ${result.finalDamage}`);
         if (result.killed) {
           this.time.delayedCall(2100, () => {
@@ -197,7 +199,8 @@ export class MatchScene extends Phaser.Scene {
     if (skill.heal !== undefined) {
       const healed = this.player.heal(skill.heal);
       if (healed > 0) {
-        showCombatText(this, this.player.x, this.player.y - 28, `+${healed}`, '#4ade80');
+        const text = showCombatText(this, this.player.x, this.player.y - 28, `+${healed}`, '#4ade80');
+        this.registerWorldObject(text);
         this.setCombatResult(`Heal +${healed}`);
       } else {
         this.setCombatResult(`${name} (HP full)`);
@@ -211,6 +214,13 @@ export class MatchScene extends Phaser.Scene {
   private setCombatResult(message: string): void {
     this.lastCombatResult = message;
     this.movement.state.lastAction = message;
+  }
+
+  /** Keep runtime world objects off the fixed UI camera layer. */
+  private registerWorldObject(obj: Phaser.GameObjects.GameObject): void {
+    if (this.uiCamera) {
+      this.uiCamera.ignore(obj);
+    }
   }
 
   private isInAttackRange(targetX: number, targetY: number, targetRadius: number): boolean {

@@ -1,13 +1,13 @@
 import Phaser from 'phaser';
 
-/** Floating combat number in world space (main camera). */
+/** Floating combat number in world space (main camera). Caller should register with uiCamera.ignore(). */
 export function showCombatText(
   scene: Phaser.Scene,
   x: number,
   y: number,
   text: string,
   color = '#ffffff',
-): void {
+): Phaser.GameObjects.Text {
   const label = scene.add
     .text(x, y, text, {
       fontFamily: 'system-ui, sans-serif',
@@ -28,4 +28,6 @@ export function showCombatText(
     ease: 'Cubic.easeOut',
     onComplete: () => label.destroy(),
   });
+
+  return label;
 }
