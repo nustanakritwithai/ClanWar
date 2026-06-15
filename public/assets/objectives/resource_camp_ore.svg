@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Ore resource camp">
+  <!-- Ground patch -->
+  <ellipse cx="128" cy="208" rx="98" ry="24" fill="#9ca3af" opacity="0.16"/>
+  <!-- Rock mound -->
+  <path d="M44 210 L78 150 L128 176 L176 142 L212 210 Z" fill="#4a5870" stroke="#0b0e13" stroke-width="11" stroke-linejoin="round"/>
+  <!-- Ore crystals -->
+  <g stroke="#0b0e13" stroke-width="8" stroke-linejoin="round">
+    <path d="M104 176 L120 108 L140 132 L132 188 Z" fill="#60a5fa"/>
+    <path d="M150 168 L168 120 L188 156 L176 192 Z" fill="#93c5fd"/>
+    <path d="M70 196 L84 156 L100 184 Z" fill="#3b82f6"/>
+  </g>
+  <!-- Sparkle accents -->
+  <g stroke="#dbeafe" stroke-width="5" stroke-linecap="round" opacity="0.9">
+    <line x1="128" y1="120" x2="128" y2="138"/>
+    <line x1="170" y1="134" x2="170" y2="150"/>
+  </g>
+</svg>

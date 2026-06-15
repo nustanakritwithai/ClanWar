@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Blue team watchtower">
+  <!-- Tower shaft -->
+  <path d="M84 232 V92 h88 V232 Z" fill="#3a4658" stroke="#0b0e13" stroke-width="12" stroke-linejoin="round"/>
+  <!-- Crenellated parapet -->
+  <g fill="#4a5870" stroke="#0b0e13" stroke-width="9" stroke-linejoin="round">
+    <path d="M72 92 V64 h22 v14 h20 V64 h20 v14 h20 V64 h22 v28 Z"/>
+  </g>
+  <!-- Arrow-slit window (blue glow) -->
+  <rect x="118" y="120" width="20" height="48" rx="9" fill="#3b82f6" stroke="#0b0e13" stroke-width="6"/>
+  <!-- Door -->
+  <path d="M110 232 V196 a18 18 0 0 1 36 0 V232 Z" fill="#1a2230" stroke="#0b0e13" stroke-width="6"/>
+  <!-- Blue team banner -->
+  <path d="M128 64 V28" stroke="#0b0e13" stroke-width="6" stroke-linecap="round"/>
+  <path d="M128 30 L160 40 L128 50 Z" fill="#3b82f6" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round"/>
+</svg>
