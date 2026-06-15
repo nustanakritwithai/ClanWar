@@ -3,11 +3,33 @@ import { segmentHitsCircle } from '../combat/HitShapes';
 import { Projectile, type ProjectileHitEvent } from '../entities/Projectile';
 import type { ProjectileSpawnConfig } from '../types';
 import type { TrainingDummy } from '../entities/TrainingDummy';
+import type { TeamId } from '../types';
+
+export interface ProjectileObjectiveHit {
+  objectiveId: string;
+  x: number;
+  y: number;
+  damage: number;
+  skillId: string;
+  skillName: string;
+  impactAoeRadius?: number;
+}
 
 export interface ProjectileSystemHooks {
   registerWorldObject: (obj: Phaser.GameObjects.GameObject) => void;
   onHit: (event: ProjectileHitEvent) => void;
+  onObjectiveHit?: (event: ProjectileObjectiveHit) => void;
   onExpired: (skillName: string) => void;
+  checkObjectiveSegment?: (
+    ownerTeam: TeamId,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    hitRadius: number,
+    damage: number,
+    skillId: string,
+  ) => boolean;
 }
 
 /** Spawns, updates, and cleans up skill projectiles for a match. */
@@ -37,20 +59,50 @@ export class ProjectileSystem {
 
       projectile.update(deltaSeconds);
 
-      if (!projectile.destroyed && dummy.canReceiveDamage()) {
+      if (!projectile.destroyed) {
         const prev = projectile.getPreviousPosition();
-        const hitRadius = projectile.hitRadius + dummy.radius;
-        if (segmentHitsCircle(prev.x, prev.y, projectile.x, projectile.y, dummy.x, dummy.y, hitRadius)) {
-          this.hooks.onHit({
-            x: projectile.x,
-            y: projectile.y,
-            damage: projectile.damage,
-            skillId: projectile.skillId,
-            skillName: projectile.skillName,
-            impactAoeRadius: projectile.impactAoeRadius,
-          });
-          this.lastResult = `${projectile.skillName} hit`;
-          projectile.markDestroyed();
+        let hit = false;
+
+        if (this.hooks.checkObjectiveSegment) {
+          hit = this.hooks.checkObjectiveSegment(
+            projectile.ownerTeam as TeamId,
+            prev.x,
+            prev.y,
+            projectile.x,
+            projectile.y,
+            projectile.hitRadius,
+            projectile.damage,
+            projectile.skillId,
+          );
+          if (hit) {
+            this.hooks.onObjectiveHit?.({
+              objectiveId: 'objective',
+              x: projectile.x,
+              y: projectile.y,
+              damage: projectile.damage,
+              skillId: projectile.skillId,
+              skillName: projectile.skillName,
+              impactAoeRadius: projectile.impactAoeRadius,
+            });
+            this.lastResult = `${projectile.skillName} objective hit`;
+            projectile.markDestroyed();
+          }
+        }
+
+        if (!hit && dummy.canReceiveDamage()) {
+          const hitRadius = projectile.hitRadius + dummy.radius;
+          if (segmentHitsCircle(prev.x, prev.y, projectile.x, projectile.y, dummy.x, dummy.y, hitRadius)) {
+            this.hooks.onHit({
+              x: projectile.x,
+              y: projectile.y,
+              damage: projectile.damage,
+              skillId: projectile.skillId,
+              skillName: projectile.skillName,
+              impactAoeRadius: projectile.impactAoeRadius,
+            });
+            this.lastResult = `${projectile.skillName} hit`;
+            projectile.markDestroyed();
+          }
         }
       }
 
