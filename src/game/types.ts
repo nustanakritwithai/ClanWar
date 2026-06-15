@@ -223,3 +223,28 @@ export interface SkillUseResult {
   skillName?: string;
   cooldown?: number;
 }
+
+// --- Phase 3B-B1: hit shapes + projectiles -----------------------------
+
+export type SkillRuntimeType =
+  | 'melee_arc'
+  | 'projectile'
+  | 'aoe_circle'
+  | 'heal'
+  | 'legacy';
+
+export interface ProjectileSpawnConfig {
+  x: number;
+  y: number;
+  angle: number;
+  speed: number;
+  maxRange: number;
+  hitRadius: number;
+  damage: number;
+  skillId: string;
+  skillName: string;
+  ownerTeam: TeamId;
+  /** AoE radius applied at impact (Fireball). */
+  impactAoeRadius?: number;
+  visual: 'arrow' | 'fireball';
+}
