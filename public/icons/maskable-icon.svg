@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Clan Siege Arena maskable app icon">
+  <defs>
+    <linearGradient id="maskBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#141b27"/>
+      <stop offset="1" stop-color="#0b0e13"/>
+    </linearGradient>
+    <linearGradient id="maskShield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5b9bff"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <!-- Full-bleed background (maskable: platforms may crop edges to any shape) -->
+  <rect x="0" y="0" width="512" height="512" fill="url(#maskBg)"/>
+  <!-- All content kept inside the central 80% safe zone (~51..461) -->
+  <g stroke="#cfa14a" stroke-width="16" stroke-linecap="round">
+    <line x1="186" y1="190" x2="326" y2="330"/>
+    <line x1="326" y1="190" x2="186" y2="330"/>
+  </g>
+  <path d="M256 158 L344 188 V268 C344 326 304 364 256 382 C208 364 168 326 168 268 V188 Z"
+        fill="url(#maskShield)" stroke="#0b0e13" stroke-width="12" stroke-linejoin="round"/>
+  <g fill="#0b0e13">
+    <rect x="216" y="226" width="20" height="24"/>
+    <rect x="246" y="226" width="20" height="24"/>
+    <rect x="276" y="226" width="20" height="24"/>
+    <rect x="216" y="248" width="80" height="80" rx="4"/>
+  </g>
+  <path d="M240 328 v-32 a16 16 0 0 1 32 0 v32 Z" fill="#5b9bff"/>
+</svg>

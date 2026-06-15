@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Meteor Siege (Ultimate)">
+  <defs>
+    <radialGradient id="meteorCore" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fde68a"/>
+      <stop offset="0.6" stop-color="#9333ea"/>
+      <stop offset="1" stop-color="#5b21b6"/>
+    </radialGradient>
+  </defs>
+  <!-- Ultimate aura ring -->
+  <circle cx="128" cy="128" r="116" fill="none" stroke="#a855f7" stroke-width="5" stroke-dasharray="6 14" opacity="0.5"/>
+  <!-- Fiery tail -->
+  <path d="M40 36 L150 146 L120 176 L40 36 Z" fill="#a855f7" stroke="#0b0e13" stroke-width="7" stroke-linejoin="round" opacity="0.8"/>
+  <!-- Meteor body -->
+  <circle cx="160" cy="160" r="52" fill="url(#meteorCore)" stroke="#0b0e13" stroke-width="11"/>
+  <!-- Impact target -->
+  <ellipse cx="160" cy="212" rx="66" ry="18" fill="none" stroke="#c4b5fd" stroke-width="7" stroke-dasharray="6 12"/>
+</svg>

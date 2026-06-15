@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Rage">
+  <!-- Fury flame burst -->
+  <path d="M128 28
+           C 168 84 160 116 140 140
+           C 156 128 166 108 166 88
+           C 196 132 188 188 152 214
+           C 168 196 172 172 166 152
+           C 178 184 156 224 128 226
+           C 100 224 78 184 90 152
+           C 84 172 88 196 104 214
+           C 68 188 60 132 90 88
+           C 90 108 100 128 116 140
+           C 96 116 88 84 128 28 Z"
+        fill="#ef4444" stroke="#0b0e13" stroke-width="10" stroke-linejoin="round"/>
+  <!-- Inner heat -->
+  <path d="M128 96 C 148 124 144 156 128 184 C 112 156 108 124 128 96 Z" fill="#fbbf24"/>
+</svg>

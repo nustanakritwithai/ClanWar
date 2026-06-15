@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Warrior class icon">
+  <defs>
+    <linearGradient id="warriorFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff6b6b"/>
+      <stop offset="1" stop-color="#dc2626"/>
+    </linearGradient>
+  </defs>
+  <!-- Heavy axe: shaft -->
+  <rect x="240" y="96" width="32" height="332" rx="14" fill="#3a2a22" stroke="#0b0e13" stroke-width="12"/>
+  <!-- Axe head (double-bit) -->
+  <path d="M256 120
+           C 188 124 148 158 132 214
+           C 176 206 214 210 256 226 Z"
+        fill="url(#warriorFill)" stroke="#0b0e13" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M256 120
+           C 324 124 364 158 380 214
+           C 336 206 298 210 256 226 Z"
+        fill="url(#warriorFill)" stroke="#0b0e13" stroke-width="14" stroke-linejoin="round"/>
+  <!-- Pommel -->
+  <circle cx="256" cy="436" r="26" fill="url(#warriorFill)" stroke="#0b0e13" stroke-width="12"/>
+</svg>
