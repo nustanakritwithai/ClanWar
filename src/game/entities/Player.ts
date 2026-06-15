@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { COLORS, PLAYER_MOVE_SPEED, PLAYER_RADIUS } from '../constants';
-import type { ActionKey } from '../types';
+import { COLORS, MANA_REGEN_PER_SECOND, PLAYER_RADIUS } from '../constants';
+import type { ActionKey, HeroClassId, HeroDefinition } from '../types';
 
 const ACTION_FLASH: Record<ActionKey, { color: number; duration: number; scale?: number }> = {
   attack: { color: 0xffffff, duration: 120 },
@@ -13,18 +13,47 @@ const ACTION_FLASH: Record<ActionKey, { color: number; duration: number; scale?:
   item2: { color: 0x38bdf8, duration: 100 },
 };
 
-// Placeholder player: a colored circle with an arcade-physics body. Phase 2.5
-// adds visual-only action feedback; real combat/stats arrive in Phase 3+.
+// Phase 3A: player uses real hero stats for movement, HP/mana display, and skill
+// costs. Combat damage is not applied yet.
 export class Player {
   public readonly sprite: Phaser.GameObjects.Arc;
   public readonly body: Phaser.Physics.Arcade.Body;
+
+  public readonly heroClass: HeroClassId;
+  public readonly heroName: string;
+  public readonly maxHp: number;
+  public currentHp: number;
+  public readonly maxMana: number;
+  public currentMana: number;
+  public readonly attack: number;
+  public readonly armor: number;
+  public readonly moveSpeed: number;
+  public readonly attackRange: number;
+  public readonly magicPower?: number;
+  public readonly gateDamageBonus?: number;
+
   private scene: Phaser.Scene;
   private facing: Phaser.GameObjects.Line;
   private facingAngle = 0;
   private baseFillColor = COLORS.blue;
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
+  constructor(scene: Phaser.Scene, x: number, y: number, hero: HeroDefinition) {
     this.scene = scene;
+    const stats = hero.stats;
+
+    this.heroClass = hero.id;
+    this.heroName = hero.name;
+    this.maxHp = stats.hp;
+    this.currentHp = stats.hp;
+    this.maxMana = stats.mana;
+    this.currentMana = stats.mana;
+    this.attack = stats.attack;
+    this.armor = stats.armor;
+    this.moveSpeed = stats.moveSpeed;
+    this.attackRange = stats.attackRange;
+    this.magicPower = stats.magicPower;
+    this.gateDamageBonus = stats.gateDamageBonus;
+
     this.sprite = scene.add.circle(x, y, PLAYER_RADIUS, COLORS.blue);
     this.sprite.setStrokeStyle(3, 0xffffff, 0.9);
     this.sprite.setDepth(100);
@@ -40,7 +69,7 @@ export class Player {
   }
 
   public move(direction: Phaser.Math.Vector2): void {
-    this.body.setVelocity(direction.x * PLAYER_MOVE_SPEED, direction.y * PLAYER_MOVE_SPEED);
+    this.body.setVelocity(direction.x * this.moveSpeed, direction.y * this.moveSpeed);
 
     if (direction.lengthSq() > 0) {
       this.facingAngle = direction.angle();
@@ -56,7 +85,46 @@ export class Player {
     return this.facingAngle;
   }
 
-  /** Visual-only feedback for an input action. No damage, cooldown, or mana. */
+  public canSpendMana(amount: number): boolean {
+    return this.currentMana >= amount;
+  }
+
+  public spendMana(amount: number): boolean {
+    if (!this.canSpendMana(amount)) return false;
+    this.currentMana -= amount;
+    return true;
+  }
+
+  public regenerateMana(deltaSeconds: number): void {
+    if (this.currentMana >= this.maxMana) return;
+    this.currentMana = Math.min(this.maxMana, this.currentMana + MANA_REGEN_PER_SECOND * deltaSeconds);
+  }
+
+  public playDeniedFeedback(reason: 'mana' | 'cooldown'): void {
+    const label = reason === 'mana' ? 'NO MANA' : 'CD';
+    const flash = this.scene.add
+      .text(this.sprite.x, this.sprite.y - PLAYER_RADIUS - 16, label, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: '11px',
+        color: '#ffffff',
+        backgroundColor: '#dc2626cc',
+        padding: { x: 4, y: 2 },
+      })
+      .setOrigin(0.5)
+      .setDepth(103);
+
+    this.sprite.setFillStyle(0xef4444, 0.9);
+    this.scene.time.delayedCall(120, () => this.sprite.setFillStyle(this.baseFillColor, 1));
+
+    this.scene.tweens.add({
+      targets: flash,
+      y: flash.y - 14,
+      alpha: 0,
+      duration: 280,
+      onComplete: () => flash.destroy(),
+    });
+  }
+
   public playActionFeedback(action: ActionKey): void {
     const spec = ACTION_FLASH[action];
 

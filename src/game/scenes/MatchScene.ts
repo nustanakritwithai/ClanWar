@@ -6,34 +6,28 @@ import {
   SCENE_KEYS,
   SHOW_DEBUG_OVERLAY,
 } from '../constants';
+import { getHero } from '../data/heroes';
 import { smallTwinFortress } from '../data/map-small-twin-fortress';
-import type { ActionKey, InputState, MapMarker } from '../types';
+import type { ActionKey, HeroClassId, MapMarker, MatchSceneData } from '../types';
 import { Player } from '../entities/Player';
 import { InputSystem } from '../systems/InputSystem';
+import { SkillRuntimeSystem } from '../systems/SkillRuntimeSystem';
 import { isFullscreenActive, requestGameFullscreen } from '../utils/fullscreen';
-
-const ACTION_KEYS: ActionKey[] = [
-  'attack',
-  'skill1',
-  'skill2',
-  'skill3',
-  'ultimate',
-  'warAction',
-  'item1',
-  'item2',
-];
 
 const HUD_HINT_NORMAL =
   'WASD/Arrows or joystick • J/Q/E/R/F/Space/1/2 or buttons • ` or F1: debug';
 const HUD_HINT_COMPACT = 'Move: joystick/WASD • Actions: buttons';
 
 export class MatchScene extends Phaser.Scene {
+  private heroClass: HeroClassId = 'guardian';
   private player!: Player;
   private movement!: InputSystem;
+  private skillRuntime!: SkillRuntimeSystem;
   private walls!: Phaser.Physics.Arcade.StaticGroup;
   private moveVec = new Phaser.Math.Vector2();
 
   private hintText!: Phaser.GameObjects.Text;
+  private statsHud!: Phaser.GameObjects.Text;
   private menuButton!: Phaser.GameObjects.Text;
   private fullscreenButton?: Phaser.GameObjects.Text;
   private debugText?: Phaser.GameObjects.Text;
@@ -46,8 +40,13 @@ export class MatchScene extends Phaser.Scene {
     super(SCENE_KEYS.Match);
   }
 
+  init(data: MatchSceneData = {}): void {
+    this.heroClass = data.heroClass ?? 'guardian';
+  }
+
   create(): void {
     const map = smallTwinFortress;
+    const hero = getHero(this.heroClass);
 
     this.physics.world.setBounds(0, 0, map.width, map.height);
     this.cameras.main.setBounds(0, 0, map.width, map.height);
@@ -56,7 +55,8 @@ export class MatchScene extends Phaser.Scene {
     this.buildWalls();
     this.drawMarkers(map.markers);
 
-    this.player = new Player(this, map.playerSpawn.x, map.playerSpawn.y);
+    this.player = new Player(this, map.playerSpawn.x, map.playerSpawn.y, hero);
+    this.skillRuntime = new SkillRuntimeSystem(this.heroClass);
     this.physics.add.collider(this.player.sprite, this.walls);
 
     this.cameras.main.startFollow(this.player.sprite, true, 0.12, 0.12);
@@ -79,47 +79,65 @@ export class MatchScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
   }
 
-  override update(): void {
+  override update(_time: number, delta: number): void {
+    const deltaSeconds = delta / 1000;
+
     this.movement.update();
+    this.player.regenerateMana(deltaSeconds);
+    this.skillRuntime.update(deltaSeconds);
 
     const dir = this.movement.getMoveVector(this.moveVec);
     this.player.move(dir);
     this.player.update();
 
     this.processActions();
+    this.updateStatsHud();
     this.updateDebugOverlay();
   }
 
   private processActions(): void {
     const s = this.movement.state;
 
-    for (const action of ACTION_KEYS) {
-      const pressed = this.isActionPressed(s, action);
-      if (!pressed) continue;
-
-      this.player.playActionFeedback(action);
-      this.movement.showButtonCooldown(action);
-    }
+    if (s.attackPressed) this.handleAttack();
+    if (s.skill1Pressed) this.handleSkill('skill1');
+    if (s.skill2Pressed) this.handleSkill('skill2');
+    if (s.skill3Pressed) this.handleSkill('skill3');
+    if (s.ultimatePressed) this.handleSkill('ultimate');
+    if (s.warActionPressed) this.handleSimpleAction('warAction', 'War Action');
+    if (s.item1Pressed) this.handleSimpleAction('item1', 'Item 1');
+    if (s.item2Pressed) this.handleSimpleAction('item2', 'Item 2');
   }
 
-  private isActionPressed(s: InputState, action: ActionKey): boolean {
-    switch (action) {
-      case 'attack':
-        return s.attackPressed;
-      case 'skill1':
-        return s.skill1Pressed;
-      case 'skill2':
-        return s.skill2Pressed;
-      case 'skill3':
-        return s.skill3Pressed;
-      case 'ultimate':
-        return s.ultimatePressed;
-      case 'warAction':
-        return s.warActionPressed;
-      case 'item1':
-        return s.item1Pressed;
-      case 'item2':
-        return s.item2Pressed;
+  private handleAttack(): void {
+    this.player.playActionFeedback('attack');
+    this.movement.showButtonCooldown('attack');
+    this.movement.state.lastAction = 'Attack';
+  }
+
+  private handleSimpleAction(action: ActionKey, label: string): void {
+    this.player.playActionFeedback(action);
+    this.movement.showButtonCooldown(action);
+    this.movement.state.lastAction = label;
+  }
+
+  private handleSkill(action: ActionKey): void {
+    const skill = this.skillRuntime.getSkillForAction(action);
+    const result = this.skillRuntime.tryUseSkill(action, this.player);
+
+    if (result.ok && skill) {
+      this.player.spendMana(skill.manaCost);
+      this.player.playActionFeedback(action);
+      this.movement.showButtonCooldown(action, (result.cooldown ?? skill.cooldown) * 1000);
+      this.movement.state.lastAction = result.skillName ?? skill.name;
+      return;
+    }
+
+    if (result.reason === 'cooldown') {
+      this.player.playDeniedFeedback('cooldown');
+      this.movement.state.lastAction = 'Skill on cooldown';
+    } else if (result.reason === 'mana') {
+      this.player.playDeniedFeedback('mana');
+      this.movement.state.lastAction = 'Not enough mana';
     }
   }
 
@@ -204,20 +222,24 @@ export class MatchScene extends Phaser.Scene {
     const compact = this.isCompactHud();
     const topMargin = compact ? 8 : 16;
     const rightMargin = compact ? 10 : 16;
+    const hintH = compact ? 22 : 30;
 
     this.hintText.setPosition(topMargin, topMargin);
     this.hintText.setFontSize(compact ? '12px' : '16px');
     this.hintText.setText(compact ? HUD_HINT_COMPACT : HUD_HINT_NORMAL);
 
+    this.statsHud.setPosition(topMargin, topMargin + hintH);
+    this.statsHud.setFontSize(compact ? '11px' : '13px');
+
     this.menuButton.setPosition(width - rightMargin, topMargin);
 
     if (this.debugText) {
-      this.debugText.setPosition(topMargin, compact ? 36 : 50);
-      this.debugText.setFontSize(compact ? '11px' : '13px');
+      const debugY = topMargin + hintH + (compact ? 30 : 36);
+      this.debugText.setPosition(topMargin, debugY);
+      this.debugText.setFontSize(compact ? '10px' : '13px');
     }
 
     if (this.fullscreenButton) {
-      // Sit left of Menu with a gap so they never overlap.
       const menuLeft = this.menuButton.x - this.menuButton.width;
       this.fullscreenButton.setPosition(menuLeft - 10, topMargin);
       this.fullscreenButton.setOrigin(1, 0);
@@ -295,6 +317,17 @@ export class MatchScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(1000);
 
+    this.statsHud = this.add
+      .text(16, compact ? 38 : 52, '', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: compact ? '11px' : '13px',
+        color: COLORS.text,
+        backgroundColor: '#00000055',
+        padding: { x: compact ? 6 : 8, y: compact ? 3 : 5 },
+      })
+      .setScrollFactor(0)
+      .setDepth(1000);
+
     this.menuButton = this.add
       .text(this.scale.width - 16, 16, '⮌ Menu', {
         fontFamily: 'system-ui, sans-serif',
@@ -313,9 +346,9 @@ export class MatchScene extends Phaser.Scene {
 
     if (SHOW_DEBUG_OVERLAY) {
       this.debugText = this.add
-        .text(16, compact ? 36 : 50, '', {
+        .text(16, compact ? 68 : 88, '', {
           fontFamily: 'monospace',
-          fontSize: compact ? '11px' : '13px',
+          fontSize: compact ? '10px' : '13px',
           color: COLORS.text,
           backgroundColor: '#00000066',
           padding: { x: compact ? 6 : 8, y: compact ? 4 : 6 },
@@ -325,19 +358,52 @@ export class MatchScene extends Phaser.Scene {
         .setDepth(1000);
       this.debugText.setVisible(this.debugOverlayVisible);
     }
+
+    this.updateStatsHud();
+  }
+
+  private updateStatsHud(): void {
+    const p = this.player;
+    const mana = `${Math.floor(p.currentMana)}/${p.maxMana}`;
+    const hp = `${Math.floor(p.currentHp)}/${p.maxHp}`;
+    const skillStatus = this.skillRuntime.getLastResult() || '-';
+    const compact = this.isCompactHud();
+
+    if (compact) {
+      this.statsHud.setText(`Hero: ${p.heroName}  HP: ${hp}  MP: ${mana}  ${skillStatus}`);
+    } else {
+      this.statsHud.setText(
+        `Hero: ${p.heroName}  HP: ${hp}  Mana: ${mana}  SPD: ${p.moveSpeed}  skill: ${skillStatus}`,
+      );
+    }
   }
 
   private updateDebugOverlay(): void {
     if (!this.debugText || !this.debugOverlayVisible) return;
     const s = this.movement.state;
+    const p = this.player;
+    const compact = this.isCompactHud();
     const move = `${s.moveX.toFixed(2)}, ${s.moveY.toFixed(2)}`;
-    this.debugText.setText(
-      [
-        CURRENT_PHASE_LABEL,
-        `input: ${s.inputMode}`,
-        `move: ${move}`,
-        `last: ${s.lastAction || '-'}`,
-      ].join('\n'),
-    );
+    const mana = `${Math.floor(p.currentMana)}/${p.maxMana}`;
+    const hp = `${Math.floor(p.currentHp)}/${p.maxHp}`;
+
+    const lines = compact
+      ? [
+          CURRENT_PHASE_LABEL,
+          `hero: ${p.heroName}`,
+          `hp: ${hp}  mp: ${mana}`,
+          `last: ${s.lastAction || '-'}`,
+          `skill: ${this.skillRuntime.getLastResult() || '-'}`,
+        ]
+      : [
+          CURRENT_PHASE_LABEL,
+          `hero: ${p.heroName} (${p.heroClass})`,
+          `hp: ${hp}  mana: ${mana}  spd: ${p.moveSpeed}`,
+          `input: ${s.inputMode}  move: ${move}`,
+          `last: ${s.lastAction || '-'}`,
+          `skill: ${this.skillRuntime.getLastResult() || '-'}`,
+        ];
+
+    this.debugText.setText(lines.join('\n'));
   }
 }

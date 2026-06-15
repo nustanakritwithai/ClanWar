@@ -241,9 +241,13 @@ export class InputSystem {
     this.joystick.reposition(layout.x, layout.y);
   }
 
-  /** Mock cooldown overlay on the matching touch button (keyboard or touch). */
-  public showButtonCooldown(action: ActionKey): void {
-    this.buttons.showMockCooldown(action);
+  /** Cooldown overlay on the matching touch button (keyboard or touch). */
+  public showButtonCooldown(action: ActionKey, durationMs?: number): void {
+    if (durationMs !== undefined) {
+      this.buttons.showCooldown(action, durationMs);
+    } else {
+      this.buttons.showMockCooldown(action);
+    }
   }
 
   /**

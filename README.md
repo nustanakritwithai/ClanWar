@@ -2,10 +2,10 @@
 
 Browser-based 2D top-down siege arena (MVP). Built with **Vite + TypeScript + Phaser 3**.
 
-> Status: **Phase 2.6** — mobile UX hotfix (fullscreen entry, compact control layout).
-> Phase 2.5 action feedback + data specs remain. No combat, shop, bots, or economy runtime.
+> Status: **Phase 3A** — class selection, hero runtime stats, HP/mana, skill cooldown/mana.
+> No combat damage, shop, bots, or economy runtime yet.
 
-See [docs/phase-2.5.md](docs/phase-2.5.md) and [docs/phase-2.6.md](docs/phase-2.6.md).
+See [docs/phase-2.5.md](docs/phase-2.5.md), [docs/phase-2.6.md](docs/phase-2.6.md), and [docs/phase-3a.md](docs/phase-3a.md).
 
 ## Run
 
@@ -16,15 +16,14 @@ npm run build    # type-check + production build
 npm run preview  # serve the production build
 ```
 
-## What works now (Phase 0–2.6)
+## What works now (Phase 0–3A)
 
-- Menu → **Start** (requests fullscreen on mobile) → Match; **Select Class** placeholder.
-- Small Twin Fortress map, WASD/arrows + **virtual joystick** movement.
-- **Attack / skills / ultimate / war action / items** — visual feedback only.
-- **Compact mobile layout** on short viewports (`height < 480`) — see `docs/phase-2.6.md`.
-- PWA manifest + fullscreen fallback button in Match.
+- Menu → **Start** → **ClassSelect** → Match with chosen hero class.
+- Five classes from `HEROES` with real **moveSpeed**, HP, mana, and stats on spawn.
+- **Skills** use mana + cooldown from `skills.ts` (visual feedback only, no damage).
+- Mobile compact layout, fullscreen entry, PWA manifest (Phase 2.6).
 - Debug overlay (toggle with **`** or **F1** in Match).
-- Data specs in `src/game/data/` for Phase 3+.
+- Data specs in `src/game/data/` for Phase 3+ combat/economy.
 
 ## Deploy on Render
 
