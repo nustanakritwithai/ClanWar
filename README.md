@@ -2,10 +2,10 @@
 
 Browser-based 2D top-down siege arena (MVP). Built with **Vite + TypeScript + Phaser 3**.
 
-> Status: **Phase 3B-B1** — projectile + hit shape foundation (melee arc, Power Shot, Fireball, AoE placeholder).
+> Status: **Phase 3B-B3** — runtime combat visual integration (SVG projectiles, hit/AoE/heal VFX).
 > No bot AI, shop, objectives, or player death yet.
 
-See [docs/phase-3b-a-1.md](docs/phase-3b-a-1.md) and [docs/phase-3b-b1.md](docs/phase-3b-b1.md).
+See [docs/phase-3b-b3-runtime-visual-integration.md](docs/phase-3b-b3-runtime-visual-integration.md).
 
 ## Run
 
@@ -16,12 +16,12 @@ npm run build    # type-check + production build
 npm run preview  # serve the production build
 ```
 
-## What works now (Phase 0–3B-B1)
+## What works now (Phase 0–3B-B3)
 
 - Menu → **Start** → **ClassSelect** → Match with chosen hero class.
 - Five classes with real stats, mana regen, skill cooldown/mana from `skills.ts`.
 - **Training dummy** — attack + skill damage/heal, floating numbers.
-- **Hit shapes** — melee arc, Ranger/Mage projectiles, AoE circle placeholder.
+- **Combat SVG VFX** — arrow/fireball projectiles, hit spark, impact burst, AoE marker, heal effects.
 - **Mobile multi-touch** — joystick + action buttons simultaneously.
 - Mobile compact layout, fullscreen entry, PWA manifest.
 - Debug overlay (toggle with **`** or **F1** in Match).

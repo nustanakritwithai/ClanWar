@@ -1,7 +1,18 @@
 import Phaser from 'phaser';
+import { COMBAT_TEXTURES } from '../ui/CombatVfx';
 import type { ProjectileSpawnConfig } from '../types';
 
-const VISUALS: Record<ProjectileSpawnConfig['visual'], { radius: number; color: number }> = {
+const PROJECTILE_TEXTURES: Record<ProjectileSpawnConfig['visual'], string> = {
+  arrow: COMBAT_TEXTURES.projectileArrow,
+  fireball: COMBAT_TEXTURES.projectileFireball,
+};
+
+const PROJECTILE_DISPLAY: Record<ProjectileSpawnConfig['visual'], number> = {
+  arrow: 40,
+  fireball: 44,
+};
+
+const FALLBACK_VISUALS: Record<ProjectileSpawnConfig['visual'], { radius: number; color: number }> = {
   arrow: { radius: 10, color: 0xfde68a },
   fireball: { radius: 14, color: 0xf97316 },
 };
@@ -34,7 +45,7 @@ export class Projectile {
   private velocityY: number;
   private prevX: number;
   private prevY: number;
-  private sprite: Phaser.GameObjects.Arc;
+  private sprite: Phaser.GameObjects.Image | Phaser.GameObjects.Arc;
 
   constructor(scene: Phaser.Scene, config: ProjectileSpawnConfig) {
     this.skillId = config.skillId;
@@ -53,15 +64,26 @@ export class Projectile {
     this.velocityX = Math.cos(config.angle) * config.speed;
     this.velocityY = Math.sin(config.angle) * config.speed;
 
-    const visual = VISUALS[config.visual];
-    this.sprite = scene.add
-      .circle(config.x, config.y, visual.radius, visual.color, 0.95)
-      .setStrokeStyle(2, 0xffffff, 0.7)
-      .setDepth(110);
-    this.sprite.setRotation(config.angle);
+    const textureKey = PROJECTILE_TEXTURES[config.visual];
+    if (scene.textures.exists(textureKey)) {
+      const size = PROJECTILE_DISPLAY[config.visual];
+      this.sprite = scene.add
+        .image(config.x, config.y, textureKey)
+        .setDisplaySize(size, size)
+        .setOrigin(0.5)
+        .setDepth(110)
+        .setRotation(config.angle);
+    } else {
+      const visual = FALLBACK_VISUALS[config.visual];
+      this.sprite = scene.add
+        .circle(config.x, config.y, visual.radius, visual.color, 0.95)
+        .setStrokeStyle(2, 0xffffff, 0.7)
+        .setDepth(110);
+      this.sprite.setRotation(config.angle);
+    }
   }
 
-  public get displayObject(): Phaser.GameObjects.Arc {
+  public get displayObject(): Phaser.GameObjects.Image | Phaser.GameObjects.Arc {
     return this.sprite;
   }
 

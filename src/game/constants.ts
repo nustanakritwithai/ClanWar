@@ -19,7 +19,7 @@ export const PLAYER_RADIUS = 22;
 
 // Phase 2.5 debug overlay. Default on during dev; toggle at runtime with ` or F1.
 export const SHOW_DEBUG_OVERLAY = true;
-export const CURRENT_PHASE_LABEL = 'Phase 3B-B2: Runtime Cleanup + Skill Coverage';
+export const CURRENT_PHASE_LABEL = 'Phase 3B-B3: Runtime Combat Visual Integration';
 
 /** Viewport height below which compact mobile HUD/controls are used. */
 export const COMPACT_LAYOUT_HEIGHT = 480;
