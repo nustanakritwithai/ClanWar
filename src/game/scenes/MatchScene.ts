@@ -22,6 +22,7 @@ import { Player } from '../entities/Player';
 import { TrainingDummy } from '../entities/TrainingDummy';
 import { InputSystem } from '../systems/InputSystem';
 import { ProjectileSystem } from '../systems/ProjectileSystem';
+import { MapRenderer, loadMapVisualAssets } from '../systems/MapRenderer';
 import { SkillRuntimeSystem } from '../systems/SkillRuntimeSystem';
 import { showCombatText } from '../ui/CombatText';
 import { showAoeMarker, showHealBurst, showHealSpark, showHitSpark, showImpactBurst, showSlashArc, loadCombatVisualAssets } from '../ui/CombatVfx';
@@ -55,6 +56,7 @@ export class MatchScene extends Phaser.Scene {
   private lastPlaceholderReason = '-';
   private lastSkippedSkillReason = '-';
   private projectileSystem!: ProjectileSystem;
+  public mapRenderer!: MapRenderer;
 
   constructor() {
     super(SCENE_KEYS.Match);
@@ -67,6 +69,7 @@ export class MatchScene extends Phaser.Scene {
 
   preload(): void {
     loadCombatVisualAssets(this.load);
+    loadMapVisualAssets(this.load);
   }
 
   create(): void {
@@ -77,6 +80,8 @@ export class MatchScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, map.width, map.height);
 
     this.drawGround(map.width, map.height);
+    this.mapRenderer = new MapRenderer(this, (obj) => this.registerWorldObject(obj));
+    this.mapRenderer.build(map);
     this.buildWalls();
     this.drawMarkers(map.markers);
 
@@ -538,6 +543,7 @@ export class MatchScene extends Phaser.Scene {
     }
 
     this.projectileSystem.destroy();
+    this.mapRenderer.destroy();
     this.movement.destroy();
   }
 
@@ -612,20 +618,24 @@ export class MatchScene extends Phaser.Scene {
 
   private drawMarkers(markers: MapMarker[]): void {
     for (const m of markers) {
+      const inBaseBand = m.y >= 3350 || m.y <= 850;
       const color = this.markerColor(m);
-      const circle = this.add.circle(m.x, m.y, m.radius, color, 0.35);
-      circle.setStrokeStyle(3, color, 1);
+      const circle = this.add.circle(m.x, m.y, m.radius, color, inBaseBand ? 0.2 : 0.06);
+      circle.setStrokeStyle(2, color, inBaseBand ? 0.45 : 0.15);
       circle.setDepth(1);
 
-      this.add
-        .text(m.x, m.y, m.label, {
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: '20px',
-          color: COLORS.text,
-          align: 'center',
-        })
-        .setOrigin(0.5)
-        .setDepth(2);
+      if (inBaseBand) {
+        this.add
+          .text(m.x, m.y, m.label, {
+            fontFamily: 'system-ui, sans-serif',
+            fontSize: '13px',
+            color: COLORS.text,
+            align: 'center',
+          })
+          .setOrigin(0.5)
+          .setDepth(2)
+          .setAlpha(0.55);
+      }
     }
   }
 
