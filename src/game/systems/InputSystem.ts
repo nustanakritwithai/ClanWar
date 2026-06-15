@@ -46,6 +46,7 @@ export class InputSystem {
   private joystick!: VirtualJoystick;
   private buttons: SkillButtons;
   private pendingActions = new Set<ActionKey>();
+  private lastActionWhileMoving = false;
 
   private keys: Record<string, Phaser.Input.Keyboard.Key>;
 
@@ -146,6 +147,7 @@ export class InputSystem {
 
   private updateActions(): void {
     const s = this.state;
+    const moving = s.moveX !== 0 || s.moveY !== 0;
     s.attackPressed = false;
     s.skill1Pressed = false;
     s.skill2Pressed = false;
@@ -154,6 +156,8 @@ export class InputSystem {
     s.warActionPressed = false;
     s.item1Pressed = false;
     s.item2Pressed = false;
+
+    let actionFired = false;
 
     this.checkKey('attack', s);
     this.checkKey('skill1', s);
@@ -164,11 +168,19 @@ export class InputSystem {
     this.checkKey('item1', s);
     this.checkKey('item2', s);
 
+    if (s.attackPressed || s.skill1Pressed || s.skill2Pressed || s.skill3Pressed ||
+        s.ultimatePressed || s.warActionPressed || s.item1Pressed || s.item2Pressed) {
+      actionFired = true;
+    }
+
     for (const action of this.pendingActions) {
       this.setActionPressed(s, action);
       s.lastAction = ACTION_LABELS[action];
+      actionFired = true;
     }
     this.pendingActions.clear();
+
+    this.lastActionWhileMoving = moving && actionFired;
   }
 
   private checkKey(action: ActionKey, s: InputState): void {
@@ -211,6 +223,16 @@ export class InputSystem {
   /** Convenience accessor for Player movement (Phase 0-1 API). */
   public getMoveVector(out = new Phaser.Math.Vector2()): Phaser.Math.Vector2 {
     return out.set(this.state.moveX, this.state.moveY);
+  }
+
+  /** Active joystick pointer id, or null when idle (debug overlay). */
+  public getJoystickPointerId(): number | null {
+    return this.joystick.pointerId;
+  }
+
+  /** True when the player moved and triggered an action on the last update. */
+  public isActionWhileMoving(): boolean {
+    return this.lastActionWhileMoving;
   }
 
   /** Reposition joystick/buttons after a scale resize. */
@@ -257,6 +279,7 @@ export class InputSystem {
   public reset(): void {
     this.joystick.reset();
     this.pendingActions.clear();
+    this.lastActionWhileMoving = false;
     this.clearActionState();
     this.state.moveX = 0;
     this.state.moveY = 0;

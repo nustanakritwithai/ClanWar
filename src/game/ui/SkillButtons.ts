@@ -93,7 +93,7 @@ export class SkillButtons {
       .setStrokeStyle(2, 0xffffff, 0.5)
       .setScrollFactor(0)
       .setDepth(2000)
-      .setInteractive({ useHandCursor: true });
+      .setInteractive({ useHandCursor: true, pixelPerfect: false });
 
     const text = this.scene.add
       .text(0, 0, def.label, {
@@ -108,7 +108,8 @@ export class SkillButtons {
 
     const handle: ButtonHandle = { ...def, bg, text };
 
-    bg.on('pointerdown', () => {
+    // Action buttons accept their own pointer independently of the joystick.
+    bg.on('pointerdown', (_pointer: Phaser.Input.Pointer) => {
       this.flash(handle);
       this.onPress(def.action);
     });
@@ -245,7 +246,7 @@ export class SkillButtons {
       const r = radii[handle.action];
       handle.radius = r;
       handle.bg.setRadius(r);
-      handle.bg.setInteractive({ useHandCursor: true });
+      handle.bg.setInteractive({ useHandCursor: true, pixelPerfect: false });
 
       const fontSize = r >= 42 ? '15px' : r >= 36 ? '13px' : '12px';
       handle.text.setFontSize(fontSize);

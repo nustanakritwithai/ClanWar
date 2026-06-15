@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { MOVEMENT_ZONE_WIDTH_RATIO } from '../constants';
 
 export interface VirtualJoystickOptions {
   x: number;
@@ -13,6 +14,10 @@ export interface VirtualJoystickOptions {
 // (scroll-factor 0, screen space), exposes a normalized `vector` (length 0..1)
 // that InputSystem reads each frame. Movement vector snaps back to 0 on
 // release, pointer cancel, or destroy.
+//
+// Phase 3B-A.1: only captures pointers that start in the left movement zone
+// (x < width * MOVEMENT_ZONE_WIDTH_RATIO) and tracks them by pointerId so a
+// second finger on action buttons does not release or steal the joystick.
 export class VirtualJoystick {
   public readonly vector = new Phaser.Math.Vector2();
 
@@ -23,24 +28,22 @@ export class VirtualJoystick {
   private knobRadius: number;
   private deadZone: number;
   private origin = new Phaser.Math.Vector2();
-  private pointerId: number | null = null;
+  private activePointerId: number | null = null;
 
   private onPointerDown = (p: Phaser.Input.Pointer) => {
-    if (this.pointerId !== null) return;
-    const dist = Phaser.Math.Distance.Between(p.x, p.y, this.origin.x, this.origin.y);
-    // Slightly larger than the visible base so the joystick is easy to grab.
-    if (dist > this.baseRadius * 1.6) return;
-    this.pointerId = p.id;
+    if (this.activePointerId !== null) return;
+    if (!this.isInMovementZone(p)) return;
+    this.activePointerId = p.id;
     this.updateFromPointer(p);
   };
 
   private onPointerMove = (p: Phaser.Input.Pointer) => {
-    if (this.pointerId !== p.id) return;
+    if (this.activePointerId !== p.id) return;
     this.updateFromPointer(p);
   };
 
   private onPointerRelease = (p: Phaser.Input.Pointer) => {
-    if (this.pointerId !== p.id) return;
+    if (this.activePointerId !== p.id) return;
     this.reset();
   };
 
@@ -71,6 +74,11 @@ export class VirtualJoystick {
     input.on('pointercancel', this.onPointerRelease);
   }
 
+  /** True when the pointer started in the left movement zone. */
+  private isInMovementZone(p: Phaser.Input.Pointer): boolean {
+    return p.x < this.scene.scale.width * MOVEMENT_ZONE_WIDTH_RATIO;
+  }
+
   private updateFromPointer(p: Phaser.Input.Pointer): void {
     const dx = p.x - this.origin.x;
     const dy = p.y - this.origin.y;
@@ -92,19 +100,24 @@ export class VirtualJoystick {
 
   /** Snap the knob back to center and zero the output vector. */
   public reset(): void {
-    this.pointerId = null;
+    this.activePointerId = null;
     this.vector.set(0, 0);
     this.knob.setPosition(this.origin.x, this.origin.y);
   }
 
   public get isActive(): boolean {
-    return this.pointerId !== null;
+    return this.activePointerId !== null;
   }
 
-  /** True if a pointer is within the joystick's grab radius (used to keep
-   * the desktop-attack click fallback from firing on joystick drags). */
+  /** Pointer id currently driving the joystick, or null when idle. */
+  public get pointerId(): number | null {
+    return this.activePointerId;
+  }
+
+  /** True if a pointer is in the left movement zone (used to keep the
+   * desktop-attack click fallback from firing on joystick drags). */
   public containsPointer(p: Phaser.Input.Pointer): boolean {
-    return Phaser.Math.Distance.Between(p.x, p.y, this.origin.x, this.origin.y) <= this.baseRadius * 1.6;
+    return this.isInMovementZone(p);
   }
 
   /** Recompute screen position on resize/orientation change. */
