@@ -1,72 +1,69 @@
 # Project Status
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-15  
-> **Base branch:** `claude/game-file-analysis-a20xup` @ `23ee8cb`
+> **Last updated:** 2026-06-15 (refreshed after base sync)  
+> **Base branch:** `claude/game-file-analysis-a20xup` @ `b03acc2`
 
 ## Current phase
 
-**Phase 4A — Map Visual Runtime** ปิดแล้ว PR #16 และ #17 merge ครบ
+**Phase 4A — Map Visual Runtime** ปิดแล้ว (#16, #17 merged)
 
-**Phase 4B — Objective Runtime Prep** ยังเปิดอยู่ prep PRs รอ review และ merge
+**Phase 4B — Objective Runtime Prep** กำลังดำเนิน — assets + UX merged แล้ว design spec (#21) ยัง Draft และต้อง sync base
 
 ## Base snapshot
 
 ```
+b03acc2  Merge pull request #19 (Phase 4B-D UX/onboarding spec)
+32d283d  Merge pull request #20 (Phase 4B-B2 player guidance assets)
 23ee8cb  Merge pull request #16 (Phase 4A map visual runtime)
 9de58e5  Merge pull request #18 (Phase 4B-B objective feedback assets)
-266bc91  Merge pull request #17 (Phase 4A level design spec)
 ```
 
 Live phase label (runtime): `Phase 4A: Map Visual Runtime Foundation`  
-Bundle (local build): `dist/assets/index-COX4lWTn.js`
+player-guidance assets: **on base** (12 SVG ใน `public/assets/player-guidance/`)
 
 ## Merged deliverables
 
-- **PR #16 (Agent A)** — Map visual runtime (`MapRenderer`, regression) @ merge `23ee8cb`
-- **PR #17 (Agent C)** — Phase 4A map layout / level design docs @ merge `266bc91`
-- **PR #18 (Agent B)** — Objective feedback asset pack (20 SVG + docs) @ merge `9de58e5`
+- **PR #16 (A)** — Map visual runtime @ `23ee8cb`
+- **PR #17 (C)** — Phase 4A level design docs @ `266bc91`
+- **PR #18 (B)** — Objective feedback assets @ `9de58e5`
+- **PR #20 (B)** — Player guidance marker assets @ `32d283d`
+- **PR #19 (D)** — Objective onboarding UX spec @ `b03acc2`
 
-## Open PRs (Phase 4B prep)
+## Open PRs
 
-- **PR #19 (Agent D)** — Objective onboarding UX spec — Draft, MERGEABLE
-- **PR #20 (Agent B)** — Player guidance marker asset pack — Draft, MERGEABLE
-- **PR #21 (Agent C)** — Gate/Core objective runtime design spec — Draft, MERGEABLE
-- **PR #22 (Agent E)** — Phase 4A closure dashboard — Draft, docs-only
+- **PR #21 (C)** — Gate/Core objective runtime design spec — Draft, MERGEABLE, **base stale** (`32d283d` → ต้อง sync `b03acc2`)
+- **PR #22 (E)** — Phase 4A closure dashboard — Draft, docs-only, syncing board
 
 ## Agent lane status
 
-**Agent A (Runtime)** — 4A เสร็จแล้ว 4B runtime ยังไม่เริ่ม blocked รอ prep merges + work order
+**Agent A** — 4A complete; 4B runtime blocked รอ #21 merge + work order
 
-**Agent B (Assets)** — #18 merge แล้ว #20 ยัง Draft
+**Agent B** — #18 + #20 merged; lane clear สำหรับ deliverables ปัจจุบัน
 
-**Agent C (Design)** — #17 merge แล้ว #21 ยัง Draft
+**Agent C** — #17 merged; #21 ยัง Draft ต้อง sync base
 
-**Agent D (UX)** — #19 ยัง Draft
+**Agent D** — #19 merged; lane clear
 
-**Agent E (Audit)** — dashboard cycle นี้
+**Agent E** — refreshing dashboard (PR #22)
 
-## Test evidence (Agent E audit, base `23ee8cb`)
+## Test / deploy evidence
 
-- `npm run build` — PASS
-- `phase-4a-map-visual-regression.mjs` — 7/7 (prior run)
-- `mobile-multitouch-verify.mjs` — 14/14 (prior run)
-- `phase-3b-b2-regression.mjs` — 11/11 (prior run)
-- `phase-3b-b3-visual-regression.mjs` — 8/8 (prior run)
-- Live Render deploy — **NOT VERIFIED** (`render.yaml` มี แต่ไม่มี deploy URL/log)
+- `npm run build` — PASS (prior audit)
+- Regressions 4A/3B/multitouch — PASS (prior runs)
+- Live deploy PR #16 — Agent A reported success; Agent E **not independently verified**
 
-## Next safe actions (Product / GPT)
+## Next safe actions
 
-1. Review Draft PRs #19, #20, #21 — ห้าม merge โดยไม่มี explicit approval
-2. หลัง #21 (design spec) merge → ออก Agent A 4B runtime work order
-3. แนะนำให้ #19 + #20 merge ก่อน Agent A เริ่ม (UX + guidance assets อยู่บน base)
+1. Sync + update **PR #21** กับ base `b03acc2` ก่อน Ready/Merge
+2. **Agent A ห้าม** เริ่ม 4B runtime จนกว่า #21 merged + Product work order
+3. Merge **PR #22** dashboard docs เมื่อพร้อม
 
 ## Must not do
 
-- Agent A: อย่าเริ่ม 4B runtime ก่อน #21 merge (+ Product work order)
-- Agent A: อย่า wire `objective-feedback/` หรือ `player-guidance/` จนกว่า 4B runtime PR
-- ทุก agent: อย่า merge Draft PRs โดยไม่มี GPT/User Ready approval
-- อย่ารวม assets + runtime + UX ใน PR เดียว
+- Agent A: อย่า wire objective-feedback / player-guidance จน 4B runtime PR
+- อย่า merge #21 ขณะ base stale
+- อย่า merge Draft PRs โดยไม่มี approval
 
 ## Related docs
 
