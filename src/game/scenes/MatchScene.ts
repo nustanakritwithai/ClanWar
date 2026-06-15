@@ -26,6 +26,7 @@ export class MatchScene extends Phaser.Scene {
   private debugText?: Phaser.GameObjects.Text;
   private uiCamera!: Phaser.Cameras.Scene2D.Camera;
   private debugOverlayVisible = SHOW_DEBUG_OVERLAY;
+  private debugToggleHandler?: () => void;
 
   constructor() {
     super(SCENE_KEYS.Match);
@@ -111,7 +112,7 @@ export class MatchScene extends Phaser.Scene {
     const kb = this.input.keyboard;
     if (!kb) return;
 
-    const toggle = () => {
+    this.debugToggleHandler = () => {
       this.debugOverlayVisible = !this.debugOverlayVisible;
       if (this.debugText) {
         this.debugText.setVisible(this.debugOverlayVisible);
@@ -119,12 +120,20 @@ export class MatchScene extends Phaser.Scene {
     };
 
     // Backquote (`) and F1 — D is reserved for movement.
-    kb.on('keydown-BACK_QUOTE', toggle);
-    kb.on('keydown-F1', toggle);
+    kb.on('keydown-BACK_QUOTE', this.debugToggleHandler);
+    kb.on('keydown-F1', this.debugToggleHandler);
   }
 
   private handleShutdown(): void {
     this.scale.off('resize', this.handleResize, this);
+
+    const kb = this.input.keyboard;
+    if (kb && this.debugToggleHandler) {
+      kb.off('keydown-BACK_QUOTE', this.debugToggleHandler);
+      kb.off('keydown-F1', this.debugToggleHandler);
+      this.debugToggleHandler = undefined;
+    }
+
     this.movement.destroy();
   }
 
