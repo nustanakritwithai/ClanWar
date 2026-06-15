@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Damage number burst backing">
+  <!-- Backing flare drawn behind a runtime-rendered damage number.
+       Intentionally text-free: the number is drawn by the runtime. -->
+  <g stroke="#0b0e13" stroke-width="6" stroke-linejoin="round">
+    <!-- Starburst behind the number -->
+    <path d="M128 36 L150 100 L128 124 L106 100 Z" fill="#ef4444"/>
+    <path d="M220 128 L156 150 L128 128 L156 106 Z" fill="#ef4444"/>
+    <path d="M128 220 L106 156 L128 132 L150 156 Z" fill="#ef4444"/>
+    <path d="M36 128 L100 106 L124 128 L100 150 Z" fill="#ef4444"/>
+  </g>
+  <!-- Soft impact disc where the number sits -->
+  <circle cx="128" cy="128" r="58" fill="#7f1d1d" opacity="0.55" stroke="#ef4444" stroke-width="6"/>
+  <!-- Upward motion cue -->
+  <g stroke="#fca5a5" stroke-width="7" stroke-linecap="round" opacity="0.85">
+    <line x1="108" y1="70" x2="100" y2="48"/>
+    <line x1="148" y1="70" x2="156" y2="48"/>
+  </g>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Shielded status">
+  <!-- Protective barrier shield (blue) -->
+  <circle cx="128" cy="128" r="96" fill="#3b82f6" opacity="0.12"/>
+  <path d="M128 32 L208 62 V140 C208 192 172 222 128 238 C84 222 48 192 48 140 V62 Z"
+        fill="#3b82f6" stroke="#0b0e13" stroke-width="11" stroke-linejoin="round"/>
+  <!-- Checkmark / intact -->
+  <path d="M94 132 L118 158 L166 100" fill="none" stroke="#dbeafe" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

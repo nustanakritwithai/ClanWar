@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Hit spark">
+  <!-- Sharp radial spark burst for a physical hit -->
+  <g fill="#fff7d6" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round">
+    <path d="M128 28 L146 104 L128 128 L110 104 Z"/>
+    <path d="M228 128 L152 146 L128 128 L152 110 Z"/>
+    <path d="M128 228 L110 152 L128 128 L146 152 Z"/>
+    <path d="M28 128 L104 110 L128 128 L104 146 Z"/>
+  </g>
+  <!-- Diagonal shards -->
+  <g fill="#fbbf24" stroke="#0b0e13" stroke-width="5" stroke-linejoin="round" opacity="0.95">
+    <path d="M196 60 L142 110 L128 128 L150 116 Z"/>
+    <path d="M60 196 L114 146 L128 128 L106 140 Z"/>
+    <path d="M196 196 L146 142 L128 128 L140 150 Z"/>
+    <path d="M60 60 L110 114 L128 128 L116 106 Z"/>
+  </g>
+  <!-- Core flash -->
+  <circle cx="128" cy="128" r="20" fill="#ffffff" stroke="#0b0e13" stroke-width="5"/>
+</svg>

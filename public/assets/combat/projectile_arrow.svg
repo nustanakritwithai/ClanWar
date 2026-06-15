@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Arrow projectile">
+  <!-- Horizontal arrow projectile, pointing right (runtime rotates to travel dir). -->
+  <line x1="36" y1="128" x2="196" y2="128" stroke="#3a2a22" stroke-width="18" stroke-linecap="round"/>
+  <!-- Arrowhead -->
+  <path d="M196 128 L150 100 L168 128 L150 156 Z" fill="#e6edf3" stroke="#0b0e13" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M196 128 L226 110 L226 146 Z" fill="#e6edf3" stroke="#0b0e13" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Fletching -->
+  <g fill="#9ca3af" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round">
+    <path d="M52 128 L30 104 L46 128 L30 152 Z"/>
+    <path d="M74 128 L52 104 L68 128 L52 152 Z"/>
+  </g>
+</svg>

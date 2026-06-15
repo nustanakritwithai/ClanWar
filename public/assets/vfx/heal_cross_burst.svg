@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Heal cross burst">
+  <!-- Radiant burst behind a healing cross -->
+  <g fill="#4ade80" opacity="0.85" stroke="#0b0e13" stroke-width="5" stroke-linejoin="round">
+    <path d="M128 30 L142 92 L114 92 Z"/>
+    <path d="M226 128 L164 142 L164 114 Z"/>
+    <path d="M128 226 L114 164 L142 164 Z"/>
+    <path d="M30 128 L92 114 L92 142 Z"/>
+  </g>
+  <circle cx="128" cy="128" r="70" fill="#16a34a" opacity="0.25"/>
+  <!-- Healing cross -->
+  <g fill="#dcfce7" stroke="#0b0e13" stroke-width="8" stroke-linejoin="round">
+    <rect x="112" y="74" width="32" height="108" rx="8"/>
+    <rect x="74" y="112" width="108" height="32" rx="8"/>
+  </g>
+</svg>

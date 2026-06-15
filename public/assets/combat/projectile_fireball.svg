@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Fireball projectile">
+  <defs>
+    <radialGradient id="projFire" cx="0.55" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff7d6"/>
+      <stop offset="0.55" stop-color="#fbbf24"/>
+      <stop offset="1" stop-color="#f97316"/>
+    </radialGradient>
+  </defs>
+  <!-- Trailing flames (left, runtime rotates to travel dir) -->
+  <g fill="#f97316" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round">
+    <path d="M96 92 L34 64 L88 108 Z"/>
+    <path d="M88 128 L20 128 L96 128 Z"/>
+    <path d="M96 164 L34 192 L88 148 Z"/>
+  </g>
+  <!-- Fire sphere -->
+  <circle cx="160" cy="128" r="64" fill="url(#projFire)" stroke="#0b0e13" stroke-width="9"/>
+  <!-- Inner curl -->
+  <path d="M160 84 C 186 112 182 138 164 160 C 178 140 178 116 166 100 C 188 124 188 156 162 178 C 134 196 110 168 122 140 C 130 158 146 162 156 150 C 138 132 138 106 160 84 Z" fill="#fff7d6"/>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Cooldown swirl">
+  <!-- Neutral spinning swirl shown while an ability recharges -->
+  <circle cx="128" cy="128" r="92" fill="none" stroke="#9ca3af" stroke-width="6" opacity="0.35"/>
+  <!-- Sweep arc (runtime can rotate this group) -->
+  <path d="M128 128 L128 36 A 92 92 0 0 1 210 170 Z" fill="#9ca3af" opacity="0.3"/>
+  <!-- Comet head of the sweep -->
+  <path d="M128 36
+           A 92 92 0 0 1 200 78"
+        fill="none" stroke="#e6edf3" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="128" cy="36" r="12" fill="#e6edf3" stroke="#0b0e13" stroke-width="5"/>
+  <!-- Hub -->
+  <circle cx="128" cy="128" r="14" fill="#9ca3af" stroke="#0b0e13" stroke-width="5"/>
+</svg>

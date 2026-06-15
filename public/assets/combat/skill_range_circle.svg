@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Skill range circle indicator">
+  <!-- Cast-range boundary ring (neutral; runtime tints). -->
+  <circle cx="128" cy="128" r="108" fill="#e6edf3" opacity="0.06"/>
+  <circle cx="128" cy="128" r="108" fill="none" stroke="#e6edf3" stroke-width="7" stroke-dasharray="10 14" opacity="0.85"/>
+  <!-- Inner faint guide -->
+  <circle cx="128" cy="128" r="70" fill="none" stroke="#e6edf3" stroke-width="3" stroke-dasharray="4 10" opacity="0.4"/>
+  <!-- Center caster point -->
+  <circle cx="128" cy="128" r="10" fill="#e6edf3" stroke="#0b0e13" stroke-width="5"/>
+  <!-- Cardinal ticks -->
+  <g stroke="#e6edf3" stroke-width="6" stroke-linecap="round" opacity="0.7">
+    <line x1="128" y1="20" x2="128" y2="36"/>
+    <line x1="236" y1="128" x2="220" y2="128"/>
+    <line x1="128" y1="236" x2="128" y2="220"/>
+    <line x1="20" y1="128" x2="36" y2="128"/>
+  </g>
+</svg>

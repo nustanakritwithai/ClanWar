@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Attack cone indicator">
+  <!-- Team-neutral melee cone preview. Apex at center-bottom, opening upward.
+       Runtime tints fill per team/skill. -->
+  <path d="M128 200
+           A 150 150 0 0 1 38 86
+           L 128 200
+           A 150 150 0 0 0 218 86 Z"
+        fill="#e6edf3" opacity="0.18" stroke="#e6edf3" stroke-width="6" stroke-linejoin="round"/>
+  <!-- Edge guide lines -->
+  <g stroke="#e6edf3" stroke-width="6" stroke-linecap="round" opacity="0.7">
+    <line x1="128" y1="200" x2="46" y2="92"/>
+    <line x1="128" y1="200" x2="210" y2="92"/>
+  </g>
+  <!-- Arc rim -->
+  <path d="M46 92 A 138 138 0 0 1 210 92" fill="none" stroke="#e6edf3" stroke-width="6" stroke-dasharray="6 12"/>
+  <!-- Origin marker -->
+  <circle cx="128" cy="200" r="12" fill="#e6edf3" stroke="#0b0e13" stroke-width="5"/>
+</svg>

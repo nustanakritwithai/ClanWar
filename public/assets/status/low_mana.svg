@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Low mana status">
+  <!-- Mana droplet nearly empty (dim blue) -->
+  <path d="M128 32
+           C 176 104 204 146 204 178
+           a76 76 0 0 1 -152 0
+           C 52 146 80 104 128 32 Z"
+        fill="none" stroke="#3b82f6" stroke-width="12" stroke-linejoin="round"/>
+  <!-- Low fill level near bottom -->
+  <clipPath id="dropClip">
+    <path d="M128 32 C 176 104 204 146 204 178 a76 76 0 0 1 -152 0 C 52 146 80 104 128 32 Z"/>
+  </clipPath>
+  <g clip-path="url(#dropClip)">
+    <rect x="40" y="208" width="176" height="60" fill="#3b82f6" opacity="0.55"/>
+  </g>
+  <!-- Empty warning ticks -->
+  <g stroke="#93c5fd" stroke-width="9" stroke-linecap="round" opacity="0.8">
+    <line x1="108" y1="120" x2="108" y2="150"/>
+    <line x1="148" y1="120" x2="148" y2="150"/>
+  </g>
+  <!-- Down arrow (depleting) -->
+  <path d="M210 70 L210 116 M194 100 L210 118 L226 100" fill="none" stroke="#93c5fd" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

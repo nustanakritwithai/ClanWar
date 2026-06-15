@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Skill ready flash">
+  <!-- Bright ready pulse: gold ring + outward rays -->
+  <circle cx="128" cy="128" r="78" fill="#f4d35e" opacity="0.18"/>
+  <circle cx="128" cy="128" r="78" fill="none" stroke="#f4d35e" stroke-width="10"/>
+  <circle cx="128" cy="128" r="58" fill="none" stroke="#fff7d6" stroke-width="5" stroke-dasharray="4 10"/>
+  <!-- Ready rays -->
+  <g stroke="#fff7d6" stroke-width="10" stroke-linecap="round">
+    <line x1="128" y1="34" x2="128" y2="8"/>
+    <line x1="222" y1="128" x2="248" y2="128"/>
+    <line x1="128" y1="222" x2="128" y2="248"/>
+    <line x1="34" y1="128" x2="8" y2="128"/>
+    <line x1="194" y1="62" x2="212" y2="44"/>
+    <line x1="194" y1="194" x2="212" y2="212"/>
+    <line x1="62" y1="194" x2="44" y2="212"/>
+    <line x1="62" y1="62" x2="44" y2="44"/>
+  </g>
+  <!-- Center check spark -->
+  <path d="M104 128 L122 148 L156 104" fill="none" stroke="#f4d35e" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
