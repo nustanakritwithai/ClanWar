@@ -2,10 +2,10 @@
 
 Browser-based 2D top-down siege arena (MVP). Built with **Vite + TypeScript + Phaser 3**.
 
-> Status: **Phase 3B-A** — combat dummy + damage foundation (attack/skill hit, HP/mana HUD).
+> Status: **Phase 3B-A.1** — mobile multi-touch control hotfix (walk + attack/skill simultaneously).
 > No bot AI, shop, objectives, or player death yet.
 
-See [docs/phase-3a.md](docs/phase-3a.md) and [docs/phase-3b-a.md](docs/phase-3b-a.md).
+See [docs/phase-3a.md](docs/phase-3a.md), [docs/phase-3b-a.md](docs/phase-3b-a.md), and [docs/phase-3b-a-1.md](docs/phase-3b-a-1.md).
 
 ## Run
 
@@ -16,11 +16,12 @@ npm run build    # type-check + production build
 npm run preview  # serve the production build
 ```
 
-## What works now (Phase 0–3B-A)
+## What works now (Phase 0–3B-A.1)
 
 - Menu → **Start** → **ClassSelect** → Match with chosen hero class.
 - Five classes with real stats, mana regen, skill cooldown/mana from `skills.ts`.
 - **Training dummy** — basic attack + skill damage/heal foundation, floating numbers.
+- **Mobile multi-touch** — joystick (left) + action buttons (right) work simultaneously.
 - Mobile compact layout, fullscreen entry, PWA manifest.
 - Debug overlay (toggle with **`** or **F1** in Match).
 

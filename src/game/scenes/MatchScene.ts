@@ -505,6 +505,9 @@ export class MatchScene extends Phaser.Scene {
     const d = this.dummy;
     const compact = this.isCompactHud();
     const move = `${s.moveX.toFixed(2)}, ${s.moveY.toFixed(2)}`;
+    const joyPtr = this.movement.getJoystickPointerId();
+    const joyId = joyPtr !== null ? String(joyPtr) : '-';
+    const actionWhileMove = this.movement.isActionWhileMoving() ? 'yes' : 'no';
     const mana = `${Math.floor(p.currentMana)}/${p.maxMana}`;
     const hp = `${Math.floor(p.currentHp)}/${p.maxHp}`;
     const dummyHp = `${Math.ceil(d.currentHp)}/${d.maxHp}`;
@@ -516,7 +519,8 @@ export class MatchScene extends Phaser.Scene {
           `hero: ${p.heroName} hp: ${hp} mp: ${mana}`,
           `dummy: ${dummyHp} dist: ${dist}`,
           `combat: ${this.lastCombatResult}`,
-          `last: ${s.lastAction || '-'}`,
+          `joy#: ${joyId} move: ${move}`,
+          `last: ${s.lastAction || '-'} act+move: ${actionWhileMove}`,
         ]
       : [
           CURRENT_PHASE_LABEL,
@@ -524,6 +528,7 @@ export class MatchScene extends Phaser.Scene {
           `dummy: ${dummyHp}  dist: ${dist}  atkRange: ${p.attackRange}`,
           `combat: ${this.lastCombatResult}`,
           `input: ${s.inputMode}  move: ${move}`,
+          `joy ptr: ${joyId}  action+move: ${actionWhileMove}`,
           `last: ${s.lastAction || '-'}`,
           `skill: ${this.skillRuntime.getLastResult() || '-'}`,
         ];
