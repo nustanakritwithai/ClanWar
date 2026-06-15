@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="High ground ramp down">
+  <rect x="24" y="24" width="208" height="208" rx="8" fill="#182230" stroke="#0b0e13" stroke-width="8"/>
+  <g stroke="#0b0e13" stroke-width="6" stroke-linejoin="round">
+    <path d="M40 40 H216 V72 H72 V104 H216 V136 H56 V168 H216 V200 H40 Z" fill="#4a5870"/>
+  </g>
+  <g fill="#5b6d88" stroke="#0b0e13" stroke-width="4">
+    <rect x="40" y="40" width="176" height="32"/><rect x="56" y="72" width="160" height="32"/>
+    <rect x="72" y="104" width="144" height="32"/><rect x="56" y="136" width="160" height="32"/>
+  </g>
+  <path d="M128 204 L108 176 L148 176 Z" fill="#e6edf3" stroke="#0b0e13" stroke-width="4" stroke-linejoin="round"/>
+</svg>

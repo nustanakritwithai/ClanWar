@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Sewer entrance">
+  <!-- Dark grate opening into shadow route -->
+  <ellipse cx="128" cy="200" rx="80" ry="20" fill="#0b0e13" opacity="0.5"/>
+  <rect x="48" y="48" width="160" height="160" rx="12" fill="#3a4658" stroke="#0b0e13" stroke-width="10"/>
+  <rect x="64" y="80" width="128" height="96" rx="8" fill="#0b0e13"/>
+  <!-- Iron grate bars -->
+  <g stroke="#4a5870" stroke-width="8" stroke-linecap="round">
+    <line x1="72" y1="88" x2="72" y2="168"/><line x1="104" y1="88" x2="104" y2="168"/>
+    <line x1="136" y1="88" x2="136" y2="168"/><line x1="168" y1="88" x2="168" y2="168"/>
+    <line x1="64" y1="108" x2="192" y2="108"/><line x1="64" y1="148" x2="192" y2="148"/>
+  </g>
+  <!-- Down arrow into darkness -->
+  <path d="M128 56 L108 84 L148 84 Z" fill="#9333ea" opacity="0.6" stroke="#0b0e13" stroke-width="4"/>
+</svg>

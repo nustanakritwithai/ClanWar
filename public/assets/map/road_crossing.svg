@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Three-route road crossing">
+  <!-- Junction where main, high ground, and shadow routes meet -->
+  <rect x="8" y="8" width="240" height="240" rx="6" fill="#182230" stroke="#0b0e13" stroke-width="8"/>
+  <!-- Main route (horizontal warm) -->
+  <rect x="16" y="100" width="224" height="56" fill="#4a3d2e" stroke="#0b0e13" stroke-width="6"/>
+  <!-- High ground spur (top, cool stone) -->
+  <path d="M108 16 L148 16 L168 100 L88 100 Z" fill="#4a5870" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round"/>
+  <!-- Shadow spur (bottom, dark) -->
+  <path d="M88 156 L168 156 L148 240 L108 240 Z" fill="#1e1a2e" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round"/>
+  <!-- Center hub marker -->
+  <circle cx="128" cy="128" r="28" fill="#3a4658" stroke="#0b0e13" stroke-width="6"/>
+  <circle cx="128" cy="128" r="12" fill="#9ca3af" opacity="0.5"/>
+</svg>

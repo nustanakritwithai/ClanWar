@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Stone bridge">
+  <!-- Intact stone bridge spanning gap -->
+  <rect x="16" y="180" width="224" height="48" fill="#0b0e13" opacity="0.4" rx="4"/>
+  <rect x="32" y="100" width="192" height="80" rx="8" fill="#4a5870" stroke="#0b0e13" stroke-width="10"/>
+  <g stroke="#3a4658" stroke-width="6">
+    <line x1="56" y1="108" x2="56" y2="172"/><line x1="96" y1="108" x2="96" y2="172"/>
+    <line x1="136" y1="108" x2="136" y2="172"/><line x1="176" y1="108" x2="176" y2="172"/>
+  </g>
+  <path d="M32 100 Q128 60 224 100" fill="none" stroke="#5b6d88" stroke-width="8"/>
+  <rect x="24" y="96" width="16" height="88" fill="#3a4658" stroke="#0b0e13" stroke-width="6"/>
+  <rect x="216" y="96" width="16" height="88" fill="#3a4658" stroke="#0b0e13" stroke-width="6"/>
+</svg>

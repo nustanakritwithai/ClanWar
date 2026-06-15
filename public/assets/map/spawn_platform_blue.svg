@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Blue spawn platform">
+  <ellipse cx="128" cy="200" rx="72" ry="20" fill="#0b0e13" opacity="0.45"/>
+  <circle cx="128" cy="128" r="88" fill="#1a2a40" stroke="#0b0e13" stroke-width="10"/>
+  <circle cx="128" cy="128" r="64" fill="#2563eb" opacity="0.35" stroke="#3b82f6" stroke-width="8"/>
+  <circle cx="128" cy="128" r="36" fill="none" stroke="#5b9bff" stroke-width="6" stroke-dasharray="10 8"/>
+  <!-- Rune ring (not text) -->
+  <g fill="none" stroke="#5b9bff" stroke-width="5" opacity="0.7">
+    <path d="M128 72 L140 100 L128 108 L116 100 Z"/>
+    <path d="M184 128 L156 140 L148 128 L156 116 Z"/>
+    <path d="M128 184 L116 156 L128 148 L140 156 Z"/>
+    <path d="M72 128 L100 116 L108 128 L100 140 Z"/>
+  </g>
+</svg>

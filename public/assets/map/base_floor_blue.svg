@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Blue base floor tile">
+  <rect x="8" y="8" width="240" height="240" rx="4" fill="#1a2a40" stroke="#0b0e13" stroke-width="8"/>
+  <g stroke="#0b0e13" stroke-width="4">
+    <line x1="8" y1="72" x2="248" y2="72"/><line x1="8" y1="136" x2="248" y2="136"/>
+    <line x1="8" y1="200" x2="248" y2="200"/><line x1="72" y1="8" x2="72" y2="248"/>
+    <line x1="136" y1="8" x2="136" y2="248"/><line x1="200" y1="8" x2="200" y2="248"/>
+  </g>
+  <g fill="#2563eb" opacity="0.2">
+    <rect x="16" y="16" width="56" height="56"/><rect x="136" y="16" width="56" height="56"/>
+    <rect x="16" y="136" width="56" height="56"/><rect x="136" y="136" width="56" height="56"/>
+  </g>
+  <rect x="80" y="80" width="96" height="96" fill="#3b82f6" opacity="0.08" stroke="#3b82f6" stroke-width="4"/>
+</svg>

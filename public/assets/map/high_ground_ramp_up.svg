@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="High ground ramp up">
+  <!-- Stone steps ascending  -  reads as elevation gain -->
+  <rect x="24" y="24" width="208" height="208" rx="8" fill="#182230" stroke="#0b0e13" stroke-width="8"/>
+  <g stroke="#0b0e13" stroke-width="6" stroke-linejoin="round">
+    <path d="M40 200 H216 V168 H72 V136 H216 V104 H56 V72 H216 V40 H40 Z" fill="#4a5870"/>
+  </g>
+  <g fill="#5b6d88" stroke="#0b0e13" stroke-width="4">
+    <rect x="56" y="168" width="160" height="32"/><rect x="72" y="136" width="144" height="32"/>
+    <rect x="56" y="104" width="160" height="32"/><rect x="40" y="72" width="176" height="32"/>
+  </g>
+  <!-- Up arrow chevrons (shape cue, not text) -->
+  <path d="M128 52 L108 80 L148 80 Z" fill="#e6edf3" stroke="#0b0e13" stroke-width="4" stroke-linejoin="round"/>
+</svg>

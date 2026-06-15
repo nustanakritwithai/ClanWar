@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Movement blocker visual marker">
+  <!-- Barrier marker  -  visual only, NOT collision -->
+  <rect x="40" y="40" width="176" height="176" rx="8" fill="#3a4658" stroke="#0b0e13" stroke-width="10"/>
+  <rect x="56" y="56" width="144" height="144" rx="4" fill="#182230" stroke="#9ca3af" stroke-width="6" stroke-dasharray="12 8"/>
+  <!-- X barrier (reads as blocked, not a button) -->
+  <g stroke="#ef4444" stroke-width="16" stroke-linecap="round">
+    <line x1="72" y1="72" x2="184" y2="184"/><line x1="184" y1="72" x2="72" y2="184"/>
+  </g>
+  <rect x="108" y="108" width="40" height="40" fill="#3a4658" stroke="#0b0e13" stroke-width="6"/>
+</svg>
