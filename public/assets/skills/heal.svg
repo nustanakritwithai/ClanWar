@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Heal">
+  <!-- Soft glow -->
+  <circle cx="128" cy="128" r="92" fill="#f4d35e" opacity="0.16"/>
+  <!-- Healing cross -->
+  <g fill="#f4d35e" stroke="#0b0e13" stroke-width="11" stroke-linejoin="round">
+    <rect x="104" y="52" width="48" height="152" rx="12"/>
+    <rect x="52" y="104" width="152" height="48" rx="12"/>
+  </g>
+  <!-- Sparkles -->
+  <g fill="#fff7d6">
+    <path d="M196 60 l6 16 16 6 -16 6 -6 16 -6 -16 -16 -6 16 -6 Z"/>
+    <path d="M60 188 l4 11 11 4 -11 4 -4 11 -4 -11 -11 -4 11 -4 Z"/>
+  </g>
+</svg>

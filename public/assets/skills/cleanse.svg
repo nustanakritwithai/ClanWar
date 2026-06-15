@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Cleanse">
+  <!-- Purifying droplet -->
+  <path d="M128 36
+           C 168 96 192 132 192 162
+           a64 64 0 0 1 -128 0
+           C 64 132 88 96 128 36 Z"
+        fill="#f4d35e" stroke="#0b0e13" stroke-width="11" stroke-linejoin="round"/>
+  <!-- Inner shine -->
+  <path d="M112 140 a24 30 0 0 0 8 44" fill="none" stroke="#fff7d6" stroke-width="9" stroke-linecap="round"/>
+  <!-- Cleansing sweep sparkles dispelling debuff -->
+  <g fill="#fff7d6">
+    <path d="M204 70 l5 13 13 5 -13 5 -5 13 -5 -13 -13 -5 13 -5 Z"/>
+    <path d="M46 96 l4 10 10 4 -10 4 -4 10 -4 -10 -10 -4 10 -4 Z"/>
+    <path d="M196 168 l3 9 9 3 -9 3 -3 9 -3 -9 -9 -3 9 -3 Z"/>
+  </g>
+</svg>

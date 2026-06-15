@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Guardian class icon">
+  <defs>
+    <linearGradient id="guardianFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5b9bff"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <!-- Heraldic shield -->
+  <path d="M256 44 L436 104 V250 C436 364 354 436 256 476 C158 436 76 364 76 250 V104 Z"
+        fill="url(#guardianFill)" stroke="#0b0e13" stroke-width="18" stroke-linejoin="round"/>
+  <!-- Fortress tower emblem (dark cut-out) -->
+  <g fill="#0b0e13">
+    <rect x="180" y="168" width="38" height="44"/>
+    <rect x="237" y="168" width="38" height="44"/>
+    <rect x="294" y="168" width="38" height="44"/>
+    <rect x="180" y="206" width="152" height="158" rx="6"/>
+  </g>
+  <!-- Gate arch -->
+  <path d="M228 364 v-58 a28 28 0 0 1 56 0 v58 Z" fill="#5b9bff"/>
+</svg>

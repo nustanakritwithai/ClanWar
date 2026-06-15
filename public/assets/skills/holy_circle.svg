@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Holy Circle">
+  <!-- Radiant area ring -->
+  <circle cx="128" cy="128" r="96" fill="#f4d35e" opacity="0.14"/>
+  <circle cx="128" cy="128" r="96" fill="none" stroke="#f4d35e" stroke-width="10"/>
+  <circle cx="128" cy="128" r="68" fill="none" stroke="#fff7d6" stroke-width="6" stroke-dasharray="5 12"/>
+  <!-- Central cross -->
+  <g fill="#f4d35e" stroke="#0b0e13" stroke-width="9" stroke-linejoin="round">
+    <rect x="116" y="86" width="24" height="84" rx="6"/>
+    <rect x="92" y="110" width="72" height="24" rx="6"/>
+  </g>
+  <!-- Light rays -->
+  <g stroke="#fff7d6" stroke-width="9" stroke-linecap="round">
+    <line x1="128" y1="20" x2="128" y2="40"/>
+    <line x1="236" y1="128" x2="216" y2="128"/>
+    <line x1="128" y1="236" x2="128" y2="216"/>
+    <line x1="20" y1="128" x2="40" y2="128"/>
+  </g>
+</svg>

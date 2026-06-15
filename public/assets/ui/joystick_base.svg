@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Virtual joystick base">
+  <!-- Outer ring -->
+  <circle cx="100" cy="100" r="92" fill="#ffffff" fill-opacity="0.10" stroke="#ffffff" stroke-width="5" stroke-opacity="0.35"/>
+  <!-- Direction ticks -->
+  <g stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-opacity="0.4">
+    <line x1="100" y1="20" x2="100" y2="38"/>
+    <line x1="100" y1="162" x2="100" y2="180"/>
+    <line x1="20" y1="100" x2="38" y2="100"/>
+    <line x1="162" y1="100" x2="180" y2="100"/>
+  </g>
+  <!-- Inner guide -->
+  <circle cx="100" cy="100" r="52" fill="none" stroke="#ffffff" stroke-width="2" stroke-opacity="0.2" stroke-dasharray="4 8"/>
+</svg>

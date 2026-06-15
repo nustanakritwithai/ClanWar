@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Gate objective">
+  <!-- Stone arch frame -->
+  <path d="M44 220 V96 a84 84 0 0 1 168 0 V220 Z" fill="#3a4658" stroke="#0b0e13" stroke-width="12" stroke-linejoin="round"/>
+  <!-- Gate opening -->
+  <path d="M80 220 V104 a48 48 0 0 1 96 0 V220 Z" fill="#1a2230"/>
+  <!-- Portcullis bars -->
+  <g stroke="#cfa14a" stroke-width="8" stroke-linecap="round">
+    <line x1="100" y1="96" x2="100" y2="220"/>
+    <line x1="128" y1="84" x2="128" y2="220"/>
+    <line x1="156" y1="96" x2="156" y2="220"/>
+    <line x1="80" y1="128" x2="176" y2="128"/>
+    <line x1="80" y1="170" x2="176" y2="170"/>
+  </g>
+  <!-- Battlement top -->
+  <g fill="#3a4658" stroke="#0b0e13" stroke-width="8">
+    <rect x="44" y="56" width="28" height="28"/>
+    <rect x="114" y="40" width="28" height="28"/>
+    <rect x="184" y="56" width="28" height="28"/>
+  </g>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Cooldown overlay (radial sweep template)">
+  <!-- Darkening disc shown over a button while on cooldown. The wedge below
+       represents ~65% remaining; runtime can redraw the path angle per frame. -->
+  <clipPath id="cdClip"><circle cx="64" cy="64" r="58"/></clipPath>
+  <g clip-path="url(#cdClip)">
+    <!-- Full dim base -->
+    <circle cx="64" cy="64" r="58" fill="#0b0e13" fill-opacity="0.6"/>
+    <!-- Remaining-time wedge (example: from top, sweeping clockwise) -->
+    <path d="M64 64 L64 0 A 64 64 0 0 1 124 86 Z" fill="#0b0e13" fill-opacity="0.55"/>
+  </g>
+  <!-- Sweep edge line -->
+  <line x1="64" y1="64" x2="64" y2="6" stroke="#e6edf3" stroke-width="2" stroke-opacity="0.5"/>
+</svg>

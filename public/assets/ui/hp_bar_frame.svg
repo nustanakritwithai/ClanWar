@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 48" width="320" height="48" role="img" aria-label="HP bar frame">
+  <!-- Outer frame -->
+  <rect x="3" y="3" width="314" height="42" rx="12" fill="#10151d" fill-opacity="0.7" stroke="#e6edf3" stroke-width="4" stroke-opacity="0.85"/>
+  <!-- Inner track (where the runtime fill goes) -->
+  <rect x="14" y="13" width="292" height="22" rx="8" fill="#0b0e13" fill-opacity="0.8"/>
+  <!-- Example fill (~70%) using HP green; runtime overrides width -->
+  <rect x="14" y="13" width="204" height="22" rx="8" fill="#4ade80"/>
+  <!-- Top sheen -->
+  <rect x="18" y="16" width="196" height="6" rx="3" fill="#ffffff" fill-opacity="0.25"/>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Power Shot">
+  <!-- Charged arrow flying diagonally -->
+  <line x1="40" y1="216" x2="196" y2="60" stroke="#3a2a22" stroke-width="16" stroke-linecap="round"/>
+  <!-- Big arrowhead -->
+  <path d="M196 60 L150 64 L172 86 L150 96 Z" fill="#34d399" stroke="#0b0e13" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M196 60 L226 30 L182 74 Z" fill="#34d399" stroke="#0b0e13" stroke-width="9" stroke-linejoin="round"/>
+  <!-- Power trail -->
+  <g stroke="#6ee7b7" stroke-width="9" stroke-linecap="round" opacity="0.8">
+    <line x1="40" y1="216" x2="20" y2="236"/>
+    <line x1="64" y1="206" x2="44" y2="224"/>
+    <line x1="58" y1="184" x2="36" y2="200"/>
+  </g>
+</svg>

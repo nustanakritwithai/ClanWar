@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Leap Strike">
+  <!-- Arc leap trajectory -->
+  <path d="M40 60 Q 128 40 128 150" fill="none" stroke="#ef4444" stroke-width="10" stroke-dasharray="4 14" stroke-linecap="round" opacity="0.8"/>
+  <!-- Downward sword -->
+  <rect x="118" y="60" width="20" height="96" rx="6" fill="#ef4444" stroke="#0b0e13" stroke-width="9"/>
+  <rect x="96" y="60" width="64" height="16" rx="6" fill="#dc2626" stroke="#0b0e13" stroke-width="8"/>
+  <path d="M118 156 L128 184 L138 156 Z" fill="#ef4444" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round"/>
+  <!-- Impact shockwave -->
+  <path d="M70 200 Q 128 170 186 200" fill="none" stroke="#fca5a5" stroke-width="12" stroke-linecap="round"/>
+  <g stroke="#ef4444" stroke-width="9" stroke-linecap="round">
+    <line x1="86" y1="206" x2="70" y2="230"/>
+    <line x1="170" y1="206" x2="186" y2="230"/>
+  </g>
+</svg>

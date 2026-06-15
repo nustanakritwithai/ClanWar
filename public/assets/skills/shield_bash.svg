@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Shield Bash">
+  <!-- Impact bursts -->
+  <g stroke="#fbbf24" stroke-width="10" stroke-linecap="round">
+    <line x1="196" y1="60" x2="232" y2="40"/>
+    <line x1="206" y1="100" x2="246" y2="96"/>
+    <line x1="196" y1="146" x2="232" y2="168"/>
+  </g>
+  <!-- Shield, tilted as if striking -->
+  <g transform="rotate(-18 120 128)">
+    <path d="M120 36 L196 64 V140 C196 184 162 212 120 228 C78 212 44 184 44 140 V64 Z"
+          fill="#3b82f6" stroke="#0b0e13" stroke-width="12" stroke-linejoin="round"/>
+    <path d="M120 80 L120 184 M78 110 L162 110" stroke="#dbeafe" stroke-width="12" stroke-linecap="round"/>
+  </g>
+</svg>
