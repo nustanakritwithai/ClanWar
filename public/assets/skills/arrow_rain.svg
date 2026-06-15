@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Arrow Rain">
+  <!-- Falling arrows -->
+  <g stroke="#3a2a22" stroke-width="11" stroke-linecap="round">
+    <line x1="72" y1="30" x2="56" y2="150"/>
+    <line x1="128" y1="20" x2="128" y2="158"/>
+    <line x1="184" y1="30" x2="200" y2="150"/>
+  </g>
+  <g fill="#34d399" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round">
+    <path d="M56 150 L40 124 L56 134 L72 124 Z"/>
+    <path d="M128 158 L112 132 L128 142 L144 132 Z"/>
+    <path d="M200 150 L184 124 L200 134 L216 124 Z"/>
+  </g>
+  <!-- Target zone on ground -->
+  <ellipse cx="128" cy="206" rx="86" ry="26" fill="none" stroke="#6ee7b7" stroke-width="8" stroke-dasharray="6 12"/>
+</svg>

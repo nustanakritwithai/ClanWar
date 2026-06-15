@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 36" width="320" height="36" role="img" aria-label="Mana bar frame">
+  <!-- Outer frame (slimmer than HP) -->
+  <rect x="3" y="3" width="314" height="30" rx="9" fill="#10151d" fill-opacity="0.7" stroke="#e6edf3" stroke-width="3" stroke-opacity="0.8"/>
+  <!-- Inner track -->
+  <rect x="12" y="10" width="296" height="16" rx="6" fill="#0b0e13" fill-opacity="0.8"/>
+  <!-- Example fill (~55%) using mana blue; runtime overrides width -->
+  <rect x="12" y="10" width="163" height="16" rx="6" fill="#3b82f6"/>
+  <!-- Top sheen -->
+  <rect x="16" y="12" width="155" height="5" rx="2" fill="#ffffff" fill-opacity="0.28"/>
+</svg>

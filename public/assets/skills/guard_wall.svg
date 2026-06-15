@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Guard Wall">
+  <!-- Three interlocked shields forming a wall -->
+  <g stroke="#0b0e13" stroke-width="11" stroke-linejoin="round">
+    <path d="M64 70 L108 86 V150 C108 178 88 198 64 210 C40 198 20 178 20 150 V86 Z" fill="#2563eb"/>
+    <path d="M192 70 L236 86 V150 C236 178 216 198 192 210 C168 198 148 178 148 150 V86 Z" fill="#2563eb"/>
+    <path d="M128 50 L176 68 V142 C176 174 154 196 128 210 C102 196 80 174 80 142 V68 Z" fill="#3b82f6"/>
+  </g>
+  <path d="M128 96 V176 M100 124 H156" stroke="#dbeafe" stroke-width="11" stroke-linecap="round"/>
+</svg>

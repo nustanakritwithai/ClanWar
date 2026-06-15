@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Priest class icon">
+  <defs>
+    <radialGradient id="priestGlow" cx="0.5" cy="0.32" r="0.6">
+      <stop offset="0" stop-color="#fff7d6"/>
+      <stop offset="1" stop-color="#f4d35e"/>
+    </radialGradient>
+  </defs>
+  <!-- Radiant light behind crook -->
+  <g stroke="#f4d35e" stroke-width="14" stroke-linecap="round" opacity="0.85">
+    <line x1="256" y1="40" x2="256" y2="92"/>
+    <line x1="160" y1="70" x2="186" y2="116"/>
+    <line x1="352" y1="70" x2="326" y2="116"/>
+    <line x1="96" y1="150" x2="142" y2="176"/>
+    <line x1="416" y1="150" x2="370" y2="176"/>
+  </g>
+  <!-- Healing orb -->
+  <circle cx="256" cy="150" r="58" fill="url(#priestGlow)" stroke="#0b0e13" stroke-width="14"/>
+  <!-- Cross inside orb -->
+  <g fill="#0b0e13">
+    <rect x="244" y="118" width="24" height="64" rx="4"/>
+    <rect x="224" y="138" width="64" height="24" rx="4"/>
+  </g>
+  <!-- Staff -->
+  <rect x="242" y="200" width="28" height="266" rx="12" fill="#caa84a" stroke="#0b0e13" stroke-width="12"/>
+</svg>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Gate Breaker (Ultimate)">
+  <!-- Ultimate aura -->
+  <circle cx="128" cy="128" r="116" fill="none" stroke="#ef4444" stroke-width="5" stroke-dasharray="6 14" opacity="0.5"/>
+  <!-- Cracked gate -->
+  <g stroke="#0b0e13" stroke-width="10" stroke-linejoin="round">
+    <path d="M52 70 h64 v140 h-64 Z" fill="#7a5a3a"/>
+    <path d="M140 70 h64 v140 h-64 Z" fill="#7a5a3a"/>
+  </g>
+  <!-- Break crack down the middle -->
+  <path d="M128 64 L112 110 L140 138 L116 176 L132 216"
+        fill="none" stroke="#fbbf24" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Impact bursts -->
+  <g stroke="#ef4444" stroke-width="10" stroke-linecap="round">
+    <line x1="128" y1="40" x2="128" y2="18"/>
+    <line x1="96" y1="48" x2="84" y2="28"/>
+    <line x1="160" y1="48" x2="172" y2="28"/>
+  </g>
+</svg>

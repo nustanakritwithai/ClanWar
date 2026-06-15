@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Revival Prayer (Ultimate)">
+  <!-- Ultimate aura -->
+  <circle cx="128" cy="128" r="116" fill="none" stroke="#f4d35e" stroke-width="5" stroke-dasharray="6 14" opacity="0.5"/>
+  <!-- Rising phoenix / soul wings -->
+  <path d="M128 44
+           C 104 92 64 100 36 92
+           C 72 112 96 116 116 116
+           C 88 136 76 168 84 204
+           C 100 176 116 162 128 156
+           C 140 162 156 176 172 204
+           C 180 168 168 136 140 116
+           C 160 116 184 112 220 92
+           C 192 100 152 92 128 44 Z"
+        fill="#f4d35e" stroke="#0b0e13" stroke-width="9" stroke-linejoin="round"/>
+  <!-- Soul core cross -->
+  <g fill="#fff7d6" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round">
+    <rect x="120" y="96" width="16" height="64" rx="4"/>
+    <rect x="104" y="116" width="48" height="16" rx="4"/>
+  </g>
+</svg>

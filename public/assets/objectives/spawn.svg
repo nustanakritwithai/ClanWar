@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Spawn objective">
+  <defs>
+    <radialGradient id="spawnGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#bfdbfe"/>
+      <stop offset="0.7" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#1e3a8a"/>
+    </radialGradient>
+  </defs>
+  <!-- Portal ground ellipse -->
+  <ellipse cx="128" cy="178" rx="92" ry="38" fill="url(#spawnGlow)" stroke="#0b0e13" stroke-width="11"/>
+  <ellipse cx="128" cy="178" rx="54" ry="22" fill="#1a2230"/>
+  <!-- Rising energy / respawn beam -->
+  <g stroke="#bfdbfe" stroke-width="11" stroke-linecap="round" opacity="0.9">
+    <line x1="128" y1="170" x2="128" y2="44"/>
+    <line x1="100" y1="170" x2="100" y2="74"/>
+    <line x1="156" y1="170" x2="156" y2="74"/>
+  </g>
+  <!-- Up arrow -->
+  <path d="M128 36 L104 76 L122 76 L122 110 L134 110 L134 76 L152 76 Z" fill="#3b82f6" stroke="#0b0e13" stroke-width="7" stroke-linejoin="round"/>
+</svg>

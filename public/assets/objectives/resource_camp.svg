@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Resource Camp objective">
+  <!-- Ground patch -->
+  <ellipse cx="128" cy="196" rx="100" ry="28" fill="#9ca3af" opacity="0.2"/>
+  <!-- Treasure chest -->
+  <path d="M56 130 h144 v74 h-144 Z" fill="#7a5a3a" stroke="#0b0e13" stroke-width="11" stroke-linejoin="round"/>
+  <path d="M56 130 a72 30 0 0 1 144 0 Z" fill="#8a6a44" stroke="#0b0e13" stroke-width="11" stroke-linejoin="round"/>
+  <rect x="44" y="126" width="168" height="16" rx="6" fill="#cfa14a" stroke="#0b0e13" stroke-width="8"/>
+  <!-- Lock -->
+  <rect x="116" y="150" width="24" height="24" rx="4" fill="#f4d35e" stroke="#0b0e13" stroke-width="6"/>
+  <!-- Gold coins spilling -->
+  <g fill="#f4d35e" stroke="#0b0e13" stroke-width="5">
+    <circle cx="70" cy="96" r="16"/>
+    <circle cx="104" cy="80" r="14"/>
+    <circle cx="186" cy="98" r="15"/>
+  </g>
+</svg>

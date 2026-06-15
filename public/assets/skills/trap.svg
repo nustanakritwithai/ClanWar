@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Trap">
+  <!-- Trap jaws (upper + lower arcs of teeth) -->
+  <ellipse cx="128" cy="128" rx="92" ry="40" fill="#14532d" stroke="#0b0e13" stroke-width="10"/>
+  <ellipse cx="128" cy="128" rx="58" ry="22" fill="#0b0e13"/>
+  <!-- Teeth -->
+  <g fill="#34d399" stroke="#0b0e13" stroke-width="5" stroke-linejoin="round">
+    <path d="M70 110 L84 132 L98 108 Z"/>
+    <path d="M104 102 L118 130 L132 100 Z"/>
+    <path d="M138 100 L152 130 L166 102 Z"/>
+    <path d="M172 108 L186 132 L200 110 Z"/>
+  </g>
+  <g fill="#34d399" stroke="#0b0e13" stroke-width="5" stroke-linejoin="round">
+    <path d="M86 146 L100 124 L114 150 Z"/>
+    <path d="M124 150 L138 122 L152 152 Z"/>
+    <path d="M160 148 L174 124 L188 146 Z"/>
+  </g>
+</svg>

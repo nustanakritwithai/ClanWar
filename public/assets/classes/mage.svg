@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Mage class icon">
+  <defs>
+    <radialGradient id="mageOrb" cx="0.4" cy="0.35" r="0.75">
+      <stop offset="0" stop-color="#e9d5ff"/>
+      <stop offset="0.5" stop-color="#a855f7"/>
+      <stop offset="1" stop-color="#6b21a8"/>
+    </radialGradient>
+  </defs>
+  <!-- Arcane orb -->
+  <circle cx="256" cy="268" r="140" fill="url(#mageOrb)" stroke="#0b0e13" stroke-width="16"/>
+  <!-- Inner flame -->
+  <path d="M256 188
+           C 300 232 300 268 268 300
+           C 286 284 290 262 282 244
+           C 296 268 296 300 268 326
+           C 232 352 200 328 200 292
+           C 200 260 228 240 256 188 Z"
+        fill="#f4d35e" stroke="#0b0e13" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Orbiting sparks -->
+  <circle cx="396" cy="150" r="16" fill="#a855f7" stroke="#0b0e13" stroke-width="6"/>
+  <circle cx="120" cy="392" r="12" fill="#e9d5ff" stroke="#0b0e13" stroke-width="6"/>
+</svg>
