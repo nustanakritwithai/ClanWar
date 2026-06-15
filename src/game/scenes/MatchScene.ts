@@ -12,6 +12,11 @@ import { getHero } from '../data/heroes';
 import { smallTwinFortress } from '../data/map-small-twin-fortress';
 import { DEFAULT_MELEE_ARC_DEGREES, testAoeCircle, testMeleeArc } from '../combat/HitShapes';
 import { getSkillRuntimeType } from '../combat/SkillRuntimeType';
+import {
+  getSkillPlaceholderNote,
+  isVisualOnlyAoe,
+  skipsObjectiveDamage,
+} from '../combat/SkillPlaceholder';
 import type { ActionKey, HeroClassId, MapMarker, MatchSceneData, SkillDefinition, SkillRuntimeType } from '../types';
 import { Player } from '../entities/Player';
 import { TrainingDummy } from '../entities/TrainingDummy';
@@ -47,6 +52,8 @@ export class MatchScene extends Phaser.Scene {
   private lastCombatResult = '-';
   private lastHitShapeResult = '-';
   private lastSkillType: SkillRuntimeType | '-' = '-';
+  private lastPlaceholderReason = '-';
+  private lastSkippedSkillReason = '-';
   private projectileSystem!: ProjectileSystem;
 
   constructor() {
@@ -185,9 +192,11 @@ export class MatchScene extends Phaser.Scene {
 
     if (result.reason === 'cooldown') {
       this.player.playDeniedFeedback('cooldown');
+      this.lastSkippedSkillReason = 'cooldown';
       this.movement.state.lastAction = 'Skill on cooldown';
     } else if (result.reason === 'mana') {
       this.player.playDeniedFeedback('mana');
+      this.lastSkippedSkillReason = 'mana';
       this.movement.state.lastAction = 'Not enough mana';
     }
   }
@@ -195,6 +204,8 @@ export class MatchScene extends Phaser.Scene {
   private applySkillCombatEffect(skill: SkillDefinition): void {
     const runtimeType = getSkillRuntimeType(skill);
     this.lastSkillType = runtimeType;
+    this.lastPlaceholderReason = getSkillPlaceholderNote(skill.id) ?? '-';
+    this.lastSkippedSkillReason = '-';
 
     switch (runtimeType) {
       case 'melee_arc':
@@ -216,7 +227,7 @@ export class MatchScene extends Phaser.Scene {
 
   private applyMeleeArcSkill(skill: SkillDefinition): void {
     const name = skill.name;
-    const range = skill.range ?? this.player.attackRange;
+    const range = skill.range ?? skill.radius ?? this.player.attackRange;
     const arcDegrees = skill.arc ?? DEFAULT_MELEE_ARC_DEGREES;
 
     if (!this.dummy.canReceiveDamage() || skill.damage === undefined) {
@@ -239,7 +250,8 @@ export class MatchScene extends Phaser.Scene {
 
     if (arc.hit) {
       showHitSpark(this, this.dummy.x, this.dummy.y, (o) => this.registerWorldObject(o));
-      this.applyDamageToDummy(skill.damage, name);
+      const suffix = skipsObjectiveDamage(skill.id) ? ' (no gate dmg)' : '';
+      this.applyDamageToDummy(skill.damage, name, suffix);
     } else {
       this.setCombatResult(`${name} missed`);
     }
@@ -282,6 +294,12 @@ export class MatchScene extends Phaser.Scene {
       skill.healPerSecond !== undefined || skill.id === 'priest_holy_circle' ? 0x4ade80 : 0x60a5fa;
     showAoeMarker(this, center.x, center.y, radius, (o) => this.registerWorldObject(o), tint);
 
+    if (isVisualOnlyAoe(skill.id)) {
+      this.lastHitShapeResult = `${name}: placeholder marker (no taunt)`;
+      this.setCombatResult(`${name} placeholder`);
+      return;
+    }
+
     if (skill.healPerSecond !== undefined || (skill.id === 'priest_holy_circle' && skill.heal === undefined)) {
       const healAmount = skill.healPerSecond ?? 45;
       this.lastHitShapeResult = `${name}: aoe_circle heal`;
@@ -316,7 +334,8 @@ export class MatchScene extends Phaser.Scene {
 
     if (circle.hit && this.dummy.canReceiveDamage()) {
       showImpactBurst(this, center.x, center.y, (o) => this.registerWorldObject(o));
-      this.applyDamageToDummy(rawDamage, name);
+      const suffix = skipsObjectiveDamage(skill.id) ? ' (no gate dmg)' : '';
+      this.applyDamageToDummy(rawDamage, name, suffix);
     } else {
       this.setCombatResult(`${name} missed`);
     }
@@ -335,7 +354,8 @@ export class MatchScene extends Phaser.Scene {
       showHealSpark(this, this.player.x, this.player.y, (o) => this.registerWorldObject(o));
       const text = showCombatText(this, this.player.x, this.player.y - 28, `+${healed}`, '#4ade80');
       this.registerWorldObject(text);
-      this.setCombatResult(`Heal +${healed}`);
+      const label = skill.id === 'priest_revival_prayer' ? `${name} +${healed} (self)` : `Heal +${healed}`;
+      this.setCombatResult(label);
     } else {
       this.setCombatResult(`${name} (HP full)`);
     }
@@ -402,11 +422,11 @@ export class MatchScene extends Phaser.Scene {
     }
   }
 
-  private applyDamageToDummy(rawDamage: number, label: string): void {
+  private applyDamageToDummy(rawDamage: number, label: string, suffix = ''): void {
     const result = this.dummy.takeDamage(rawDamage);
     const text = showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#f87171');
     this.registerWorldObject(text);
-    this.setCombatResult(`${label} hit ${result.finalDamage}`);
+    this.setCombatResult(`${label} hit ${result.finalDamage}${suffix}`);
     if (result.killed) {
       this.time.delayedCall(2100, () => {
         if (!this.dummy.isDead()) this.setCombatResult('Dummy reset');
@@ -711,6 +731,7 @@ export class MatchScene extends Phaser.Scene {
           `dummy: ${dummyHp} dist: ${dist}`,
           `combat: ${this.lastCombatResult}`,
           `type: ${this.lastSkillType} hit: ${this.lastHitShapeResult}`,
+          `placeholder: ${this.lastPlaceholderReason}`,
           `proj: ${projCount} ${projResult}`,
         ]
       : [
@@ -719,6 +740,7 @@ export class MatchScene extends Phaser.Scene {
           `dummy: ${dummyHp}  dist: ${dist}  atkRange: ${p.attackRange}`,
           `combat: ${this.lastCombatResult}`,
           `skill type: ${this.lastSkillType}  hit shape: ${this.lastHitShapeResult}`,
+          `placeholder: ${this.lastPlaceholderReason}  skipped: ${this.lastSkippedSkillReason}`,
           `projectiles: ${projCount}  last: ${projResult}`,
           `input: ${s.inputMode}  move: ${move}`,
           `joy ptr: ${joyId}  action+move: ${actionWhileMove}`,
