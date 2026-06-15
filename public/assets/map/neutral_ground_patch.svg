@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Neutral ground patch">
+  <rect x="8" y="8" width="240" height="240" rx="6" fill="#182230" stroke="#0b0e13" stroke-width="8"/>
+  <rect x="24" y="24" width="208" height="208" rx="4" fill="#1e2a22"/>
+  <!-- Grass tufts -->
+  <g fill="#16a34a" stroke="#0b0e13" stroke-width="4" stroke-linejoin="round">
+    <path d="M64 80 L72 56 L80 80 Z"/><path d="M120 64 L128 40 L136 64 Z"/>
+    <path d="M176 88 L184 64 L192 88 Z"/><path d="M88 140 L96 116 L104 140 Z"/>
+    <path d="M152 148 L160 124 L168 148 Z"/><path d="M64 180 L72 156 L80 180 Z"/>
+    <path d="M192 176 L200 152 L208 176 Z"/>
+  </g>
+  <!-- Dirt patches -->
+  <ellipse cx="128" cy="128" rx="56" ry="40" fill="#4a3d2e" opacity="0.5"/>
+</svg>

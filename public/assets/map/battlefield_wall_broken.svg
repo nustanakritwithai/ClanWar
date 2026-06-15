@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Broken battlefield wall">
+  <g fill="#3a4658" stroke="#0b0e13" stroke-width="8" stroke-linejoin="round">
+    <path d="M32 120 L100 100 L108 148 L40 168 Z"/>
+    <path d="M148 96 L220 112 L204 160 L136 144 Z"/>
+  </g>
+  <g fill="#4a5870" stroke="#0b0e13" stroke-width="6">
+    <rect x="56" y="172" width="36" height="28" transform="rotate(-12 74 186)"/>
+    <rect x="120" y="180" width="44" height="24" transform="rotate(8 142 192)"/>
+    <rect x="168" y="168" width="32" height="32" transform="rotate(-20 184 184)"/>
+  </g>
+  <g fill="#9ca3af" opacity="0.5">
+    <ellipse cx="128" cy="200" rx="48" ry="16"/>
+  </g>
+</svg>
