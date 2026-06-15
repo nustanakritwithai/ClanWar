@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Objective priority guidance marker">
+  <!-- Player guidance only - not objective logic, not capture priority system -->
+  <ellipse cx="128" cy="210" rx="56" ry="14" fill="#0b0e13" opacity="0.25"/>
+  <!-- Priority outer ring (distinct from ownership seal in PR #18) -->
+  <circle cx="128" cy="128" r="88" fill="none" stroke="#f4d35e" stroke-width="6" stroke-dasharray="8 6"/>
+  <circle cx="128" cy="128" r="68" fill="#f4d35e" opacity="0.08"/>
+  <!-- Priority star diamond (four-point, not combat burst) -->
+  <path d="M128 36 L148 108 L220 128 L148 148 L128 220 L108 148 L36 128 L108 108 Z"
+        fill="#f4d35e" stroke="#0b0e13" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Center priority pip -->
+  <circle cx="128" cy="128" r="20" fill="#fff7d6" stroke="#0b0e13" stroke-width="7"/>
+</svg>
