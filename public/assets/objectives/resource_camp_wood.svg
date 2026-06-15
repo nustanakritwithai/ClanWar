@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Wood resource camp">
+  <!-- Ground patch -->
+  <ellipse cx="128" cy="208" rx="98" ry="24" fill="#9ca3af" opacity="0.16"/>
+  <!-- Stacked logs (bottom row) -->
+  <g stroke="#0b0e13" stroke-width="10" stroke-linejoin="round">
+    <rect x="44" y="166" width="168" height="46" rx="23" fill="#854d0e"/>
+  </g>
+  <!-- Log ends (bottom) -->
+  <g fill="#a16207" stroke="#0b0e13" stroke-width="8">
+    <circle cx="68" cy="189" r="19"/>
+    <circle cx="128" cy="189" r="19"/>
+    <circle cx="188" cy="189" r="19"/>
+  </g>
+  <!-- Top row -->
+  <g stroke="#0b0e13" stroke-width="10" stroke-linejoin="round">
+    <rect x="74" y="118" width="108" height="44" rx="22" fill="#854d0e"/>
+  </g>
+  <g fill="#a16207" stroke="#0b0e13" stroke-width="8">
+    <circle cx="98" cy="140" r="18"/>
+    <circle cx="158" cy="140" r="18"/>
+  </g>
+  <!-- Growth rings -->
+  <g fill="none" stroke="#7c5a2e" stroke-width="4" opacity="0.8">
+    <circle cx="128" cy="189" r="9"/>
+    <circle cx="98" cy="140" r="8"/>
+  </g>
+</svg>

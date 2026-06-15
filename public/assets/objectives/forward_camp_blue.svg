@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Blue team forward camp">
+  <!-- Ground patch -->
+  <ellipse cx="128" cy="212" rx="100" ry="24" fill="#3b82f6" opacity="0.12"/>
+  <!-- Tent body -->
+  <path d="M40 200 L128 64 L216 200 Z" fill="#3b82f6" stroke="#0b0e13" stroke-width="12" stroke-linejoin="round"/>
+  <!-- Tent entrance flap -->
+  <path d="M128 200 V120 L100 200 Z" fill="#1a2230" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M128 200 V120 L156 200 Z" fill="#2563eb" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round"/>
+  <!-- Ridge pole + flag -->
+  <path d="M128 64 V32" stroke="#0b0e13" stroke-width="7" stroke-linecap="round"/>
+  <path d="M128 34 L162 44 L128 54 Z" fill="#60a5fa" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round"/>
+  <!-- Guy lines -->
+  <g stroke="#0b0e13" stroke-width="5" stroke-linecap="round" opacity="0.7">
+    <line x1="40" y1="200" x2="24" y2="212"/>
+    <line x1="216" y1="200" x2="232" y2="212"/>
+  </g>
+</svg>

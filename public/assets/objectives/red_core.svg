@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Red team core">
+  <defs>
+    <radialGradient id="redCoreGlow" cx="0.5" cy="0.45" r="0.55">
+      <stop offset="0" stop-color="#fee2e2"/>
+      <stop offset="0.6" stop-color="#f87171"/>
+      <stop offset="1" stop-color="#dc2626"/>
+    </radialGradient>
+  </defs>
+  <!-- Energy glow -->
+  <circle cx="128" cy="124" r="96" fill="#ef4444" opacity="0.16"/>
+  <!-- Crystal nexus (octahedron) -->
+  <path d="M128 28 L188 124 L128 164 L68 124 Z" fill="url(#redCoreGlow)" stroke="#0b0e13" stroke-width="11" stroke-linejoin="round"/>
+  <path d="M128 220 L188 124 L128 164 L68 124 Z" fill="#dc2626" stroke="#0b0e13" stroke-width="11" stroke-linejoin="round"/>
+  <!-- Facet lines -->
+  <g stroke="#0b0e13" stroke-width="6" opacity="0.6">
+    <line x1="128" y1="28" x2="128" y2="164"/>
+    <line x1="68" y1="124" x2="188" y2="124"/>
+  </g>
+</svg>
