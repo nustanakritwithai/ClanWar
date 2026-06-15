@@ -46,9 +46,52 @@ async function getMatchState(page) {
       playerY: scene.player?.sprite?.y ?? 0,
       dummyHp: scene.dummy?.currentHp ?? 0,
       combat: scene.lastCombatResult ?? '-',
+      placeholder: scene.lastPlaceholderReason ?? '-',
+      hitShape: scene.lastHitShapeResult ?? '-',
+      skillType: scene.lastSkillType ?? '-',
       heroClass: scene.heroClass ?? '',
     };
   });
+}
+
+async function walkTowardDummy(page, steps = 14) {
+  for (let i = 0; i < steps; i++) {
+    await page.keyboard.down('w');
+    await new Promise((r) => setTimeout(r, 80));
+    await page.keyboard.up('w');
+    await new Promise((r) => setTimeout(r, 30));
+  }
+}
+
+async function pressSkillKey(page, key = 'q') {
+  await page.focus('body');
+  const canvas = await page.$('canvas');
+  if (canvas) {
+    const box = await canvas.boundingBox();
+    if (box) {
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    }
+  }
+  await page.keyboard.down(key);
+  await new Promise((r) => setTimeout(r, 50));
+  await page.keyboard.up(key);
+}
+
+async function waitForSkillResult(page, timeoutMs = 1200) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const st = await getMatchState(page);
+    const action = st?.lastAction ?? '';
+    const combat = st?.combat ?? '';
+    if (
+      (action && action !== '-') ||
+      (combat && combat !== '-' && !combat.startsWith('used '))
+    ) {
+      return st;
+    }
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  return getMatchState(page);
 }
 
 async function startMatch(page, heroClass = 'guardian') {
@@ -184,19 +227,24 @@ async function runDesktopRegression(browser) {
     window.__CLANWAR_GAME__.scene.start('MatchScene', { heroClass: 'guardian' });
   });
   await page.waitForFunction(() => window.__CLANWAR_GAME__?.scene?.getScene('MatchScene'));
-  await new Promise((r) => setTimeout(r, 300));
+  await new Promise((r) => setTimeout(r, 400));
 
   const before = await getMatchState(page);
-  await page.keyboard.down('w');
-  await new Promise((r) => setTimeout(r, 500));
-  await page.keyboard.up('w');
+  await walkTowardDummy(page, 12);
   const after = await getMatchState(page);
   log('E: WASD movement', after.playerY < before.playerY, `dy=${(after.playerY - before.playerY).toFixed(0)}`);
 
-  await page.keyboard.press('q');
-  await new Promise((r) => setTimeout(r, 200));
-  const afterQ = await getMatchState(page);
-  log('E: keyboard Q skill', !!afterQ.lastAction && afterQ.lastAction !== '-', afterQ.lastAction);
+  await pressSkillKey(page, 'q');
+  const afterQ = await waitForSkillResult(page);
+  const qOk =
+    (afterQ?.combat?.includes('Shield Bash') ?? false) ||
+    (afterQ?.lastAction?.includes('Shield Bash') ?? false) ||
+    (afterQ?.hitShape?.includes('Shield Bash') ?? false);
+  log(
+    'E: keyboard Q skill',
+    qOk,
+    `combat=${afterQ?.combat} action=${afterQ?.lastAction}`,
+  );
 
   // Menu ↔ Match 3 rounds
   for (let i = 0; i < 3; i++) {
