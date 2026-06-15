@@ -208,6 +208,10 @@ Log blocked hits at debug level only — no floating "-0" text.
 
 ## 9. Implementation brief — Agent A
 
+> **Work order gate:** PR #13, #18, and #20 asset packs are merged on base and
+> safe to reference in specs. Agent A must **not** wire assets or gameplay until
+> GPT/User issues a separate Phase 4B runtime work order.
+
 1. Add `ObjectiveSystem.applyDamageFromCombat(context)` called from `MatchScene`
    after existing dummy resolution.
 2. Remove or narrow `skipsObjectiveDamage` — only skills listed as ❌ above skip.

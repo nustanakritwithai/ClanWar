@@ -23,7 +23,7 @@
 | 4B-12 | **Feedback overlay leak** | M | Med | Destroy overlays with objectives | Agent A |
 | 4B-13 | **Debug labels + sprites = clutter** | M | Med | Remove four text labels; debug overlay only | Agent A |
 | 4B-14 | **Friendly fire on Blue Core** | L | Med | Team check on all damage paths | Agent A |
-| 4B-15 | **Using unmerged B2 guidance assets** | L | Med | Block load until branch merged | Agent A |
+| 4B-15 | **Wiring assets before runtime work order** | M | High | PR #13/#18/#20 merged but no wire until GPT/User work order | Agent A |
 | 4B-16 | **Player attacks core through gate visually** | M | Med | Protected rule + no damage numbers | Agent A |
 | 4B-17 | **Gate Breaker still shows "(no gate dmg)"** | H | Low | Remove skip flag when objectives live | Agent A |
 | 4B-18 | **Result scene doesn't explain win** | M | Med | Agent D copy in Result; MVP: "Victory" text OK | Agent D |

@@ -189,14 +189,24 @@ revise in 4B.1).
 - `objective_under_attack.svg`
 - `ui_attack_gate.svg`, `ui_gate_breached.svg`, `ui_core_vulnerable.svg`, `ui_defend_core.svg`
 
-### Future (do not block 4B)
+### Optional — merged, safe to reference (PR #20)
 
-**Agent B B2** `public/assets/player-guidance/**` — world arrow markers.
-Use PR #18 HUD icons until B2 merges.
+**PR #20** `public/assets/player-guidance/` — world guidance markers. Stock art
+is on base branch. Priority markers for 4B if wired:
 
-### Forbidden
+- `attack_gate_marker.svg` — while Red Gate is primary target
+- `defend_core_marker.svg` — while Blue Core threatened (future bot)
+- `go_to_gate_marker.svg` — direction toward enemy gate
+- `objective_priority_marker.svg` — top-priority objective hint
 
-- Do not load assets from unmerged branches.
+See `player-guidance-asset-manifest.md` for full catalogue. **4B MVP can
+ship with PR #18 HUD icons only** — guidance markers are optional polish.
+
+### Work order & forbidden
+
+- **Do not wire any assets** until GPT/User issues a separate Phase 4B
+  runtime work order — even though PR #13, #18, and #20 are merged.
+- Do not load assets from branches not on base.
 - Do not create new SVGs in runtime PR.
 
 ---

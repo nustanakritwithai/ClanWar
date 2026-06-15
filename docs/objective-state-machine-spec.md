@@ -177,6 +177,17 @@ MatchObjectiveState {
 3. On `MatchScene` shutdown: destroy sprites, overlays, timers, HUD icons.
 4. On new match: reset all four to initial table in `gate-core-loop-spec.md`.
 
+### Asset dependencies (merged on base — wire only after work order)
+
+| Pack | PR | Status |
+|---|---|---|
+| `public/assets/objectives/**` | #13 | Merged — safe to reference |
+| `public/assets/objective-feedback/**` | #18 | Merged — safe to reference |
+| `public/assets/player-guidance/**` | #20 | Merged — optional world markers |
+
+**Do not start runtime wiring** until GPT/User issues a separate Phase 4B
+runtime work order.
+
 ---
 
 ## 9. Asset mapping on transition

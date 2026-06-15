@@ -18,8 +18,18 @@ mobile regressions.
 |---|---|
 | P0 | Phase 4A map visual merged on base |
 | P1 | This spec set approved by Product |
-| P2 | Explicit work order to Agent A |
+| P2 | **Separate Phase 4B runtime work order** from GPT/User |
 | P3 | PR stays **Draft** until Agent C + Product sign off |
+
+### Asset packs on base (safe to reference — not a work order)
+
+| Pack | PR | Status |
+|---|---|---|
+| `public/assets/objectives/**` | #13 | Merged — safe to reference |
+| `public/assets/objective-feedback/**` | #18 | Merged — safe to reference |
+| `public/assets/player-guidance/**` | #20 | Merged — safe to reference (optional in 4B MVP) |
+
+Agent D UX docs (PR #19) are **not on base** — runtime must not block on them.
 
 ---
 
@@ -148,8 +158,8 @@ Notes:
 - Watchtower / camp / resource interaction
 - Capture ring / contested state
 - Minimap objective icons
-- Full tutorial / onboarding (Agent D)
-- Player guidance world markers (Agent B B2)
+- Full tutorial / onboarding (Agent D — PR #19 pending)
+- Player guidance world markers (PR #20 — optional; not required for 4B MVP)
 - Match timer / scoreboard
 - Balance tuning beyond MVP HP table
 
@@ -162,6 +172,6 @@ After this gate passes:
 | Next | Owner |
 |---|---|
 | Bot pressure on Blue Core | Agent A — separate PR |
-| Onboarding copy wiring | Agent D |
-| World guidance markers | Agent B B2 + Agent A |
+| Onboarding copy wiring | Agent D (PR #19 when merged) |
+| World guidance markers | Agent A + PR #20 assets (optional 4B.1) |
 | Forward camp / watchtower | Agent C spec first |

@@ -79,6 +79,8 @@ multiplayer, siege equipment, pathfinding, stealth/elevation, full tutorial.
 | `objective-asset-manifest.md` | Base sprites (PR #13) |
 | `objective-feedback-asset-manifest.md` | Feedback overlays (PR #18) |
 | `objective-feedback-integration-brief.md` | Agent B wiring notes |
+| `player-guidance-asset-manifest.md` | World guidance markers (PR #20) |
+| `player-guidance-integration-brief.md` | Agent B guidance wiring notes |
 | `map-layout-spec.md` | Terrain context (Phase 4A) |
 
 ---
@@ -125,29 +127,35 @@ Blue Core HP = 0 ──► DEFEAT (enemy damage hook; no bot required in 4B).
 
 | Pack | Status | Use in 4B |
 |---|---|---|
-| `public/assets/objectives/**` | Merged PR #13 | Base gate/core sprites |
-| `public/assets/objective-feedback/**` | Merged PR #18 | State overlays + HUD icons |
-| `public/assets/player-guidance/**` | **Future** (Agent B B2) | World guidance markers — **do not block 4B** |
+| `public/assets/objectives/**` | **Merged PR #13** — safe to reference | Base gate/core sprites |
+| `public/assets/objective-feedback/**` | **Merged PR #18** — safe to reference | State overlays + HUD icons |
+| `public/assets/player-guidance/**` | **Merged PR #20** — safe to reference | World guidance markers (optional in 4B MVP) |
 
-See §8 in `gate-core-loop-spec.md` for per-state asset mapping.
+All three packs are stock art on base branch — **Agent A must not wire any of
+them until a separate Phase 4B runtime work order** from GPT/User.
+
+See §8 in `gate-core-loop-spec.md` for per-state asset mapping. Guidance
+markers are **optional** for 4B MVP; PR #18 HUD icons are sufficient to ship
+the gate/core loop.
 
 ---
 
 ## 8. Agent D — UX dependencies
 
-Agent C defines **rules**; Agent D defines **how we tell the player** (PR #19).
+Agent C defines **rules**; Agent D defines **how we tell the player**.
 
-| Expected doc (Agent D) | Runtime uses |
-|---|---|
-| `player-onboarding-flow.md` | First-match sequencing |
-| `objective-explanation-flow.md` | Gate → Core teaching beats |
-| `mobile-hud-ux-spec.md` | HUD alert slot position |
-| `player-guidance-system.md` | When to show guidance |
-| `ux-copy-and-message-guide.md` | Toast/banner strings |
-| `tutorial-first-3-minutes.md` | Optional first-run flags |
+| Doc (Agent D) | Status | Runtime uses |
+|---|---|---|
+| `player-onboarding-flow.md` | **Pending** (PR #19 not on base) | First-match sequencing |
+| `objective-explanation-flow.md` | **Pending** (PR #19) | Gate → Core teaching beats |
+| `mobile-hud-ux-spec.md` | **Pending** (PR #19) | HUD alert slot position |
+| `player-guidance-system.md` | **Pending** (PR #19) | When to show guidance |
+| `ux-copy-and-message-guide.md` | **Pending** (PR #19) | Toast/banner strings |
+| `tutorial-first-3-minutes.md` | **Pending** (PR #19) | Optional first-run flags |
 
 Agent A implements **hooks/events** (`onObjectivePriorityChanged`, etc.).
-Agent D copy can land after runtime skeleton exists.
+Agent D copy can land after runtime skeleton exists — do not block 4B runtime
+on PR #19 merge.
 
 ---
 
@@ -162,4 +170,6 @@ Runtime PR may update `CURRENT_PHASE_LABEL` to
 
 Full checklist: [`objective-runtime-acceptance-gate.md`](./objective-runtime-acceptance-gate.md).
 
-**Gate to start coding:** Phase 4A merged + this spec approved + Product work order.
+**Gate to start coding:** Phase 4A merged + this spec approved + **separate
+Phase 4B runtime work order** from GPT/User. Merged asset packs (PR #13, #18,
+#20) do **not** authorize runtime work by themselves.
