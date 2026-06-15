@@ -116,6 +116,17 @@ export class VirtualJoystick {
     }
   }
 
+  /** Resize base/knob radii (e.g. compact mobile layout). */
+  public setSize(baseRadius: number, knobRadius: number): void {
+    this.baseRadius = baseRadius;
+    this.knobRadius = knobRadius;
+    this.base.setRadius(baseRadius);
+    this.knob.setRadius(knobRadius);
+    if (!this.isActive) {
+      this.knob.setPosition(this.origin.x, this.origin.y);
+    }
+  }
+
   public destroy(): void {
     const input = this.scene.input;
     input.off('pointerdown', this.onPointerDown);

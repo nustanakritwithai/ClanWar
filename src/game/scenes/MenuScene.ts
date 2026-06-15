@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { COLORS, SCENE_KEYS } from '../constants';
+import { requestGameFullscreen, tryLockLandscape } from '../utils/fullscreen';
 
 export class MenuScene extends Phaser.Scene {
   constructor() {
@@ -27,7 +28,9 @@ export class MenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.makeButton(cx, height * 0.55, 'START', () => {
+    this.makeButton(cx, height * 0.55, 'START', async () => {
+      await requestGameFullscreen();
+      await tryLockLandscape();
       this.scene.start(SCENE_KEYS.Match);
     });
 
@@ -36,7 +39,15 @@ export class MenuScene extends Phaser.Scene {
     });
 
     this.add
-      .text(cx, height - 40, 'Phase 2.5: controls + action feedback (visual only)', {
+      .text(cx, height * 0.55 + 130, 'Tap Start for fullscreen mobile play', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: '13px',
+        color: '#7c8a9a',
+      })
+      .setOrigin(0.5);
+
+    this.add
+      .text(cx, height - 40, 'Phase 2.6: mobile UX hotfix (visual controls only)', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '14px',
         color: '#5b6675',

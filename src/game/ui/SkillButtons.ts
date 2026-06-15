@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS } from '../constants';
+import { COLORS, COMPACT_LAYOUT_HEIGHT } from '../constants';
 import type { ActionKey } from '../types';
 
 interface ButtonDef {
@@ -14,8 +14,42 @@ interface ButtonHandle extends ButtonDef {
   cooldownOverlay?: Phaser.GameObjects.Arc;
 }
 
-// Phase 2.5 action buttons with press flash and mock cooldown overlay (no
-// real gameplay cooldown yet).
+const NORMAL_RADII: Record<ActionKey, number> = {
+  attack: 46,
+  skill1: 34,
+  skill2: 34,
+  skill3: 34,
+  ultimate: 50,
+  warAction: 44,
+  item1: 28,
+  item2: 28,
+};
+
+const COMPACT_RADII: Record<ActionKey, number> = {
+  attack: 41,
+  skill1: 31,
+  skill2: 31,
+  skill3: 31,
+  ultimate: 43,
+  warAction: 37,
+  item1: 25,
+  item2: 25,
+};
+
+function clampToScreen(
+  pos: { x: number; y: number },
+  radius: number,
+  width: number,
+  height: number,
+  margin: number,
+): { x: number; y: number } {
+  return {
+    x: Phaser.Math.Clamp(pos.x, margin + radius, width - margin - radius),
+    y: Phaser.Math.Clamp(pos.y, margin + radius, height - margin - radius),
+  };
+}
+
+// Phase 2.6: adaptive compact layout for short mobile viewports.
 export class SkillButtons {
   private scene: Phaser.Scene;
   private onPress: (action: ActionKey) => void;
@@ -91,7 +125,6 @@ export class SkillButtons {
     });
   }
 
-  /** Visual-only cooldown mock to prove future overlay support. */
   public showMockCooldown(action: ActionKey): void {
     const handle = this.buttons.find((b) => b.action === action);
     if (!handle) return;
@@ -124,21 +157,106 @@ export class SkillButtons {
     });
   }
 
-  /** Recompute screen positions for the right-side action cluster. */
+  private getRadius(action: ActionKey, compact: boolean): number {
+    return compact ? COMPACT_RADII[action] : NORMAL_RADII[action];
+  }
+
+  private computePositions(
+    width: number,
+    height: number,
+    compact: boolean,
+    radii: Record<ActionKey, number>,
+  ): Record<ActionKey, { x: number; y: number }> {
+    const margin = compact ? 16 : 24;
+
+    if (!compact) {
+      return {
+        attack: { x: width - 100 - margin, y: height - 90 - margin },
+        skill1: { x: width - 190 - margin, y: height - 150 - margin },
+        skill2: { x: width - 100 - margin, y: height - 190 - margin },
+        skill3: { x: width - 10 - margin, y: height - 150 - margin },
+        ultimate: { x: width - 190 - margin, y: height - 60 - margin },
+        warAction: { x: width - 70 - margin, y: height * 0.5 },
+        item1: { x: width / 2 - 50, y: height - 50 - margin },
+        item2: { x: width / 2 + 50, y: height - 50 - margin },
+      };
+    }
+
+    const safeRight = 52;
+    const safeBottom = 32;
+    const attackX = width - safeRight - 112;
+    const attackY = height - safeBottom - 70;
+
+    let positions: Record<ActionKey, { x: number; y: number }> = {
+      attack: { x: attackX, y: attackY },
+      skill1: { x: attackX - 72, y: attackY - 52 },
+      skill2: { x: attackX, y: attackY - 106 },
+      skill3: { x: attackX + 72, y: attackY - 52 },
+      ultimate: { x: attackX - 82, y: attackY + 18 },
+      warAction: { x: width - safeRight - 48, y: attackY - 150 },
+      item1: { x: width / 2 - 50, y: height - safeBottom - 28 },
+      item2: { x: width / 2 + 50, y: height - safeBottom - 28 },
+    };
+
+    // If skill3 clips the right edge, shift the whole combat cluster left.
+    const skill3Right = positions.skill3.x + radii.skill3;
+    const maxRight = width - margin;
+    if (skill3Right > maxRight) {
+      const shift = skill3Right - maxRight;
+      const clusterKeys: ActionKey[] = ['attack', 'skill1', 'skill2', 'skill3', 'ultimate', 'warAction'];
+      for (const key of clusterKeys) {
+        positions[key] = { x: positions[key].x - shift, y: positions[key].y };
+      }
+    }
+
+    return positions;
+  }
+
+  private warnIfButtonsOverlap(radii: Record<ActionKey, number>): void {
+    for (let i = 0; i < this.buttons.length; i++) {
+      for (let j = i + 1; j < this.buttons.length; j++) {
+        const a = this.buttons[i];
+        const b = this.buttons[j];
+        const dist = Phaser.Math.Distance.Between(a.bg.x, a.bg.y, b.bg.x, b.bg.y);
+        const minDist = radii[a.action] + radii[b.action] + 4;
+        if (dist < minDist) {
+          console.warn(
+            `SkillButtons overlap: ${a.action} & ${b.action} (${dist.toFixed(0)}px < ${minDist}px)`,
+          );
+        }
+      }
+    }
+  }
+
   public reposition(): void {
     const { width, height } = this.scene.scale;
-    const margin = 24;
+    const compact = height < COMPACT_LAYOUT_HEIGHT;
+    const margin = compact ? 16 : 24;
 
-    const positions: Record<ActionKey, { x: number; y: number }> = {
-      attack: { x: width - 100 - margin, y: height - 90 - margin },
-      skill1: { x: width - 190 - margin, y: height - 150 - margin },
-      skill2: { x: width - 100 - margin, y: height - 190 - margin },
-      skill3: { x: width - 10 - margin, y: height - 150 - margin },
-      ultimate: { x: width - 190 - margin, y: height - 60 - margin },
-      warAction: { x: width - 70 - margin, y: height * 0.5 },
-      item1: { x: width / 2 - 50, y: height - 50 - margin },
-      item2: { x: width / 2 + 50, y: height - 50 - margin },
-    };
+    const radii = {} as Record<ActionKey, number>;
+    for (const key of Object.keys(NORMAL_RADII) as ActionKey[]) {
+      radii[key] = this.getRadius(key, compact);
+    }
+
+    let positions = this.computePositions(width, height, compact, radii);
+
+    for (const handle of this.buttons) {
+      const r = radii[handle.action];
+      handle.radius = r;
+      handle.bg.setRadius(r);
+      handle.bg.setInteractive({ useHandCursor: true });
+
+      const fontSize = r >= 42 ? '15px' : r >= 36 ? '13px' : '12px';
+      handle.text.setFontSize(fontSize);
+
+      positions[handle.action] = clampToScreen(
+        positions[handle.action],
+        r,
+        width,
+        height,
+        margin,
+      );
+    }
 
     for (const handle of this.buttons) {
       const pos = positions[handle.action];
@@ -146,8 +264,11 @@ export class SkillButtons {
       handle.text.setPosition(pos.x, pos.y);
       if (handle.cooldownOverlay) {
         handle.cooldownOverlay.setPosition(pos.x, pos.y);
+        handle.cooldownOverlay.setRadius(handle.radius);
       }
     }
+
+    this.warnIfButtonsOverlap(radii);
   }
 
   public destroy(): void {

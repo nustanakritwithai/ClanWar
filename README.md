@@ -2,11 +2,10 @@
 
 Browser-based 2D top-down siege arena (MVP). Built with **Vite + TypeScript + Phaser 3**.
 
-> Status: **Phase 2.5** — controls (Phase 2) plus visual action feedback pipeline
-> and locked data specs for heroes/skills/economy/items. No real combat, shop,
-> bots, or economy runtime yet.
+> Status: **Phase 2.6** — mobile UX hotfix (fullscreen entry, compact control layout).
+> Phase 2.5 action feedback + data specs remain. No combat, shop, bots, or economy runtime.
 
-See [docs/phase-2.5.md](docs/phase-2.5.md) for Phase 2.5 details and testing.
+See [docs/phase-2.5.md](docs/phase-2.5.md) and [docs/phase-2.6.md](docs/phase-2.6.md).
 
 ## Run
 
@@ -17,15 +16,15 @@ npm run build    # type-check + production build
 npm run preview  # serve the production build
 ```
 
-## What works now (Phase 0–2.5)
+## What works now (Phase 0–2.6)
 
-- Menu → **Start** → Match; **Select Class** opens a placeholder list.
+- Menu → **Start** (requests fullscreen on mobile) → Match; **Select Class** placeholder.
 - Small Twin Fortress map, WASD/arrows + **virtual joystick** movement.
-- **Attack / skills / ultimate / war action / items** — visual feedback only
-  (flash, direction arc, button mock cooldown). See `docs/phase-2.5.md`.
-- Smooth camera follow, collision, mobile touch UI (joystick + skill buttons).
+- **Attack / skills / ultimate / war action / items** — visual feedback only.
+- **Compact mobile layout** on short viewports (`height < 480`) — see `docs/phase-2.6.md`.
+- PWA manifest + fullscreen fallback button in Match.
 - Debug overlay (toggle with **`** or **F1** in Match).
-- Data specs in `src/game/data/` for Phase 3+ (heroes, skills, economy, items, rules).
+- Data specs in `src/game/data/` for Phase 3+.
 
 ## Deploy on Render
 
