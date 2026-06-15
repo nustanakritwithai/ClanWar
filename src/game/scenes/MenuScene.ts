@@ -36,7 +36,7 @@ export class MenuScene extends Phaser.Scene {
     });
 
     this.add
-      .text(cx, height - 40, 'Phase 0-1: map + movement only', {
+      .text(cx, height - 40, 'Phase 2.5: controls + action feedback (visual only)', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '14px',
         color: '#5b6675',
