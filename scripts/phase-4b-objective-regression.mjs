@@ -43,6 +43,25 @@ async function waitForScene(page, key, timeout = 4000) {
   return false;
 }
 
+async function getResultReasonText(page) {
+  await page.waitForFunction(() => {
+    const sc = window.__CLANWAR_GAME__.scene.getScene('ResultScene');
+    if (!sc) return false;
+    return sc.children.list.some(
+      (o) => typeof o.text === 'string' && /core.*destroyed/i.test(o.text) && !/^(VICTORY|DEFEAT)$/i.test(o.text),
+    );
+  }, { timeout: 3000 }).catch(() => null);
+  return page.evaluate(() => {
+    const sc = window.__CLANWAR_GAME__.scene.getScene('ResultScene');
+    if (!sc) return '';
+    return (
+      sc.children.list
+        .map((o) => (typeof o.text === 'string' ? o.text : ''))
+        .find((t) => /core.*destroyed/i.test(t) && !/^(VICTORY|DEFEAT)$/i.test(t)) ?? ''
+    );
+  });
+}
+
 async function main() {
   const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
   const page = await browser.newPage();
@@ -53,6 +72,8 @@ async function main() {
 
   await startMatch(page);
   let s = await snap(page);
+  log('HUD label starts Attack the Gate', s.priority === 'attack_gate' && (await page.evaluate(() => window.__CLANWAR_GAME__.scene.getScene('MatchScene').objectiveSystem.getHudLabel())) === 'Attack the Gate', await page.evaluate(() => window.__CLANWAR_GAME__.scene.getScene('MatchScene').objectiveSystem.getHudLabel()));
+
   log('Four objectives spawn', s.count === 4, `count=${s.count}`);
 
   const ids = s.snapshots.map((o) => o.id).sort();
@@ -99,6 +120,8 @@ async function main() {
     redGateDown.combatState === 'destroyed' && redCoreVuln.combatState === 'vulnerable',
     `gate=${redGateDown.combatState} core=${redCoreVuln.combatState} priority=${s.priority}`,
   );
+  const hudAfterGate = await page.evaluate(() => window.__CLANWAR_GAME__.scene.getScene('MatchScene').objectiveSystem.getHudLabel());
+  log('HUD label becomes Destroy the Core', s.priority === 'attack_core' && hudAfterGate === 'Destroy the Core', hudAfterGate);
 
   await page.evaluate(() => {
     window.__CLANWAR_GAME__.scene.getScene('MatchScene').objectiveSystem.debugDealDamage('redCore', 250, 'blue');
@@ -120,11 +143,13 @@ async function main() {
     const result = scenes.find((sc) => sc.scene.key === 'ResultScene');
     return result?.sys?.settings?.data ?? {};
   });
+  const victoryReason = await getResultReasonText(page);
   log(
     'Red Core destroyed triggers Victory',
     victoryScene && victoryData.outcome === 'victory',
     `scene=${victoryScene} outcome=${victoryData.outcome}`,
   );
+  log('ResultScene victory reason copy', victoryReason === 'Enemy core destroyed', victoryReason);
 
   await startMatch(page);
   await page.evaluate(() => {
@@ -136,11 +161,13 @@ async function main() {
     const result = scenes.find((sc) => sc.scene.key === 'ResultScene');
     return result?.sys?.settings?.data ?? {};
   });
+  const defeatReason = await getResultReasonText(page);
   log(
     'Blue Core destroyed triggers Defeat (debug hook)',
     defeatScene && defeatData.outcome === 'defeat',
     `scene=${defeatScene} outcome=${defeatData.outcome}`,
   );
+  log('ResultScene defeat reason copy', defeatReason === 'Your core was destroyed', defeatReason);
 
   const counts = [];
   for (let i = 0; i < 3; i++) {

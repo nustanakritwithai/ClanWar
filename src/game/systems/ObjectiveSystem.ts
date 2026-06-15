@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { SHOW_DEBUG_OVERLAY } from '../constants';
+import { COMPACT_LAYOUT_HEIGHT, SHOW_DEBUG_OVERLAY } from '../constants';
 import {
   OBJECTIVE_DEFINITIONS,
   type ObjectiveDefinition,
@@ -18,6 +18,14 @@ import { showHitSpark } from '../ui/CombatVfx';
 
 const UNDER_ATTACK_TIMEOUT_MS = 2000;
 const MATCH_END_DELAY_MS = 500;
+const PROTECTED_FEEDBACK_COOLDOWN_MS = 2000;
+
+const PRIORITY_LABELS: Record<PlayerObjectivePriority, string> = {
+  attack_gate: 'Attack the Gate',
+  attack_core: 'Destroy the Core',
+  defend_core: 'Defend your Core',
+  victory: 'Victory',
+};
 
 export const OBJECTIVE_TEXTURES = {
   blueGate: 'obj_blue_gate',
@@ -120,9 +128,11 @@ export class ObjectiveSystem {
   private matchPhase: MatchObjectivePhase = 'in_progress';
   private priority: PlayerObjectivePriority = 'attack_gate';
   private hudIcon?: Phaser.GameObjects.Image;
+  private hudLabel?: Phaser.GameObjects.Text;
   private hudVictoryText?: Phaser.GameObjects.Text;
   private matchEndTimer?: Phaser.Time.TimerEvent;
   private lastBlockedLog = '';
+  private protectedFeedbackCooldownMs = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -155,6 +165,10 @@ export class ObjectiveSystem {
   }
 
   public update(deltaMs: number): void {
+    if (this.protectedFeedbackCooldownMs > 0) {
+      this.protectedFeedbackCooldownMs = Math.max(0, this.protectedFeedbackCooldownMs - deltaMs);
+    }
+
     if (this.matchPhase !== 'in_progress') return;
 
     for (const obj of this.objectives.values()) {
@@ -175,6 +189,8 @@ export class ObjectiveSystem {
     this.objectives.clear();
     this.hudIcon?.destroy();
     this.hudIcon = undefined;
+    this.hudLabel?.destroy();
+    this.hudLabel = undefined;
     this.hudVictoryText?.destroy();
     this.hudVictoryText = undefined;
   }
@@ -189,6 +205,10 @@ export class ObjectiveSystem {
 
   public getPriority(): PlayerObjectivePriority {
     return this.priority;
+  }
+
+  public getHudLabel(): string {
+    return PRIORITY_LABELS[this.priority];
   }
 
   public getSnapshots(): ObjectiveSnapshot[] {
@@ -404,6 +424,7 @@ export class ObjectiveSystem {
     if (!this.canReceiveDamage(obj)) {
       if (obj.def.type === 'core' && obj.combatState === 'protected') {
         this.lastBlockedLog = `blocked: ${obj.def.id} protected`;
+        this.showProtectedCoreFeedback(obj);
       }
       return null;
     }
@@ -482,6 +503,13 @@ export class ObjectiveSystem {
     });
   }
 
+  private showProtectedCoreFeedback(obj: RuntimeObjective): void {
+    if (this.protectedFeedbackCooldownMs > 0) return;
+    this.protectedFeedbackCooldownMs = PROTECTED_FEEDBACK_COOLDOWN_MS;
+    const text = showCombatText(this.scene, obj.def.x, obj.def.y - 40, 'Destroy Gate first', '#9ca3af');
+    this.registerWorldObject(text);
+  }
+
   private showDamageFeedback(obj: RuntimeObjective, finalDamage: number): void {
     const color = obj.def.type === 'gate' ? '#cfa14a' : '#f4d35e';
     showHitSpark(this.scene, obj.def.x, obj.def.y, this.registerWorldObject);
@@ -548,17 +576,35 @@ export class ObjectiveSystem {
   }
 
   private createHud(): void {
-    const { width } = this.scene.scale;
+    const { width, height } = this.scene.scale;
+    const compact = height < COMPACT_LAYOUT_HEIGHT;
+    const hudY = compact ? 36 : 44;
+    const labelY = compact ? 58 : 72;
+    const iconSize = compact ? 36 : 48;
+    const labelSize = compact ? '11px' : '13px';
+
     this.hudIcon = this.scene.add
-      .image(width / 2, 52, OBJECTIVE_TEXTURES.uiAttackGate)
-      .setDisplaySize(48, 48)
+      .image(width / 2, hudY, OBJECTIVE_TEXTURES.uiAttackGate)
+      .setDisplaySize(iconSize, iconSize)
+      .setScrollFactor(0)
+      .setDepth(1100);
+
+    this.hudLabel = this.scene.add
+      .text(width / 2, labelY, PRIORITY_LABELS.attack_gate, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: labelSize,
+        color: '#e6edf3',
+        backgroundColor: '#00000077',
+        padding: { x: compact ? 5 : 6, y: compact ? 2 : 3 },
+      })
+      .setOrigin(0.5, 0)
       .setScrollFactor(0)
       .setDepth(1100);
 
     this.hudVictoryText = this.scene.add
-      .text(width / 2, 52, 'Victory', {
+      .text(width / 2, hudY, PRIORITY_LABELS.victory, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '22px',
+        fontSize: compact ? '16px' : '22px',
         color: '#fbbf24',
         fontStyle: 'bold',
         backgroundColor: '#00000088',
@@ -570,27 +616,41 @@ export class ObjectiveSystem {
       .setVisible(false);
 
     this.registerWorldObject(this.hudIcon);
+    this.registerWorldObject(this.hudLabel);
     this.registerWorldObject(this.hudVictoryText);
     this.refreshHud();
   }
 
   public layoutHud(): void {
-    const { width } = this.scene.scale;
-    this.hudIcon?.setPosition(width / 2, 52);
-    this.hudVictoryText?.setPosition(width / 2, 52);
+    const { width, height } = this.scene.scale;
+    const compact = height < COMPACT_LAYOUT_HEIGHT;
+    const hudY = compact ? 36 : 44;
+    const labelY = compact ? 58 : 72;
+    const iconSize = compact ? 36 : 48;
+    const labelSize = compact ? '11px' : '13px';
+
+    this.hudIcon?.setPosition(width / 2, hudY).setDisplaySize(iconSize, iconSize);
+    this.hudLabel?.setPosition(width / 2, labelY).setFontSize(labelSize);
+    this.hudVictoryText?.setPosition(width / 2, hudY);
   }
 
   private refreshHud(): void {
-    if (!this.hudIcon || !this.hudVictoryText) return;
+    if (!this.hudIcon || !this.hudLabel || !this.hudVictoryText) return;
+
+    const label = PRIORITY_LABELS[this.priority];
 
     if (this.priority === 'victory' && this.matchPhase === 'victory') {
       this.hudIcon.setVisible(false);
+      this.hudLabel.setVisible(false);
       this.hudVictoryText.setVisible(true);
+      this.hudVictoryText.setText(label);
       return;
     }
 
     this.hudVictoryText.setVisible(false);
     this.hudIcon.setVisible(true);
+    this.hudLabel.setVisible(true);
+    this.hudLabel.setText(label);
 
     const texture =
       this.priority === 'attack_core'

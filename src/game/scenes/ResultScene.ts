@@ -6,6 +6,17 @@ export interface ResultSceneData {
   reason?: string;
 }
 
+const REASON_COPY: Record<string, string> = {
+  enemy_core_destroyed: 'Enemy core destroyed',
+  friendly_core_destroyed: 'Your core was destroyed',
+};
+
+function formatResultReason(outcome: 'victory' | 'defeat', reason?: string): string {
+  if (reason && REASON_COPY[reason]) return REASON_COPY[reason];
+  if (reason && !reason.includes('_')) return reason;
+  return outcome === 'victory' ? 'Enemy core destroyed' : 'Your core was destroyed';
+}
+
 export class ResultScene extends Phaser.Scene {
   constructor() {
     super(SCENE_KEYS.Result);
@@ -14,7 +25,7 @@ export class ResultScene extends Phaser.Scene {
   create(data: ResultSceneData = {}): void {
     const { width, height } = this.scale;
     const cx = width / 2;
-    const outcome = data.outcome ?? 'victory';
+    const outcome: 'victory' | 'defeat' = data.outcome === 'defeat' ? 'defeat' : 'victory';
     const isVictory = outcome === 'victory';
 
     this.add
@@ -26,9 +37,7 @@ export class ResultScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    const reason =
-      data.reason ??
-      (isVictory ? 'Enemy core destroyed' : 'Your core was destroyed');
+    const reason = formatResultReason(outcome, data.reason);
     this.add
       .text(cx, height * 0.35 + 52, reason, {
         fontFamily: 'system-ui, sans-serif',
