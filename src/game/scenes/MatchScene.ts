@@ -1,9 +1,16 @@
 import Phaser from 'phaser';
-import { COLORS, CURRENT_PHASE_LABEL, SCENE_KEYS, SHOW_DEBUG_OVERLAY } from '../constants';
+import {
+  COLORS,
+  COMPACT_LAYOUT_HEIGHT,
+  CURRENT_PHASE_LABEL,
+  SCENE_KEYS,
+  SHOW_DEBUG_OVERLAY,
+} from '../constants';
 import { smallTwinFortress } from '../data/map-small-twin-fortress';
 import type { ActionKey, InputState, MapMarker } from '../types';
 import { Player } from '../entities/Player';
 import { InputSystem } from '../systems/InputSystem';
+import { isFullscreenActive, requestGameFullscreen } from '../utils/fullscreen';
 
 const ACTION_KEYS: ActionKey[] = [
   'attack',
@@ -16,17 +23,24 @@ const ACTION_KEYS: ActionKey[] = [
   'item2',
 ];
 
+const HUD_HINT_NORMAL =
+  'WASD/Arrows or joystick • J/Q/E/R/F/Space/1/2 or buttons • ` or F1: debug';
+const HUD_HINT_COMPACT = 'Move: joystick/WASD • Actions: buttons';
+
 export class MatchScene extends Phaser.Scene {
   private player!: Player;
   private movement!: InputSystem;
   private walls!: Phaser.Physics.Arcade.StaticGroup;
   private moveVec = new Phaser.Math.Vector2();
 
+  private hintText!: Phaser.GameObjects.Text;
   private menuButton!: Phaser.GameObjects.Text;
+  private fullscreenButton?: Phaser.GameObjects.Text;
   private debugText?: Phaser.GameObjects.Text;
   private uiCamera!: Phaser.Cameras.Scene2D.Camera;
   private debugOverlayVisible = SHOW_DEBUG_OVERLAY;
   private debugToggleHandler?: () => void;
+  private fullscreenChangeHandler?: () => void;
 
   constructor() {
     super(SCENE_KEYS.Match);
@@ -54,6 +68,7 @@ export class MatchScene extends Phaser.Scene {
 
     this.drawHud();
     this.setupDebugToggle();
+    this.setupFullscreenButton();
 
     const uiObjects = this.children.list.filter((o) => !worldObjects.includes(o));
     this.uiCamera = this.cameras.add(0, 0, this.scale.width, this.scale.height);
@@ -119,9 +134,41 @@ export class MatchScene extends Phaser.Scene {
       }
     };
 
-    // Backquote (`) and F1 — D is reserved for movement.
     kb.on('keydown-BACK_QUOTE', this.debugToggleHandler);
     kb.on('keydown-F1', this.debugToggleHandler);
+  }
+
+  private setupFullscreenButton(): void {
+    this.fullscreenButton = this.add
+      .text(0, 0, 'Fullscreen', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: '13px',
+        color: COLORS.text,
+        backgroundColor: '#00000066',
+        padding: { x: 6, y: 4 },
+      })
+      .setScrollFactor(0)
+      .setDepth(1000)
+      .setInteractive({ useHandCursor: true });
+
+    this.fullscreenButton.on('pointerdown', async () => {
+      await requestGameFullscreen();
+      this.updateFullscreenButtonVisibility();
+    });
+
+    this.fullscreenChangeHandler = () => this.updateFullscreenButtonVisibility();
+    document.addEventListener('fullscreenchange', this.fullscreenChangeHandler);
+    document.addEventListener('webkitfullscreenchange', this.fullscreenChangeHandler);
+
+    this.updateFullscreenButtonVisibility();
+    this.layoutTopHud();
+  }
+
+  private updateFullscreenButtonVisibility(): void {
+    if (!this.fullscreenButton) return;
+    const active = isFullscreenActive();
+    this.fullscreenButton.setVisible(!active);
+    this.fullscreenButton.setActive(!active);
   }
 
   private handleShutdown(): void {
@@ -134,6 +181,12 @@ export class MatchScene extends Phaser.Scene {
       this.debugToggleHandler = undefined;
     }
 
+    if (this.fullscreenChangeHandler) {
+      document.removeEventListener('fullscreenchange', this.fullscreenChangeHandler);
+      document.removeEventListener('webkitfullscreenchange', this.fullscreenChangeHandler);
+      this.fullscreenChangeHandler = undefined;
+    }
+
     this.movement.destroy();
   }
 
@@ -142,11 +195,40 @@ export class MatchScene extends Phaser.Scene {
     return Phaser.Math.Clamp(z, 0.45, 1.1);
   }
 
+  private isCompactHud(): boolean {
+    return this.scale.height < COMPACT_LAYOUT_HEIGHT;
+  }
+
+  private layoutTopHud(): void {
+    const { width } = this.scale;
+    const compact = this.isCompactHud();
+    const topMargin = compact ? 8 : 16;
+    const rightMargin = compact ? 10 : 16;
+
+    this.hintText.setPosition(topMargin, topMargin);
+    this.hintText.setFontSize(compact ? '12px' : '16px');
+    this.hintText.setText(compact ? HUD_HINT_COMPACT : HUD_HINT_NORMAL);
+
+    this.menuButton.setPosition(width - rightMargin, topMargin);
+
+    if (this.debugText) {
+      this.debugText.setPosition(topMargin, compact ? 36 : 50);
+      this.debugText.setFontSize(compact ? '11px' : '13px');
+    }
+
+    if (this.fullscreenButton) {
+      // Sit left of Menu with a gap so they never overlap.
+      const menuLeft = this.menuButton.x - this.menuButton.width;
+      this.fullscreenButton.setPosition(menuLeft - 10, topMargin);
+      this.fullscreenButton.setOrigin(1, 0);
+    }
+  }
+
   private handleResize(): void {
     this.cameras.main.setZoom(this.computeZoom());
     this.uiCamera.setSize(this.scale.width, this.scale.height);
     this.movement.handleResize();
-    this.menuButton.setPosition(this.scale.width - 16, 16);
+    this.layoutTopHud();
   }
 
   private drawGround(w: number, h: number): void {
@@ -200,13 +282,15 @@ export class MatchScene extends Phaser.Scene {
   }
 
   private drawHud(): void {
-    this.add
-      .text(16, 16, 'WASD/Arrows or joystick • J/Q/E/R/F/Space/1/2 or buttons • ` or F1: debug', {
+    const compact = this.isCompactHud();
+
+    this.hintText = this.add
+      .text(16, 16, compact ? HUD_HINT_COMPACT : HUD_HINT_NORMAL, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '16px',
+        fontSize: compact ? '12px' : '16px',
         color: COLORS.text,
         backgroundColor: '#00000066',
-        padding: { x: 8, y: 6 },
+        padding: { x: compact ? 6 : 8, y: compact ? 4 : 6 },
       })
       .setScrollFactor(0)
       .setDepth(1000);
@@ -214,10 +298,10 @@ export class MatchScene extends Phaser.Scene {
     this.menuButton = this.add
       .text(this.scale.width - 16, 16, '⮌ Menu', {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '16px',
+        fontSize: compact ? '14px' : '16px',
         color: COLORS.text,
         backgroundColor: '#00000066',
-        padding: { x: 8, y: 6 },
+        padding: { x: compact ? 6 : 8, y: compact ? 4 : 6 },
       })
       .setOrigin(1, 0)
       .setScrollFactor(0)
@@ -229,12 +313,12 @@ export class MatchScene extends Phaser.Scene {
 
     if (SHOW_DEBUG_OVERLAY) {
       this.debugText = this.add
-        .text(16, 50, '', {
+        .text(16, compact ? 36 : 50, '', {
           fontFamily: 'monospace',
-          fontSize: '13px',
+          fontSize: compact ? '11px' : '13px',
           color: COLORS.text,
           backgroundColor: '#00000066',
-          padding: { x: 8, y: 6 },
+          padding: { x: compact ? 6 : 8, y: compact ? 4 : 6 },
         })
         .setOrigin(0, 0)
         .setScrollFactor(0)

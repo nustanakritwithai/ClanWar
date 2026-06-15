@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { ActionKey, InputState } from '../types';
+import { COMPACT_LAYOUT_HEIGHT } from '../constants';
 import { VirtualJoystick } from '../ui/VirtualJoystick';
 import { SkillButtons } from '../ui/SkillButtons';
 
@@ -42,7 +43,7 @@ export class InputSystem {
   public readonly state: InputState = createInputState();
 
   private scene: Phaser.Scene;
-  private joystick: VirtualJoystick;
+  private joystick!: VirtualJoystick;
   private buttons: SkillButtons;
   private pendingActions = new Set<ActionKey>();
 
@@ -90,7 +91,8 @@ export class InputSystem {
     };
 
     const { height } = scene.scale;
-    this.joystick = new VirtualJoystick(scene, { x: 110, y: height - 110 });
+    const joyLayout = this.getJoystickLayout(height);
+    this.joystick = new VirtualJoystick(scene, joyLayout);
     this.buttons = new SkillButtons(scene, (action) => this.queueAction(action, 'touch'));
 
     scene.input.on('pointerdown', this.onPointerDown);
@@ -214,8 +216,29 @@ export class InputSystem {
   /** Reposition joystick/buttons after a scale resize. */
   public handleResize(): void {
     const { height } = this.scene.scale;
-    this.joystick.reposition(110, height - 110);
+    this.applyJoystickLayout(height);
     this.buttons.reposition();
+  }
+
+  private getJoystickLayout(height: number): {
+    x: number;
+    y: number;
+    baseRadius: number;
+    knobRadius: number;
+  } {
+    const compact = height < COMPACT_LAYOUT_HEIGHT;
+    return {
+      x: compact ? 105 : 110,
+      y: compact ? height - 92 : height - 110,
+      baseRadius: compact ? 60 : 70,
+      knobRadius: compact ? 27 : 32,
+    };
+  }
+
+  private applyJoystickLayout(height: number): void {
+    const layout = this.getJoystickLayout(height);
+    this.joystick.setSize(layout.baseRadius, layout.knobRadius);
+    this.joystick.reposition(layout.x, layout.y);
   }
 
   /** Mock cooldown overlay on the matching touch button (keyboard or touch). */

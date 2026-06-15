@@ -1,0 +1,10 @@
+{
+  "name": "Clan Siege Arena",
+  "short_name": "Clan Siege",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0b0e13",
+  "theme_color": "#0b0e13",
+  "start_url": ".",
+  "scope": "."
+}
