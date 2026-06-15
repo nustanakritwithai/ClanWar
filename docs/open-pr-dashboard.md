@@ -1,41 +1,14 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-15 (refreshed after base sync)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `b03acc2`
+> **Last updated:** 2026-06-15 (refreshed after PR #21 merge)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `0509a8c`
 
 ## Summary
 
-Open PRs เหลือ **2 ตัว:** #21 (Agent C design spec) และ #22 (Agent E dashboard)
+Open PR เหลือ **เฉพาะ PR #22** (Agent E dashboard) — ไม่มี open PR อื่น
 
-PR #20 merged แล้ว @ `32d283d` — player-guidance assets บน base  
-PR #19 merged แล้ว @ `b03acc2` — UX/onboarding docs บน base  
-PR #21 base ยัง stale ที่ `32d283d` — ต้อง sync ก่อน Ready/Merge
-
----
-
-## PR #21 — Agent C (Design / Spec) — OPEN
-
-**Phase 4B-C: Gate/Core objective runtime design spec**  
-https://github.com/nustanakritwithai/ClanWar/pull/21
-
-Branch `cursor/phase-4b-c-gate-core-objective-runtime-spec` @ head `e6b5713`  
-Base บน GitHub: `32d283d` (**stale** — ก่อน PR #19 merge)  
-Latest base: `b03acc2`
-
-State: OPEN · Draft: true · Mergeable: MERGEABLE (CLEAN) บน base ปัจจุบันของ PR
-
-Scope guard: PASS — docs-only (6 ไฟล์ gate/core design spec)
-
-Agent E แนะนำ: **HOLD — NEED SYNC** — sync base ไป `b03acc2`, update dependency refs ต่อ UX docs จาก PR #19 ก่อน Ready/Merge
-
-ไฟล์:
-- `docs/phase-4b-objective-runtime-spec.md`
-- `docs/gate-core-loop-spec.md`
-- `docs/objective-state-machine-spec.md`
-- `docs/objective-damage-and-win-condition.md`
-- `docs/objective-runtime-acceptance-gate.md`
-- `docs/phase-4b-design-risk-register.md`
+Phase 4B prep PRs (#18, #19, #20, #21) merge ครบแล้ว — **ready for runtime work order**
 
 ---
 
@@ -47,35 +20,49 @@ https://github.com/nustanakritwithai/ClanWar/pull/22
 Branch `cursor/agent-e-phase-4a-closure-dashboard`  
 State: OPEN · Draft · docs-only
 
-กำลัง sync board ล่าสุดหลัง PR #20 และ PR #19 merge — push ใหม่จะอัปเดต base ไป `b03acc2`
+Syncing board ล่าสุดหลัง PR #21 merge — push ใหม่จะอัปเดต base ไป `0509a8c`
 
 ---
 
-## Recently merged (reference)
+## Recently merged (Phase 4B prep — complete)
+
+**PR #21 (Agent C)** — Gate/Core objective runtime design spec  
+MERGED @ `0509a8cca1b6ed3b1b9eefc5657050e9b3669d35` (2026-06-15T19:02:33Z)
 
 **PR #19 (Agent D)** — Objective onboarding UX spec  
-MERGED @ `b03acc206a6eaed2863da1e524a6d6ad796aaad3` (2026-06-15T18:58:22Z)
+MERGED @ `b03acc206a6eaed2863da1e524a6d6ad796aaad3`
 
 **PR #20 (Agent B)** — Player guidance marker asset pack  
-MERGED @ `32d283d17fd96c14388e4a716cf47a1b372b4479` (2026-06-15T18:48:17Z)
+MERGED @ `32d283d17fd96c14388e4a716cf47a1b372b4479`
 
+**PR #18 (Agent B)** — Objective feedback assets @ `9de58e5`  
 **PR #16 (Agent A)** — Map visual runtime @ `23ee8cb`  
-**PR #17 (Agent C)** — Phase 4A level design @ `266bc91`  
-**PR #18 (Agent B)** — Objective feedback assets @ `9de58e5`
+**PR #17 (Agent C)** — Phase 4A level design @ `266bc91`
 
 ---
 
-## Merge readiness
+## Phase 4B prep readiness
 
-**#21** — scope OK · review pending · base stale → **Hold until sync**  
-**#22** — docs-only dashboard → merge หลัง push sync
+**Assets:** PR #18 + PR #20 merged — objective-feedback + player-guidance บน base  
+**UX:** PR #19 merged — onboarding/HUD/copy docs บน base  
+**Design/spec:** PR #21 merged — gate/core loop, state machine, acceptance gate บน base
+
+**Verdict:** Phase 4B prep **ready for runtime work order**
 
 ---
 
-## Agent A 4B runtime — prerequisites
+## Agent A 4B runtime
 
-**พร้อมแล้ว:** #16 (4A runtime), #17 (4A design), #18 (feedback assets), #19 (UX spec), #20 (guidance assets)
+**Prerequisites on base:** ครบแล้ว (#16, #17, #18, #19, #20, #21)
 
-**ยังไม่พร้อม:** #21 (gate/core design spec — Draft, base stale), Product work order
+**Still required:** Product / GPT explicit work order
 
-Agent A เริ่ม 4B runtime ได้เมื่อ **#21 merged บน latest base + Product work order**
+Agent A ยังห้ามเริ่มจนกว่า GPT/User ออก work order — Agent E ไม่สั่งเอง
+
+---
+
+## Next safe action
+
+Product / GPT can issue Agent A Phase 4B runtime work order
+
+Merge PR #22 dashboard docs เมื่อ GPT/User พร้อมอนุมัติ

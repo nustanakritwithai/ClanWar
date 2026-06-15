@@ -5,48 +5,48 @@
 
 ---
 
-## 2026-06-15 — Dashboard refresh after PR #20 / #19 merge
+## 2026-06-15 — Dashboard refresh after PR #21 merge
 
 **Agent:** E  
 **Branch:** `cursor/agent-e-phase-4a-closure-dashboard`  
-**Task:** Sync base + refresh stale dashboard (docs-only)
+**Task:** Sync base + refresh dashboard after gate/core design spec merge
 
 ### Actions taken
 
-1. `git fetch origin` + merge `origin/claude/game-file-analysis-a20xup` into PR #22 branch — **no conflicts**
-2. Queried GitHub PR status for #19, #20, #21, #22
-3. Confirmed PR #20 MERGED @ `32d283d` — player-guidance assets on base
-4. Confirmed PR #19 MERGED @ `b03acc2` — UX docs on base (board was stale showing Draft)
-5. Confirmed PR #21 OPEN Draft, base stale at `32d283d`, needs sync to `b03acc2`
-6. Updated 5 audit docs to current board
+1. `git fetch origin` + merge `origin/claude/game-file-analysis-a20xup` — **no conflicts**
+2. Confirmed PR #21 MERGED @ `0509a8cca1b6ed3b1b9eefc5657050e9b3669d35`
+3. Confirmed PR #19 @ `b03acc2`, PR #20 @ `32d283d` — still MERGED
+4. Updated 5 audit docs: Phase 4B prep → **ready for runtime work order**
+5. Open PR board: only #22 remains
 
 ### Stale status corrected
 
-- PR #20: OPEN/Draft → **MERGED** @ `32d283d`
-- PR #19: Draft/mergeable → **MERGED** @ `b03acc2`
-- player-guidance assets: "not on base" → **on base** (12 SVG)
-- PR #21: noted **base stale**, needs sync before Ready/Merge
-- Next actions: updated — #19 already merged; focus on #21 sync + Agent A block
+- PR #21: OPEN/Draft/base stale → **MERGED** @ `0509a8c`
+- Final verdict: "prep in progress" → **"prep ready for runtime work order"**
+- Agent A blocker: จาก "รอ #21 merge" → **"รอ Product work order"**
 
 ### Actions NOT taken
 
 - Did not Ready or Merge any PR
 - Did not modify `src/game/**`, assets, scripts, README, package.json
-- Did not start Phase 4B runtime
+- Did not issue work order to Agent A
 
 ---
 
-## 2026-06-15 — Phase 4A closure + PR dashboard audit (initial)
+## 2026-06-15 — Dashboard refresh after PR #20 / #19 merge
 
-**Branch:** `cursor/agent-e-phase-4a-closure-dashboard`  
-**Deliverable:** Draft PR #22 (docs-only)
+Synced base to `b03acc2`, corrected PR #20 merged status.
 
-Initial audit created dashboard docs. Later refreshed after base moved to `b03acc2`.
+---
+
+## 2026-06-15 — Phase 4A closure + initial dashboard
+
+Created PR #22 docs-only audit deliverable.
 
 ---
 
 ## Next scheduled audit triggers
 
-- After PR #21 syncs to `b03acc2` and merges → re-run gate audit
-- After Agent A opens 4B runtime PR → scope guard + regression
+- After Product issues Agent A 4B runtime work order → gate Agent A PR when opened
+- After Agent A opens 4B runtime PR → scope guard + regression audit
 - After live deploy URL provided → verify phase label independently
