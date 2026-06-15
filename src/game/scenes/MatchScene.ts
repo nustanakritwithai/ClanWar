@@ -3,25 +3,28 @@ import {
   COLORS,
   COMPACT_LAYOUT_HEIGHT,
   CURRENT_PHASE_LABEL,
+  PLAYER_TEAM,
+  PROJECTILE_HIT_RADIUS,
   SCENE_KEYS,
   SHOW_DEBUG_OVERLAY,
 } from '../constants';
 import { getHero } from '../data/heroes';
 import { smallTwinFortress } from '../data/map-small-twin-fortress';
-import type { ActionKey, HeroClassId, MapMarker, MatchSceneData, SkillDefinition } from '../types';
+import { DEFAULT_MELEE_ARC_DEGREES, testAoeCircle, testMeleeArc } from '../combat/HitShapes';
+import { getSkillRuntimeType } from '../combat/SkillRuntimeType';
+import type { ActionKey, HeroClassId, MapMarker, MatchSceneData, SkillDefinition, SkillRuntimeType } from '../types';
 import { Player } from '../entities/Player';
 import { TrainingDummy } from '../entities/TrainingDummy';
 import { InputSystem } from '../systems/InputSystem';
+import { ProjectileSystem } from '../systems/ProjectileSystem';
 import { SkillRuntimeSystem } from '../systems/SkillRuntimeSystem';
 import { showCombatText } from '../ui/CombatText';
+import { showAoeMarker, showHealBurst, showHealSpark, showHitSpark, showImpactBurst } from '../ui/CombatVfx';
 import { isFullscreenActive, requestGameFullscreen } from '../utils/fullscreen';
 
 const HUD_HINT_NORMAL =
   'WASD/Arrows or joystick • J/Q/E/R/F/Space/1/2 or buttons • ` or F1: debug';
 const HUD_HINT_COMPACT = 'Move: joystick/WASD • Actions: buttons';
-
-/** Half-angle of the attack cone in radians (90° total arc). */
-const ATTACK_CONE_HALF = Math.PI / 4;
 
 export class MatchScene extends Phaser.Scene {
   private heroClass: HeroClassId = 'guardian';
@@ -42,6 +45,9 @@ export class MatchScene extends Phaser.Scene {
   private debugToggleHandler?: () => void;
   private fullscreenChangeHandler?: () => void;
   private lastCombatResult = '-';
+  private lastHitShapeResult = '-';
+  private lastSkillType: SkillRuntimeType | '-' = '-';
+  private projectileSystem!: ProjectileSystem;
 
   constructor() {
     super(SCENE_KEYS.Match);
@@ -76,6 +82,13 @@ export class MatchScene extends Phaser.Scene {
     const worldObjects = [...this.children.list];
 
     this.movement = new InputSystem(this);
+    this.projectileSystem = new ProjectileSystem(this, {
+      registerWorldObject: (obj) => this.registerWorldObject(obj),
+      onHit: (event) => this.handleProjectileHit(event),
+      onExpired: (skillName) => {
+        this.lastHitShapeResult = `${skillName} expired`;
+      },
+    });
 
     this.drawHud();
     this.setupDebugToggle();
@@ -101,6 +114,7 @@ export class MatchScene extends Phaser.Scene {
     this.player.move(dir);
     this.player.update();
     this.dummy.update();
+    this.projectileSystem.update(deltaSeconds, this.dummy);
 
     this.processActions();
     this.updateStatsHud();
@@ -121,24 +135,30 @@ export class MatchScene extends Phaser.Scene {
   }
 
   private handleAttack(): void {
+    this.lastSkillType = 'melee_arc';
     this.player.playActionFeedback('attack');
     this.movement.showButtonCooldown('attack');
 
     if (!this.dummy.canReceiveDamage()) {
+      this.lastHitShapeResult = 'attack: dummy dead';
       this.setCombatResult('Attack missed');
       return;
     }
 
-    if (this.isInAttackRange(this.dummy.x, this.dummy.y, this.dummy.radius)) {
-      const result = this.dummy.takeDamage(this.player.attack);
-      const text = showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#ef4444');
-      this.registerWorldObject(text);
-      this.setCombatResult(`Attack hit ${result.finalDamage}`);
-      if (result.killed) {
-        this.time.delayedCall(2100, () => {
-          if (!this.dummy.isDead()) this.setCombatResult('Dummy reset');
-        });
-      }
+    const arc = testMeleeArc(
+      this.player.x,
+      this.player.y,
+      this.player.getFacingAngle(),
+      this.dummy.x,
+      this.dummy.y,
+      this.dummy.radius,
+      this.player.attackRange,
+      DEFAULT_MELEE_ARC_DEGREES,
+    );
+    this.lastHitShapeResult = `attack: ${arc.reason}`;
+
+    if (arc.hit) {
+      this.applyDamageToDummy(this.player.attack, 'Attack');
     } else {
       this.setCombatResult('Attack missed');
     }
@@ -173,42 +193,233 @@ export class MatchScene extends Phaser.Scene {
   }
 
   private applySkillCombatEffect(skill: SkillDefinition): void {
-    const name = skill.name;
+    const runtimeType = getSkillRuntimeType(skill);
+    this.lastSkillType = runtimeType;
 
-    if (skill.damage !== undefined) {
-      const range = skill.range ?? 160;
-      if (
-        this.dummy.canReceiveDamage() &&
-        this.isInSkillRange(this.dummy.x, this.dummy.y, this.dummy.radius, range)
-      ) {
-        const result = this.dummy.takeDamage(skill.damage);
-        const text = showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#f87171');
-        this.registerWorldObject(text);
-        this.setCombatResult(`${name} hit ${result.finalDamage}`);
-        if (result.killed) {
-          this.time.delayedCall(2100, () => {
-            if (!this.dummy.isDead()) this.setCombatResult('Dummy reset');
-          });
-        }
-      } else {
-        this.setCombatResult(`${name} missed`);
-      }
+    switch (runtimeType) {
+      case 'melee_arc':
+        this.applyMeleeArcSkill(skill);
+        return;
+      case 'projectile':
+        this.applyProjectileSkill(skill);
+        return;
+      case 'aoe_circle':
+        this.applyAoeCircleSkill(skill);
+        return;
+      case 'heal':
+        this.applyHealSkill(skill);
+        return;
+      default:
+        this.applyLegacySkill(skill);
+    }
+  }
+
+  private applyMeleeArcSkill(skill: SkillDefinition): void {
+    const name = skill.name;
+    const range = skill.range ?? this.player.attackRange;
+    const arcDegrees = skill.arc ?? DEFAULT_MELEE_ARC_DEGREES;
+
+    if (!this.dummy.canReceiveDamage() || skill.damage === undefined) {
+      this.lastHitShapeResult = `${name}: no target`;
+      this.setCombatResult(`${name} missed`);
       return;
     }
 
-    if (skill.heal !== undefined) {
-      const healed = this.player.heal(skill.heal);
+    const arc = testMeleeArc(
+      this.player.x,
+      this.player.y,
+      this.player.getFacingAngle(),
+      this.dummy.x,
+      this.dummy.y,
+      this.dummy.radius,
+      range,
+      arcDegrees,
+    );
+    this.lastHitShapeResult = `${name}: ${arc.reason}`;
+
+    if (arc.hit) {
+      showHitSpark(this, this.dummy.x, this.dummy.y, (o) => this.registerWorldObject(o));
+      this.applyDamageToDummy(skill.damage, name);
+    } else {
+      this.setCombatResult(`${name} missed`);
+    }
+  }
+
+  private applyProjectileSkill(skill: SkillDefinition): void {
+    if (skill.damage === undefined || skill.projectileSpeed === undefined || skill.range === undefined) {
+      this.setCombatResult(`${skill.name} failed`);
+      return;
+    }
+
+    const visual = skill.id === 'mage_fireball' ? 'fireball' : 'arrow';
+    this.projectileSystem.spawn({
+      x: this.player.x,
+      y: this.player.y,
+      angle: this.player.getFacingAngle(),
+      speed: skill.projectileSpeed,
+      maxRange: skill.range,
+      hitRadius: PROJECTILE_HIT_RADIUS,
+      damage: skill.damage,
+      skillId: skill.id,
+      skillName: skill.name,
+      ownerTeam: PLAYER_TEAM,
+      impactAoeRadius: skill.radius,
+      visual,
+    });
+    this.lastHitShapeResult = `${skill.name}: projectile spawned`;
+    this.setCombatResult(`${skill.name} fired`);
+  }
+
+  private applyAoeCircleSkill(skill: SkillDefinition): void {
+    const name = skill.name;
+    const radius = skill.radius ?? 100;
+    const selfCentered = skill.id === 'priest_holy_circle' || skill.id === 'guardian_war_taunt';
+    const center = selfCentered
+      ? { x: this.player.x, y: this.player.y }
+      : this.getPointInFacingDirection(skill.range ?? radius);
+
+    const tint =
+      skill.healPerSecond !== undefined || skill.id === 'priest_holy_circle' ? 0x4ade80 : 0x60a5fa;
+    showAoeMarker(this, center.x, center.y, radius, (o) => this.registerWorldObject(o), tint);
+
+    if (skill.healPerSecond !== undefined || (skill.id === 'priest_holy_circle' && skill.heal === undefined)) {
+      const healAmount = skill.healPerSecond ?? 45;
+      this.lastHitShapeResult = `${name}: aoe_circle heal`;
+      const healed = this.player.heal(healAmount);
       if (healed > 0) {
+        showHealBurst(this, this.player.x, this.player.y, (o) => this.registerWorldObject(o));
         const text = showCombatText(this, this.player.x, this.player.y - 28, `+${healed}`, '#4ade80');
         this.registerWorldObject(text);
-        this.setCombatResult(`Heal +${healed}`);
+        this.setCombatResult(`${name} +${healed}`);
       } else {
         this.setCombatResult(`${name} (HP full)`);
       }
       return;
     }
 
+    const rawDamage = skill.damage ?? skill.damagePerSecond ?? 0;
+    if (rawDamage <= 0) {
+      this.lastHitShapeResult = `${name}: aoe_circle no damage`;
+      this.setCombatResult(`used ${name}`);
+      return;
+    }
+
+    const circle = testAoeCircle(
+      center.x,
+      center.y,
+      radius,
+      this.dummy.x,
+      this.dummy.y,
+      this.dummy.radius,
+    );
+    this.lastHitShapeResult = `${name}: ${circle.reason}`;
+
+    if (circle.hit && this.dummy.canReceiveDamage()) {
+      showImpactBurst(this, center.x, center.y, (o) => this.registerWorldObject(o));
+      this.applyDamageToDummy(rawDamage, name);
+    } else {
+      this.setCombatResult(`${name} missed`);
+    }
+  }
+
+  private applyHealSkill(skill: SkillDefinition): void {
+    const name = skill.name;
+    if (skill.heal === undefined) {
+      this.setCombatResult(`used ${name}`);
+      return;
+    }
+
+    this.lastHitShapeResult = `${name}: heal`;
+    const healed = this.player.heal(skill.heal);
+    if (healed > 0) {
+      showHealSpark(this, this.player.x, this.player.y, (o) => this.registerWorldObject(o));
+      const text = showCombatText(this, this.player.x, this.player.y - 28, `+${healed}`, '#4ade80');
+      this.registerWorldObject(text);
+      this.setCombatResult(`Heal +${healed}`);
+    } else {
+      this.setCombatResult(`${name} (HP full)`);
+    }
+  }
+
+  private applyLegacySkill(skill: SkillDefinition): void {
+    const name = skill.name;
+
+    if (skill.damage !== undefined) {
+      const range = skill.range ?? 160;
+      if (
+        this.dummy.canReceiveDamage() &&
+        this.isWithinDistance(this.dummy.x, this.dummy.y, this.dummy.radius, range)
+      ) {
+        this.lastHitShapeResult = `${name}: legacy range hit`;
+        this.applyDamageToDummy(skill.damage, name);
+      } else {
+        this.lastHitShapeResult = `${name}: legacy range miss`;
+        this.setCombatResult(`${name} missed`);
+      }
+      return;
+    }
+
+    if (skill.heal !== undefined) {
+      this.applyHealSkill(skill);
+      return;
+    }
+
+    this.lastHitShapeResult = `${name}: no combat effect`;
     this.setCombatResult(`used ${name}`);
+  }
+
+  private handleProjectileHit(event: {
+    x: number;
+    y: number;
+    damage: number;
+    skillName: string;
+    impactAoeRadius?: number;
+  }): void {
+    showHitSpark(this, event.x, event.y, (o) => this.registerWorldObject(o));
+
+    if (event.impactAoeRadius !== undefined && event.impactAoeRadius > 0) {
+      showImpactBurst(this, event.x, event.y, (o) => this.registerWorldObject(o));
+      const circle = testAoeCircle(
+        event.x,
+        event.y,
+        event.impactAoeRadius,
+        this.dummy.x,
+        this.dummy.y,
+        this.dummy.radius,
+      );
+      this.lastHitShapeResult = `${event.skillName}: projectile+aoe ${circle.reason}`;
+      if (circle.hit && this.dummy.canReceiveDamage()) {
+        this.applyDamageToDummy(event.damage, event.skillName);
+      } else {
+        this.setCombatResult(`${event.skillName} missed`);
+      }
+      return;
+    }
+
+    this.lastHitShapeResult = `${event.skillName}: projectile hit`;
+    if (this.dummy.canReceiveDamage()) {
+      this.applyDamageToDummy(event.damage, event.skillName);
+    }
+  }
+
+  private applyDamageToDummy(rawDamage: number, label: string): void {
+    const result = this.dummy.takeDamage(rawDamage);
+    const text = showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#f87171');
+    this.registerWorldObject(text);
+    this.setCombatResult(`${label} hit ${result.finalDamage}`);
+    if (result.killed) {
+      this.time.delayedCall(2100, () => {
+        if (!this.dummy.isDead()) this.setCombatResult('Dummy reset');
+      });
+    }
+  }
+
+  private getPointInFacingDirection(distance: number): { x: number; y: number } {
+    const angle = this.player.getFacingAngle();
+    return {
+      x: this.player.x + Math.cos(angle) * distance,
+      y: this.player.y + Math.sin(angle) * distance,
+    };
   }
 
   private setCombatResult(message: string): void {
@@ -223,22 +434,6 @@ export class MatchScene extends Phaser.Scene {
     }
   }
 
-  private isInAttackRange(targetX: number, targetY: number, targetRadius: number): boolean {
-    return (
-      this.isWithinDistance(targetX, targetY, targetRadius, this.player.attackRange) &&
-      this.isInFacingCone(targetX, targetY)
-    );
-  }
-
-  private isInSkillRange(
-    targetX: number,
-    targetY: number,
-    targetRadius: number,
-    range: number,
-  ): boolean {
-    return this.isWithinDistance(targetX, targetY, targetRadius, range);
-  }
-
   private isWithinDistance(
     targetX: number,
     targetY: number,
@@ -248,14 +443,6 @@ export class MatchScene extends Phaser.Scene {
     const dx = targetX - this.player.x;
     const dy = targetY - this.player.y;
     return Math.hypot(dx, dy) <= range + targetRadius;
-  }
-
-  private isInFacingCone(targetX: number, targetY: number): boolean {
-    const dx = targetX - this.player.x;
-    const dy = targetY - this.player.y;
-    const angleToTarget = Math.atan2(dy, dx);
-    const diff = Phaser.Math.Angle.Wrap(angleToTarget - this.player.getFacingAngle());
-    return Math.abs(diff) <= ATTACK_CONE_HALF;
   }
 
   private setupDebugToggle(): void {
@@ -322,6 +509,7 @@ export class MatchScene extends Phaser.Scene {
       this.fullscreenChangeHandler = undefined;
     }
 
+    this.projectileSystem.destroy();
     this.movement.destroy();
   }
 
@@ -513,20 +701,25 @@ export class MatchScene extends Phaser.Scene {
     const dummyHp = `${Math.ceil(d.currentHp)}/${d.maxHp}`;
     const dist = Math.hypot(d.x - p.x, d.y - p.y).toFixed(0);
 
+    const projCount = this.projectileSystem.getActiveCount();
+    const projResult = this.projectileSystem.getLastResult();
+
     const lines = compact
       ? [
           CURRENT_PHASE_LABEL,
           `hero: ${p.heroName} hp: ${hp} mp: ${mana}`,
           `dummy: ${dummyHp} dist: ${dist}`,
           `combat: ${this.lastCombatResult}`,
-          `joy#: ${joyId} move: ${move}`,
-          `last: ${s.lastAction || '-'} act+move: ${actionWhileMove}`,
+          `type: ${this.lastSkillType} hit: ${this.lastHitShapeResult}`,
+          `proj: ${projCount} ${projResult}`,
         ]
       : [
           CURRENT_PHASE_LABEL,
           `hero: ${p.heroName} (${p.heroClass}) hp: ${hp} mana: ${mana}`,
           `dummy: ${dummyHp}  dist: ${dist}  atkRange: ${p.attackRange}`,
           `combat: ${this.lastCombatResult}`,
+          `skill type: ${this.lastSkillType}  hit shape: ${this.lastHitShapeResult}`,
+          `projectiles: ${projCount}  last: ${projResult}`,
           `input: ${s.inputMode}  move: ${move}`,
           `joy ptr: ${joyId}  action+move: ${actionWhileMove}`,
           `last: ${s.lastAction || '-'}`,

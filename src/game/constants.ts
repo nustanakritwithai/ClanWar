@@ -19,7 +19,7 @@ export const PLAYER_RADIUS = 22;
 
 // Phase 2.5 debug overlay. Default on during dev; toggle at runtime with ` or F1.
 export const SHOW_DEBUG_OVERLAY = true;
-export const CURRENT_PHASE_LABEL = 'Phase 3B-A.1: Mobile Multi-touch Control Hotfix';
+export const CURRENT_PHASE_LABEL = 'Phase 3B-B1: Projectile + Hit Shape Foundation';
 
 /** Viewport height below which compact mobile HUD/controls are used. */
 export const COMPACT_LAYOUT_HEIGHT = 480;
@@ -29,6 +29,12 @@ export const MOVEMENT_ZONE_WIDTH_RATIO = 0.45;
 
 /** Passive mana regeneration for Phase 3A skill testing (not final balance). */
 export const MANA_REGEN_PER_SECOND = 8;
+
+/** Body hit radius for skill projectiles (independent of on-hit AoE). */
+export const PROJECTILE_HIT_RADIUS = 14;
+
+/** Player team placeholder until multiplayer/bots exist. */
+export const PLAYER_TEAM = 'blue' as const;
 
 // Team colors used for placeholder rendering.
 export const COLORS = {
