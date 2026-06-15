@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="HUD gate breached alert">
+  <!-- Compact HUD icon (UI-space, not map terrain) -->
+  <rect x="32" y="32" width="192" height="192" rx="36" fill="#1a2230" stroke="#0b0e13" stroke-width="10"/>
+  <!-- Mini broken gate arch -->
+  <path d="M64 188 V108 a64 64 0 0 1 56 -36" fill="#3a4658" stroke="#0b0e13" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M192 188 V116 a64 64 0 0 0 -52 -32" fill="#3a4658" stroke="#0b0e13" stroke-width="9" stroke-linejoin="round"/>
+  <!-- Breach opening -->
+  <path d="M100 188 V132 a28 28 0 0 1 56 0 V188 Z" fill="#0b0e13"/>
+  <!-- Breach highlight -->
+  <path d="M100 132 a28 28 0 0 1 56 0" fill="none" stroke="#f59e0b" stroke-width="7" stroke-linecap="round"/>
+  <!-- Rubble -->
+  <path d="M96 188 L112 168 L144 172 L160 188 Z" fill="#4a5870" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round"/>
+</svg>

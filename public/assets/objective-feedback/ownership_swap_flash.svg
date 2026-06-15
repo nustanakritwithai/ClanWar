@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Ownership swap flash visual only">
+  <!-- Brief ownership-change flash (one-shot visual, not skill effect) -->
+  <circle cx="128" cy="128" r="104" fill="#f4d35e" opacity="0.12"/>
+  <!-- Diagonal swap sweep band -->
+  <path d="M-20 140 L276 80 L276 116 L-20 176 Z" fill="#fff7d6" opacity="0.55" stroke="#0b0e13" stroke-width="6"/>
+  <!-- Split color hint (old vs new ownership) -->
+  <path d="M128 24 L128 232" stroke="#0b0e13" stroke-width="5" opacity="0.3"/>
+  <path d="M24 128 L104 128" stroke="#3b82f6" stroke-width="10" stroke-linecap="round" opacity="0.6"/>
+  <path d="M152 128 L232 128" stroke="#ef4444" stroke-width="10" stroke-linecap="round" opacity="0.6"/>
+  <!-- Swap arrows (drawn chevrons) -->
+  <g fill="#f4d35e" stroke="#0b0e13" stroke-width="5" stroke-linejoin="round">
+    <path d="M108 128 L88 116 L88 140 Z"/>
+    <path d="M148 128 L168 116 L168 140 Z"/>
+  </g>
+</svg>
