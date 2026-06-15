@@ -11,9 +11,9 @@ export function getSkillPlaceholderNote(skillId: string): string | undefined {
   return SKILL_PLACEHOLDER_NOTES[skillId];
 }
 
-/** Skills whose objective/gate damage fields are inert until Phase 3C+. */
+/** Skills that must not apply damage to objectives (heal/taunt/visual-only). */
 export function skipsObjectiveDamage(skillId: string): boolean {
-  return skillId === 'warrior_gate_breaker' || skillId === 'mage_meteor_siege';
+  return skillId === 'guardian_war_taunt';
 }
 
 /** Skills that must not apply status/taunt/revive/leap movement in 3B-B2. */

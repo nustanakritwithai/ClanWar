@@ -23,6 +23,7 @@ import { TrainingDummy } from '../entities/TrainingDummy';
 import { InputSystem } from '../systems/InputSystem';
 import { ProjectileSystem } from '../systems/ProjectileSystem';
 import { MapRenderer, loadMapVisualAssets } from '../systems/MapRenderer';
+import { ObjectiveSystem, loadObjectiveAssets } from '../systems/ObjectiveSystem';
 import { SkillRuntimeSystem } from '../systems/SkillRuntimeSystem';
 import { showCombatText } from '../ui/CombatText';
 import { showAoeMarker, showHealBurst, showHealSpark, showHitSpark, showImpactBurst, showSlashArc, loadCombatVisualAssets } from '../ui/CombatVfx';
@@ -31,6 +32,8 @@ import { isFullscreenActive, requestGameFullscreen } from '../utils/fullscreen';
 const HUD_HINT_NORMAL =
   'WASD/Arrows or joystick • J/Q/E/R/F/Space/1/2 or buttons • ` or F1: debug';
 const HUD_HINT_COMPACT = 'Move: joystick/WASD • Actions: buttons';
+
+const GATE_CORE_MARKER_IDS = new Set(['blueGate', 'blueCore', 'redGate', 'redCore']);
 
 export class MatchScene extends Phaser.Scene {
   private heroClass: HeroClassId = 'guardian';
@@ -57,6 +60,7 @@ export class MatchScene extends Phaser.Scene {
   private lastSkippedSkillReason = '-';
   private projectileSystem!: ProjectileSystem;
   public mapRenderer!: MapRenderer;
+  public objectiveSystem!: ObjectiveSystem;
 
   constructor() {
     super(SCENE_KEYS.Match);
@@ -70,6 +74,7 @@ export class MatchScene extends Phaser.Scene {
   preload(): void {
     loadCombatVisualAssets(this.load);
     loadMapVisualAssets(this.load);
+    loadObjectiveAssets(this.load);
   }
 
   create(): void {
@@ -84,6 +89,11 @@ export class MatchScene extends Phaser.Scene {
     this.mapRenderer.build(map);
     this.buildWalls();
     this.drawMarkers(map.markers);
+
+    this.objectiveSystem = new ObjectiveSystem(this, (obj) => this.registerWorldObject(obj), (outcome) =>
+      this.handleMatchEnd(outcome),
+    );
+    this.objectiveSystem.build();
 
     this.player = new Player(this, map.playerSpawn.x, map.playerSpawn.y, hero);
     this.dummy = new TrainingDummy(this, map.playerSpawn.x, map.playerSpawn.y - 350);
@@ -101,6 +111,9 @@ export class MatchScene extends Phaser.Scene {
     this.projectileSystem = new ProjectileSystem(this, {
       registerWorldObject: (obj) => this.registerWorldObject(obj),
       onHit: (event) => this.handleProjectileHit(event),
+      onObjectiveHit: (event) => this.handleProjectileObjectiveHit(event),
+      checkObjectiveSegment: (ownerTeam, x1, y1, x2, y2, hitRadius, damage) =>
+        this.objectiveSystem.handleProjectileSegmentHit(ownerTeam, x1, y1, x2, y2, hitRadius, damage).hit,
       onExpired: (skillName) => {
         this.lastHitShapeResult = `${skillName} expired`;
       },
@@ -125,6 +138,7 @@ export class MatchScene extends Phaser.Scene {
     this.movement.update();
     this.player.regenerateMana(deltaSeconds);
     this.skillRuntime.update(deltaSeconds);
+    this.objectiveSystem.update(delta);
 
     const dir = this.movement.getMoveVector(this.moveVec);
     this.player.move(dir);
@@ -138,6 +152,8 @@ export class MatchScene extends Phaser.Scene {
   }
 
   private processActions(): void {
+    if (this.objectiveSystem.getMatchPhase() !== 'in_progress') return;
+
     const s = this.movement.state;
 
     if (s.attackPressed) this.handleAttack();
@@ -155,12 +171,6 @@ export class MatchScene extends Phaser.Scene {
     this.player.playActionFeedback('attack');
     this.movement.showButtonCooldown('attack');
 
-    if (!this.dummy.canReceiveDamage()) {
-      this.lastHitShapeResult = 'attack: dummy dead';
-      this.setCombatResult('Attack missed');
-      return;
-    }
-
     const arc = testMeleeArc(
       this.player.x,
       this.player.y,
@@ -173,11 +183,33 @@ export class MatchScene extends Phaser.Scene {
     );
     this.lastHitShapeResult = `attack: ${arc.reason}`;
 
-    if (arc.hit) {
-      this.applyDamageToDummy(this.player.attack, 'Attack');
-    } else {
-      this.setCombatResult('Attack missed');
+    let hitMessage = 'Attack missed';
+    if (arc.hit && this.dummy.canReceiveDamage()) {
+      const result = this.dummy.takeDamage(this.player.attack);
+      const text = showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#f87171');
+      this.registerWorldObject(text);
+      hitMessage = `Attack hit ${result.finalDamage}`;
+      if (result.killed) {
+        this.time.delayedCall(2100, () => {
+          if (!this.dummy.isDead()) this.setCombatResult('Dummy reset');
+        });
+      }
     }
+
+    const objResult = this.objectiveSystem.applyMeleeArcDamage({
+      ownerTeam: PLAYER_TEAM,
+      casterX: this.player.x,
+      casterY: this.player.y,
+      facingAngle: this.player.getFacingAngle(),
+      range: this.player.attackRange,
+      rawDamage: this.player.attack,
+      playerGateDamageBonus: this.player.gateDamageBonus,
+    });
+    if (objResult) {
+      hitMessage = `${hitMessage} | objective -${objResult.finalDamage}`;
+    }
+
+    this.setCombatResult(hitMessage);
   }
 
   private handleSimpleAction(action: ActionKey, label: string): void {
@@ -239,8 +271,8 @@ export class MatchScene extends Phaser.Scene {
     const range = skill.range ?? skill.radius ?? this.player.attackRange;
     const arcDegrees = skill.arc ?? DEFAULT_MELEE_ARC_DEGREES;
 
-    if (!this.dummy.canReceiveDamage() || skill.damage === undefined) {
-      this.lastHitShapeResult = `${name}: no target`;
+    if (skill.damage === undefined) {
+      this.lastHitShapeResult = `${name}: no damage`;
       this.setCombatResult(`${name} missed`);
       return;
     }
@@ -257,17 +289,38 @@ export class MatchScene extends Phaser.Scene {
     );
     this.lastHitShapeResult = `${name}: ${arc.reason}`;
 
-    if (arc.hit) {
+    let hitMessage = `${name} missed`;
+    if (arc.hit && this.dummy.canReceiveDamage()) {
       const facing = this.player.getFacingAngle();
       if (skill.id === 'warrior_cleave' || skill.id === 'guardian_shield_bash' || skill.id === 'warrior_gate_breaker') {
         showSlashArc(this, this.player.x, this.player.y, facing, (o) => this.registerWorldObject(o));
       }
       showHitSpark(this, this.dummy.x, this.dummy.y, (o) => this.registerWorldObject(o));
-      const suffix = skipsObjectiveDamage(skill.id) ? ' (no gate dmg)' : '';
-      this.applyDamageToDummy(skill.damage, name, suffix);
-    } else {
-      this.setCombatResult(`${name} missed`);
+      const result = this.dummy.takeDamage(skill.damage);
+      const text = showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#f87171');
+      this.registerWorldObject(text);
+      hitMessage = `${name} hit ${result.finalDamage}`;
     }
+
+    if (!skipsObjectiveDamage(skill.id)) {
+      const objResult = this.objectiveSystem.applyMeleeArcDamage({
+        ownerTeam: PLAYER_TEAM,
+        casterX: this.player.x,
+        casterY: this.player.y,
+        facingAngle: this.player.getFacingAngle(),
+        range,
+        arcDegrees,
+        rawDamage: skill.damage,
+        skillId: skill.id,
+        skillGateDamageBonus: skill.gateDamageBonus,
+        playerGateDamageBonus: this.player.gateDamageBonus,
+      });
+      if (objResult) {
+        hitMessage = `${hitMessage} | objective -${objResult.finalDamage}`;
+      }
+    }
+
+    this.setCombatResult(hitMessage);
   }
 
   private applyProjectileSkill(skill: SkillDefinition): void {
@@ -345,13 +398,33 @@ export class MatchScene extends Phaser.Scene {
     );
     this.lastHitShapeResult = `${name}: ${circle.reason}`;
 
+    let hitMessage = `${name} missed`;
     if (circle.hit && this.dummy.canReceiveDamage()) {
       showImpactBurst(this, center.x, center.y, (o) => this.registerWorldObject(o));
-      const suffix = skipsObjectiveDamage(skill.id) ? ' (no gate dmg)' : '';
-      this.applyDamageToDummy(rawDamage, name, suffix);
-    } else {
-      this.setCombatResult(`${name} missed`);
+      const result = this.dummy.takeDamage(rawDamage);
+      const text = showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#f87171');
+      this.registerWorldObject(text);
+      hitMessage = `${name} hit ${result.finalDamage}`;
     }
+
+    if (!skipsObjectiveDamage(skill.id)) {
+      const objResult = this.objectiveSystem.applyAoeDamage({
+        ownerTeam: PLAYER_TEAM,
+        centerX: center.x,
+        centerY: center.y,
+        radius,
+        rawDamage,
+        skillId: skill.id,
+        skillGateDamageBonus: skill.gateDamageBonus,
+        playerGateDamageBonus: this.player.gateDamageBonus,
+      });
+      if (objResult) {
+        this.setCombatResult(`${name} hit ${objResult.finalDamage} objective`);
+        return;
+      }
+    }
+
+    this.setCombatResult(hitMessage);
   }
 
   private applyHealSkill(skill: SkillDefinition): void {
@@ -379,16 +452,34 @@ export class MatchScene extends Phaser.Scene {
 
     if (skill.damage !== undefined) {
       const range = skill.range ?? 160;
+      let hitMessage = `${name} missed`;
       if (
         this.dummy.canReceiveDamage() &&
         this.isWithinDistance(this.dummy.x, this.dummy.y, this.dummy.radius, range)
       ) {
         this.lastHitShapeResult = `${name}: legacy range hit`;
-        this.applyDamageToDummy(skill.damage, name);
+        const result = this.dummy.takeDamage(skill.damage);
+        const text = showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#f87171');
+        this.registerWorldObject(text);
+        hitMessage = `${name} hit ${result.finalDamage}`;
       } else {
         this.lastHitShapeResult = `${name}: legacy range miss`;
-        this.setCombatResult(`${name} missed`);
       }
+
+      if (!skipsObjectiveDamage(skill.id)) {
+        const objResult = this.objectiveSystem.applyRangeDamage({
+          ownerTeam: PLAYER_TEAM,
+          casterX: this.player.x,
+          casterY: this.player.y,
+          range,
+          rawDamage: skill.damage,
+          skillGateDamageBonus: skill.gateDamageBonus,
+          playerGateDamageBonus: this.player.gateDamageBonus,
+        });
+        if (objResult) hitMessage = `${hitMessage} | objective -${objResult.finalDamage}`;
+      }
+
+      this.setCombatResult(hitMessage);
       return;
     }
 
@@ -401,10 +492,23 @@ export class MatchScene extends Phaser.Scene {
     this.setCombatResult(`used ${name}`);
   }
 
+  private handleProjectileObjectiveHit(event: {
+    x: number;
+    y: number;
+    damage: number;
+    skillName: string;
+    impactAoeRadius?: number;
+  }): void {
+    showHitSpark(this, event.x, event.y, (o) => this.registerWorldObject(o));
+    this.lastHitShapeResult = `${event.skillName}: objective projectile hit`;
+    this.setCombatResult(`${event.skillName} hit objective`);
+  }
+
   private handleProjectileHit(event: {
     x: number;
     y: number;
     damage: number;
+    skillId: string;
     skillName: string;
     impactAoeRadius?: number;
   }): void {
@@ -426,6 +530,16 @@ export class MatchScene extends Phaser.Scene {
       } else {
         this.setCombatResult(`${event.skillName} missed`);
       }
+      if (!skipsObjectiveDamage(event.skillId)) {
+        this.objectiveSystem.applyAoeDamage({
+          ownerTeam: PLAYER_TEAM,
+          centerX: event.x,
+          centerY: event.y,
+          radius: event.impactAoeRadius,
+          rawDamage: event.damage,
+          skillId: event.skillId,
+        });
+      }
       return;
     }
 
@@ -433,6 +547,11 @@ export class MatchScene extends Phaser.Scene {
     if (this.dummy.canReceiveDamage()) {
       this.applyDamageToDummy(event.damage, event.skillName);
     }
+  }
+
+  private handleMatchEnd(outcome: 'victory' | 'defeat'): void {
+    const reason = outcome === 'victory' ? 'enemy_core_destroyed' : 'friendly_core_destroyed';
+    this.scene.start(SCENE_KEYS.Result, { outcome, reason });
   }
 
   private applyDamageToDummy(rawDamage: number, label: string, suffix = ''): void {
@@ -543,6 +662,7 @@ export class MatchScene extends Phaser.Scene {
     }
 
     this.projectileSystem.destroy();
+    this.objectiveSystem.destroy();
     this.mapRenderer.destroy();
     this.movement.destroy();
   }
@@ -589,6 +709,7 @@ export class MatchScene extends Phaser.Scene {
     this.cameras.main.setZoom(this.computeZoom());
     this.uiCamera.setSize(this.scale.width, this.scale.height);
     this.movement.handleResize();
+    this.objectiveSystem.layoutHud();
     this.layoutTopHud();
   }
 
@@ -618,6 +739,8 @@ export class MatchScene extends Phaser.Scene {
 
   private drawMarkers(markers: MapMarker[]): void {
     for (const m of markers) {
+      if (GATE_CORE_MARKER_IDS.has(m.id)) continue;
+
       const inBaseBand = m.y >= 3350 || m.y <= 850;
       const color = this.markerColor(m);
       const circle = this.add.circle(m.x, m.y, m.radius, color, inBaseBand ? 0.2 : 0.06);
@@ -751,6 +874,7 @@ export class MatchScene extends Phaser.Scene {
           `type: ${this.lastSkillType} hit: ${this.lastHitShapeResult}`,
           `placeholder: ${this.lastPlaceholderReason}`,
           `proj: ${projCount} ${projResult}`,
+          ...this.objectiveSystem.getDebugLines(),
         ]
       : [
           CURRENT_PHASE_LABEL,
@@ -764,6 +888,7 @@ export class MatchScene extends Phaser.Scene {
           `joy ptr: ${joyId}  action+move: ${actionWhileMove}`,
           `last: ${s.lastAction || '-'}`,
           `skill: ${this.skillRuntime.getLastResult() || '-'}`,
+          ...this.objectiveSystem.getDebugLines(),
         ];
 
     this.debugText.setText(lines.join('\n'));
