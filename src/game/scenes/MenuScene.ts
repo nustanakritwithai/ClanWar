@@ -49,7 +49,7 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(cx, height - 40, 'Phase 3A: class stats + skill runtime (no combat damage)', {
+      .text(cx, height - 40, 'Phase 3B-A: combat dummy + damage foundation', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '14px',
         color: '#5b6675',
