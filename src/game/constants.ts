@@ -19,10 +19,13 @@ export const PLAYER_RADIUS = 22;
 
 // Phase 2.5 debug overlay. Default on during dev; toggle at runtime with ` or F1.
 export const SHOW_DEBUG_OVERLAY = true;
-export const CURRENT_PHASE_LABEL = 'Phase 3B-A: Combat Dummy + Damage Foundation';
+export const CURRENT_PHASE_LABEL = 'Phase 3B-A.1: Mobile Multi-touch Control Hotfix';
 
 /** Viewport height below which compact mobile HUD/controls are used. */
 export const COMPACT_LAYOUT_HEIGHT = 480;
+
+/** Left-side screen fraction reserved for movement (joystick) input. */
+export const MOVEMENT_ZONE_WIDTH_RATIO = 0.45;
 
 /** Passive mana regeneration for Phase 3A skill testing (not final balance). */
 export const MANA_REGEN_PER_SECOND = 8;
