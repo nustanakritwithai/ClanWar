@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Route hint arrow guidance marker">
+  <!-- Player guidance only - not pathfinding, not AI routing -->
+  <ellipse cx="128" cy="220" rx="48" ry="12" fill="#0b0e13" opacity="0.25"/>
+  <!-- Ground chevron trail (guidance cyan, distinct from map path_arrow) -->
+  <g fill="#22d3ee" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round" opacity="0.55">
+    <path d="M128 196 L148 176 L108 176 Z"/>
+    <path d="M128 164 L148 144 L108 144 Z"/>
+    <path d="M128 132 L148 112 L108 112 Z"/>
+  </g>
+  <!-- Main direction arrow -->
+  <path d="M128 40 L88 120 L112 120 L112 176 L144 176 L144 120 L168 120 Z"
+        fill="#22d3ee" stroke="#0b0e13" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Arrow tip highlight -->
+  <path d="M128 56 L108 100 L148 100 Z" fill="#67e8f9" opacity="0.5"/>
+</svg>

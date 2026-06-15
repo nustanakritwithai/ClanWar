@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Interact here guidance marker">
+  <!-- Player guidance only - not interaction logic, not capture trigger -->
+  <ellipse cx="128" cy="210" rx="52" ry="14" fill="#0b0e13" opacity="0.25"/>
+  <!-- Proximity rings -->
+  <circle cx="128" cy="140" r="72" fill="#22d3ee" opacity="0.08"/>
+  <circle cx="128" cy="140" r="72" fill="none" stroke="#22d3ee" stroke-width="5" stroke-dasharray="12 10"/>
+  <circle cx="128" cy="140" r="48" fill="none" stroke="#22d3ee" stroke-width="6"/>
+  <!-- Tap/interact circle (drawn, not button UI) -->
+  <circle cx="128" cy="140" r="28" fill="#22d3ee" stroke="#0b0e13" stroke-width="8"/>
+  <!-- Downward action caret -->
+  <path d="M128 120 L144 148 L112 148 Z" fill="#0b0e13"/>
+  <!-- Approach footsteps -->
+  <g fill="#22d3ee" stroke="#0b0e13" stroke-width="4" stroke-linejoin="round" opacity="0.5">
+    <path d="M96 188 L108 176 L84 176 Z"/>
+    <path d="M160 188 L172 176 L148 176 Z"/>
+  </g>
+</svg>
