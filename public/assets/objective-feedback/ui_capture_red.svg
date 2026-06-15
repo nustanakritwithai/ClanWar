@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="HUD capture red owned objective">
+  <!-- Compact HUD icon (UI-space, not map terrain) -->
+  <rect x="32" y="32" width="192" height="192" rx="36" fill="#1a2230" stroke="#0b0e13" stroke-width="10"/>
+  <!-- Red ownership ring -->
+  <circle cx="128" cy="128" r="68" fill="#ef4444" opacity="0.10"/>
+  <circle cx="128" cy="128" r="68" fill="none" stroke="#ef4444" stroke-width="8"/>
+  <!-- Stable red pennant -->
+  <line x1="128" y1="168" x2="128" y2="88" stroke="#0b0e13" stroke-width="8" stroke-linecap="round"/>
+  <path d="M128 88 L160 100 L128 112 Z" fill="#ef4444" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round"/>
+  <!-- Ownership seal -->
+  <circle cx="128" cy="140" r="22" fill="#dc2626" stroke="#0b0e13" stroke-width="7"/>
+</svg>

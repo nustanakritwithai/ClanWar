@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="HUD capture in progress">
+  <!-- Compact HUD icon (UI-space, not map terrain) -->
+  <rect x="32" y="32" width="192" height="192" rx="36" fill="#1a2230" stroke="#0b0e13" stroke-width="10"/>
+  <!-- Capture progress ring (partial arcs) -->
+  <circle cx="128" cy="128" r="68" fill="#9ca3af" opacity="0.08"/>
+  <g fill="none" stroke="#4ade80" stroke-width="9" stroke-linecap="round">
+    <path d="M128 60 a68 68 0 0 1 58.9 34"/>
+    <path d="M186.9 94 a68 68 0 0 1 0 68" opacity="0.85"/>
+    <path d="M186.9 162 a68 68 0 0 1 -58.9 34" opacity="0.65"/>
+    <path d="M69.1 162 a68 68 0 0 1 0 -68" opacity="0.35" stroke="#9ca3af"/>
+  </g>
+  <!-- Inner pulse ring -->
+  <circle cx="128" cy="128" r="44" fill="none" stroke="#cbd5e1" stroke-width="5" stroke-dasharray="6 10" opacity="0.6"/>
+  <!-- Center capture pip -->
+  <circle cx="128" cy="128" r="14" fill="#4ade80" stroke="#0b0e13" stroke-width="6"/>
+</svg>
