@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Capture progress ring">
+  <!-- Outer capture zone fill -->
+  <circle cx="128" cy="128" r="104" fill="#9ca3af" opacity="0.10"/>
+  <!-- Segmented capture ring (neutral; runtime tints + sweeps progress) -->
+  <g fill="none" stroke="#9ca3af" stroke-width="12" stroke-linecap="round">
+    <path d="M128 36 a92 92 0 0 1 79.7 46"/>
+    <path d="M207.7 174 a92 92 0 0 1 -79.7 46"/>
+    <path d="M48.3 174 a92 92 0 0 1 0 -92"/>
+  </g>
+  <!-- Inner dashed boundary -->
+  <circle cx="128" cy="128" r="70" fill="none" stroke="#cbd5e1" stroke-width="6"
+          stroke-dasharray="14 16" opacity="0.85"/>
+  <!-- Center capture pip -->
+  <circle cx="128" cy="128" r="16" fill="#9ca3af" stroke="#0b0e13" stroke-width="7"/>
+</svg>
