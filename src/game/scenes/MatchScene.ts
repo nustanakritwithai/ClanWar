@@ -24,7 +24,7 @@ import { InputSystem } from '../systems/InputSystem';
 import { ProjectileSystem } from '../systems/ProjectileSystem';
 import { SkillRuntimeSystem } from '../systems/SkillRuntimeSystem';
 import { showCombatText } from '../ui/CombatText';
-import { showAoeMarker, showHealBurst, showHealSpark, showHitSpark, showImpactBurst } from '../ui/CombatVfx';
+import { showAoeMarker, showHealBurst, showHealSpark, showHitSpark, showImpactBurst, showSlashArc, loadCombatVisualAssets } from '../ui/CombatVfx';
 import { isFullscreenActive, requestGameFullscreen } from '../utils/fullscreen';
 
 const HUD_HINT_NORMAL =
@@ -63,6 +63,10 @@ export class MatchScene extends Phaser.Scene {
   init(data: MatchSceneData = {}): void {
     this.heroClass = data.heroClass ?? 'guardian';
     this.lastCombatResult = '-';
+  }
+
+  preload(): void {
+    loadCombatVisualAssets(this.load);
   }
 
   create(): void {
@@ -249,6 +253,10 @@ export class MatchScene extends Phaser.Scene {
     this.lastHitShapeResult = `${name}: ${arc.reason}`;
 
     if (arc.hit) {
+      const facing = this.player.getFacingAngle();
+      if (skill.id === 'warrior_cleave' || skill.id === 'guardian_shield_bash' || skill.id === 'warrior_gate_breaker') {
+        showSlashArc(this, this.player.x, this.player.y, facing, (o) => this.registerWorldObject(o));
+      }
       showHitSpark(this, this.dummy.x, this.dummy.y, (o) => this.registerWorldObject(o));
       const suffix = skipsObjectiveDamage(skill.id) ? ' (no gate dmg)' : '';
       this.applyDamageToDummy(skill.damage, name, suffix);
