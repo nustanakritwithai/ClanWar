@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Attack gate guidance marker">
+  <!-- Player guidance only - not damage, not gate HP -->
+  <ellipse cx="128" cy="210" rx="56" ry="14" fill="#0b0e13" opacity="0.25"/>
+  <!-- Gate target silhouette -->
+  <path d="M72 188 V108 a56 56 0 0 1 112 0 V188 Z" fill="#3a4658" stroke="#0b0e13" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M100 188 V128 a28 28 0 0 1 56 0 V188 Z" fill="#1a2230"/>
+  <!-- Strike chevron (world guidance, not combat VFX) -->
+  <path d="M128 40 L168 96 L144 96 L144 120 L112 120 L112 96 L88 96 Z"
+        fill="#ef4444" stroke="#0b0e13" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Target crosshair ring -->
+  <circle cx="128" cy="158" r="36" fill="none" stroke="#ef4444" stroke-width="6" stroke-dasharray="10 8"/>
+</svg>

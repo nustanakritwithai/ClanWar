@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Defend core guidance marker">
+  <!-- Player guidance only - not core HP, not damage immunity -->
+  <ellipse cx="128" cy="210" rx="56" ry="14" fill="#0b0e13" opacity="0.25"/>
+  <!-- Protective shield (guidance, not status buff) -->
+  <path d="M128 48 L196 80 V152 C196 188 168 210 128 222 C88 210 60 188 60 152 V80 Z"
+        fill="#3b82f6" stroke="#0b0e13" stroke-width="10" stroke-linejoin="round" opacity="0.85"/>
+  <!-- Mini core crystal behind shield -->
+  <path d="M128 148 L156 180 L128 196 L100 180 Z" fill="#f4d35e" stroke="#0b0e13" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M128 120 L156 152 L128 168 L100 152 Z" fill="#cfa14a" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round"/>
+  <!-- Defend cross guard -->
+  <g stroke="#dbeafe" stroke-width="10" stroke-linecap="round">
+    <line x1="128" y1="88" x2="128" y2="168"/>
+    <line x1="96" y1="128" x2="160" y2="128"/>
+  </g>
+</svg>
