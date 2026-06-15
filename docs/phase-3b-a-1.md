@@ -86,3 +86,28 @@ Allows joystick + one or two action touches simultaneously.
 5. Release left finger → movement stops.
 6. Spam actions while walking → no crash.
 7. Walk to dummy + attack; Mage/Priest Q while moving; cooldown/mana OK.
+
+## Mobile verification (PR #8)
+
+**Render PR preview:** disabled (`pullRequestPreviewsEnabled: false`).
+
+**Test URL (cloudflared tunnel, ephemeral):**
+
+`https://operator-geometry-proposed-handed.trycloudflare.com`
+
+Open on Android Chrome in landscape (~915×412). Tunnel serves the PR branch build via
+`npm run preview` with `preview.allowedHosts: true`.
+
+**Automated multi-touch verification (CDP, 915×412):**
+
+```bash
+npm run build
+npm run preview
+node scripts/mobile-multitouch-verify.mjs http://127.0.0.1:4173
+```
+
+Results (2026-06-15): **14/14 passed** — walk+attack, walk+skill, release
+behavior, Mage/Priest combat while moving, desktop regression.
+
+**Physical device:** pending human confirmation on Android Chrome. PR #8 remains
+**draft** until real-device manual test passes.
