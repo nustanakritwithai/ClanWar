@@ -66,6 +66,8 @@ interface RuntimeObjective {
   currentHp: number;
   underAttackTimerMs: number;
   blueCoreThreatened: boolean;
+  shownGateBreachedFeedback: boolean;
+  shownCoreOpenFeedback: boolean;
 }
 
 export interface ObjectiveMeleeContext {
@@ -133,6 +135,8 @@ export class ObjectiveSystem {
   private matchEndTimer?: Phaser.Time.TimerEvent;
   private lastBlockedLog = '';
   private protectedFeedbackCooldownMs = 0;
+  private lastWorldFeedback = '';
+  private worldFeedbackCount = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -145,6 +149,11 @@ export class ObjectiveSystem {
   }
 
   public build(): void {
+    this.lastWorldFeedback = '';
+    this.worldFeedbackCount = 0;
+    this.protectedFeedbackCooldownMs = 0;
+    this.lastBlockedLog = '';
+
     for (const def of OBJECTIVE_DEFINITIONS) {
       const baseKey = this.baseTextureFor(def);
       const entity = new Objective(this.scene, def, baseKey, this.registerWorldObject);
@@ -156,6 +165,8 @@ export class ObjectiveSystem {
         currentHp: def.maxHp,
         underAttackTimerMs: 0,
         blueCoreThreatened: false,
+        shownGateBreachedFeedback: false,
+        shownCoreOpenFeedback: false,
       });
       entity.applyVisualState(combatState, baseKey);
     }
@@ -240,6 +251,14 @@ export class ObjectiveSystem {
     return this.lastBlockedLog;
   }
 
+  public getLastWorldFeedback(): string {
+    return this.lastWorldFeedback;
+  }
+
+  public getWorldFeedbackCount(): number {
+    return this.worldFeedbackCount;
+  }
+
   /** Debug/test hook — deal damage from an attacker team without hit-shape checks. */
   public debugDealDamage(
     objectiveId: ObjectiveId,
@@ -269,9 +288,8 @@ export class ObjectiveSystem {
   public applyMeleeArcDamage(ctx: ObjectiveMeleeContext): DamageResult | null {
     if (this.matchPhase !== 'in_progress') return null;
 
-    let best: RuntimeObjective | null = null;
+    const hits: RuntimeObjective[] = [];
     for (const obj of this.enemyObjectives(ctx.ownerTeam)) {
-      if (!this.canReceiveDamage(obj)) continue;
       const arc = testMeleeArc(
         ctx.casterX,
         ctx.casterY,
@@ -282,20 +300,39 @@ export class ObjectiveSystem {
         ctx.range,
         ctx.arcDegrees ?? DEFAULT_MELEE_ARC_DEGREES,
       );
-      if (arc.hit) best = obj;
+      if (arc.hit) hits.push(obj);
     }
 
-    if (!best) return null;
-    const raw = this.computeRawDamage(best, ctx.rawDamage, ctx.skillGateDamageBonus, ctx.playerGateDamageBonus);
-    return this.applyDamageToObjective(best, raw, ctx.ownerTeam);
+    const damageables = hits.filter((obj) => this.canReceiveDamage(obj));
+    const damageTarget =
+      damageables.find((obj) => obj.def.type === 'gate') ?? damageables[damageables.length - 1] ?? null;
+
+    if (damageTarget) {
+      const raw = this.computeRawDamage(
+        damageTarget,
+        ctx.rawDamage,
+        ctx.skillGateDamageBonus,
+        ctx.playerGateDamageBonus,
+      );
+      return this.applyDamageToObjective(damageTarget, raw, ctx.ownerTeam);
+    }
+
+    const protectedCore = hits.find((obj) => this.isProtectedCore(obj));
+    if (protectedCore) {
+      this.lastBlockedLog = `blocked: ${protectedCore.def.id} protected`;
+      this.showProtectedCoreFeedback(protectedCore);
+    }
+
+    return null;
   }
 
   public applyAoeDamage(ctx: ObjectiveAoeContext): DamageResult | null {
     if (this.matchPhase !== 'in_progress') return null;
 
     let last: DamageResult | null = null;
+    let protectedCoreHit: RuntimeObjective | null = null;
+
     for (const obj of this.enemyObjectives(ctx.ownerTeam)) {
-      if (!this.canReceiveDamage(obj)) continue;
       const circle = testAoeCircle(
         ctx.centerX,
         ctx.centerY,
@@ -305,10 +342,21 @@ export class ObjectiveSystem {
         obj.def.radius,
       );
       if (!circle.hit) continue;
-      const raw = this.computeRawDamage(obj, ctx.rawDamage, ctx.skillGateDamageBonus, ctx.playerGateDamageBonus);
-      const result = this.applyDamageToObjective(obj, raw, ctx.ownerTeam);
-      if (result) last = result;
+
+      if (this.canReceiveDamage(obj)) {
+        const raw = this.computeRawDamage(obj, ctx.rawDamage, ctx.skillGateDamageBonus, ctx.playerGateDamageBonus);
+        const result = this.applyDamageToObjective(obj, raw, ctx.ownerTeam);
+        if (result) last = result;
+      } else if (this.isProtectedCore(obj)) {
+        protectedCoreHit = obj;
+      }
     }
+
+    if (protectedCoreHit) {
+      this.lastBlockedLog = `blocked: ${protectedCoreHit.def.id} protected`;
+      this.showProtectedCoreFeedback(protectedCoreHit);
+    }
+
     return last;
   }
 
@@ -323,25 +371,52 @@ export class ObjectiveSystem {
   }): DamageResult | null {
     if (this.matchPhase !== 'in_progress') return null;
 
+    let protectedCoreHit: RuntimeObjective | null = null;
+
     for (const obj of this.enemyObjectives(ctx.ownerTeam)) {
-      if (!this.canReceiveDamage(obj)) continue;
       const dist = Math.hypot(obj.def.x - ctx.casterX, obj.def.y - ctx.casterY);
       if (dist > ctx.range + obj.def.radius) continue;
-      const raw = this.computeRawDamage(obj, ctx.rawDamage, ctx.skillGateDamageBonus, ctx.playerGateDamageBonus);
-      return this.applyDamageToObjective(obj, raw, ctx.ownerTeam);
+
+      if (this.canReceiveDamage(obj)) {
+        const raw = this.computeRawDamage(obj, ctx.rawDamage, ctx.skillGateDamageBonus, ctx.playerGateDamageBonus);
+        return this.applyDamageToObjective(obj, raw, ctx.ownerTeam);
+      }
+      if (this.isProtectedCore(obj)) {
+        protectedCoreHit = obj;
+      }
     }
+
+    if (protectedCoreHit) {
+      this.lastBlockedLog = `blocked: ${protectedCoreHit.def.id} protected`;
+      this.showProtectedCoreFeedback(protectedCoreHit);
+    }
+
     return null;
   }
 
   public applyProjectileDamage(ctx: ObjectiveProjectileContext): DamageResult | null {
     if (this.matchPhase !== 'in_progress') return null;
 
+    let protectedCoreHit: RuntimeObjective | null = null;
+
     for (const obj of this.enemyObjectives(ctx.ownerTeam)) {
-      if (!this.canReceiveDamage(obj)) continue;
       const dist = Math.hypot(obj.def.x - ctx.x, obj.def.y - ctx.y);
       if (dist > obj.def.radius + 14) continue;
-      return this.applyDamageToObjective(obj, ctx.rawDamage, ctx.ownerTeam);
+
+      if (this.canReceiveDamage(obj)) {
+        return this.applyDamageToObjective(obj, ctx.rawDamage, ctx.ownerTeam);
+      }
+      if (this.isProtectedCore(obj)) {
+        protectedCoreHit = obj;
+      }
     }
+
+    if (protectedCoreHit) {
+      this.lastBlockedLog = `blocked: ${protectedCoreHit.def.id} protected`;
+      this.showProtectedCoreFeedback(protectedCoreHit);
+      return { rawDamage: ctx.rawDamage, finalDamage: 0, targetHpAfter: protectedCoreHit.currentHp, killed: false };
+    }
+
     return null;
   }
 
@@ -357,6 +432,26 @@ export class ObjectiveSystem {
 
     for (const obj of this.enemyObjectives(ownerTeam)) {
       if (!this.canReceiveDamage(obj)) continue;
+      const combined = hitRadius + obj.def.radius;
+      if (segmentHitsCircle(x1, y1, x2, y2, obj.def.x, obj.def.y, combined)) {
+        return obj.def.id;
+      }
+    }
+    return null;
+  }
+
+  public findProtectedCoreSegmentHit(
+    ownerTeam: TeamId,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    hitRadius: number,
+  ): ObjectiveId | null {
+    if (this.matchPhase !== 'in_progress') return null;
+
+    for (const obj of this.enemyObjectives(ownerTeam)) {
+      if (!this.isProtectedCore(obj)) continue;
       const combined = hitRadius + obj.def.radius;
       if (segmentHitsCircle(x1, y1, x2, y2, obj.def.x, obj.def.y, combined)) {
         return obj.def.id;
@@ -383,16 +478,32 @@ export class ObjectiveSystem {
     y2: number,
     hitRadius: number,
     rawDamage: number,
-  ): { hit: boolean; objectiveId?: ObjectiveId; result?: DamageResult } {
+  ): { hit: boolean; objectiveId?: ObjectiveId; result?: DamageResult; blocked?: boolean } {
     const objectiveId = this.findProjectileSegmentHit(ownerTeam, x1, y1, x2, y2, hitRadius);
-    if (!objectiveId) return { hit: false };
-    const result = this.damageObjectiveById(objectiveId, rawDamage, ownerTeam);
-    if (result) return { hit: true, objectiveId, result };
+    if (objectiveId) {
+      const result = this.damageObjectiveById(objectiveId, rawDamage, ownerTeam);
+      if (result) return { hit: true, objectiveId, result };
+    }
+
+    const protectedId = this.findProtectedCoreSegmentHit(ownerTeam, x1, y1, x2, y2, hitRadius);
+    if (protectedId) {
+      const obj = this.objectives.get(protectedId);
+      if (obj) {
+        this.lastBlockedLog = `blocked: ${protectedId} protected`;
+        this.showProtectedCoreFeedback(obj);
+      }
+      return { hit: true, objectiveId: protectedId, blocked: true };
+    }
+
     return { hit: false };
   }
 
   private enemyObjectives(ownerTeam: TeamId): RuntimeObjective[] {
     return [...this.objectives.values()].filter((obj) => obj.def.team !== ownerTeam);
+  }
+
+  private isProtectedCore(obj: RuntimeObjective): boolean {
+    return obj.def.type === 'core' && obj.combatState === 'protected';
   }
 
   private canReceiveDamage(obj: RuntimeObjective): boolean {
@@ -475,6 +586,9 @@ export class ObjectiveSystem {
     if (obj.def.type === 'gate') {
       this.onGateDestroyed(obj.def.team);
       this.refreshPriority();
+      if (obj.def.team === 'red') {
+        this.showGateBreachedFeedback(obj);
+      }
     } else if (obj.def.id === 'redCore') {
       this.endMatch('victory');
     } else if (obj.def.id === 'blueCore') {
@@ -489,6 +603,9 @@ export class ObjectiveSystem {
     core.combatState = 'vulnerable';
     this.syncVisuals(core);
     this.refreshPriority();
+    if (team === 'red') {
+      this.showCoreOpenFeedback(core);
+    }
   }
 
   private endMatch(outcome: 'victory' | 'defeat'): void {
@@ -506,7 +623,25 @@ export class ObjectiveSystem {
   private showProtectedCoreFeedback(obj: RuntimeObjective): void {
     if (this.protectedFeedbackCooldownMs > 0) return;
     this.protectedFeedbackCooldownMs = PROTECTED_FEEDBACK_COOLDOWN_MS;
-    const text = showCombatText(this.scene, obj.def.x, obj.def.y - 40, 'Destroy Gate first', '#9ca3af');
+    this.showWorldFeedback(obj.def.x, obj.def.y - 40, 'Destroy Gate first', '#9ca3af');
+  }
+
+  private showGateBreachedFeedback(obj: RuntimeObjective): void {
+    if (obj.shownGateBreachedFeedback) return;
+    obj.shownGateBreachedFeedback = true;
+    this.showWorldFeedback(obj.def.x, obj.def.y - 48, 'Gate Breached', '#fbbf24');
+  }
+
+  private showCoreOpenFeedback(obj: RuntimeObjective): void {
+    if (obj.shownCoreOpenFeedback) return;
+    obj.shownCoreOpenFeedback = true;
+    this.showWorldFeedback(obj.def.x, obj.def.y - 48, 'Core is open', '#f4d35e');
+  }
+
+  private showWorldFeedback(x: number, y: number, message: string, color: string): void {
+    this.lastWorldFeedback = message;
+    this.worldFeedbackCount += 1;
+    const text = showCombatText(this.scene, x, y, message, color);
     this.registerWorldObject(text);
   }
 
@@ -520,6 +655,10 @@ export class ObjectiveSystem {
   private syncVisuals(obj: RuntimeObjective): void {
     const texture = this.textureForState(obj);
     obj.entity.applyVisualState(obj.combatState, texture);
+    // Avoid stacking vulnerable + under-attack overlays on cores (mobile readability).
+    if (obj.def.type === 'core' && obj.combatState === 'under_attack') {
+      obj.entity.vulnerableOverlay.setVisible(false);
+    }
   }
 
   private textureForState(obj: RuntimeObjective): string {
