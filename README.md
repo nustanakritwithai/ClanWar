@@ -22,6 +22,7 @@ npm run preview  # serve the production build
 - Five classes with real stats, mana regen, skill cooldown/mana from `skills.ts`.
 - **Training dummy** — attack + skill damage/heal, floating numbers.
 - **Combat SVG VFX** — arrow/fireball projectiles, hit spark, impact burst, AoE marker, heal effects.
+- **Map SVG terrain** — three-route battlefield (main / high ground / shadow), bases, structures, guide markers.
 - **Mobile multi-touch** — joystick + action buttons simultaneously.
 - Mobile compact layout, fullscreen entry, PWA manifest.
 - Debug overlay (toggle with **`** or **F1** in Match).

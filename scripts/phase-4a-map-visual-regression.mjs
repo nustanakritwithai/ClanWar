@@ -56,7 +56,10 @@ async function main() {
   log('Map SVG textures preloaded', loaded === MAP_TEXTURE_COUNT, `${loaded}/${MAP_TEXTURE_COUNT}`);
 
   const mapObjs = await page.evaluate(() => window.__CLANWAR_GAME__.scene.getScene('MatchScene').mapRenderer.getObjectCount());
-  log('Map objects rendered', mapObjs > 40, `count=${mapObjs}`);
+  log('Map objects rendered', mapObjs > 30, `count=${mapObjs}`);
+
+  const crossings = await page.evaluate(() => window.__CLANWAR_GAME__.scene.getScene('MatchScene').mapRenderer.getRoadCrossingCount());
+  log('Road crossing hubs defined', crossings === 3, `count=${crossings}`);
 
   const phase = await page.evaluate(() => {
     const s = window.__CLANWAR_GAME__.scene.getScene('MatchScene');

@@ -33,6 +33,26 @@ export const MAP_TEXTURES = {
 
 export const MAP_TEXTURE_KEYS = Object.values(MAP_TEXTURES);
 
+/** Three-route junction hubs per docs/map-layout-spec.md §3.3 */
+export const MAP_ROAD_CROSSINGS = [
+  { id: 'blueFork', x: 1500, y: 3550 },
+  { id: 'midCross', x: 1500, y: 2100 },
+  { id: 'redFork', x: 1500, y: 650 },
+] as const;
+
+/** Route bands (px) — main wider/brighter; shadow inset narrower. */
+const ROUTE_BANDS = {
+  main: { left: 1300, width: 400, top: 650, height: 2950 },
+  highGround: { left: 600, width: 450, top: 650, height: 2950 },
+  shadow: { left: 2070, width: 280, top: 650, height: 2950 },
+} as const;
+
+/** Gate lines — cosmetic wall art flanks playable opening x 1140–1860. */
+const GATE_LINES = {
+  blue: { y: 3200, leftWallX: 560, rightWallX: 2440 },
+  red: { y: 1000, leftWallX: 560, rightWallX: 2440 },
+} as const;
+
 const SVG_SOURCES: Array<{ key: string; path: string }> = [
   { key: MAP_TEXTURES.mainRouteTile, path: 'map/main_route_tile.svg' },
   { key: MAP_TEXTURES.highGroundTile, path: 'map/high_ground_tile.svg' },
@@ -101,6 +121,10 @@ export class MapRenderer {
     return this.objects.length;
   }
 
+  public getRoadCrossingCount(): number {
+    return MAP_ROAD_CROSSINGS.length;
+  }
+
   public static countLoadedTextures(scene: Phaser.Scene): number {
     return MAP_TEXTURE_KEYS.filter((key) => scene.textures.exists(key)).length;
   }
@@ -113,16 +137,17 @@ export class MapRenderer {
     depth: number,
     rotation = 0,
     alpha = 1,
+    displayHeight?: number,
   ): void {
     if (!this.scene.textures.exists(texture)) return;
 
-    const img = this.scene.add
-      .image(x, y, texture)
-      .setDisplaySize(displaySize, displaySize)
-      .setOrigin(0.5)
-      .setDepth(depth)
-      .setRotation(rotation)
-      .setAlpha(alpha);
+    const img = this.scene.add.image(x, y, texture).setOrigin(0.5).setDepth(depth).setRotation(rotation).setAlpha(alpha);
+
+    if (displayHeight !== undefined) {
+      img.setDisplaySize(displaySize, displayHeight);
+    } else {
+      img.setDisplaySize(displaySize, displaySize);
+    }
 
     this.register(img);
     this.objects.push(img);
@@ -146,76 +171,76 @@ export class MapRenderer {
 
   private paintBaseFloors(map: MapDefinition): void {
     const cx = map.width / 2;
-    // Blue base (bottom)
-    this.tileRect(MAP_TEXTURES.baseFloorBlue, cx - 600, map.height - 1200, 1200, 1200, -55);
-    // Red base (top)
-    this.tileRect(MAP_TEXTURES.baseFloorRed, cx - 600, 0, 1200, 1200, -55);
-    // Midfield neutral patches
-    this.tileRect(MAP_TEXTURES.neutralGroundPatch, cx - 500, 1200, 1000, 1800, -54, 160);
+    // Blue base below y ≈ 3350
+    this.tileRect(MAP_TEXTURES.baseFloorBlue, cx - 600, map.height - 1050, 1200, 1050, -55);
+    // Red base above y ≈ 850
+    this.tileRect(MAP_TEXTURES.baseFloorRed, cx - 600, 0, 1200, 850, -55);
+    // Sparse midfield neutral (not full blanket)
+    this.tileRect(MAP_TEXTURES.neutralGroundPatch, cx - 400, 1500, 800, 1200, -54, 192);
   }
 
-  private paintRouteLanes(map: MapDefinition): void {
-    const cx = map.width / 2;
+  private paintRouteLanes(_map: MapDefinition): void {
+    const main = ROUTE_BANDS.main;
+    const high = ROUTE_BANDS.highGround;
+    const shadow = ROUTE_BANDS.shadow;
 
-    // Main / Army route — center column
-    this.tileRect(MAP_TEXTURES.mainRouteTile, cx - 120, 900, 240, 2400, -45);
+    // Main / Army — widest, brightest (400 px band)
+    this.tileRect(MAP_TEXTURES.mainRouteTile, main.left, main.top, main.width, main.height, -45);
 
-    // High Ground route — left flank
-    this.tileRect(MAP_TEXTURES.highGroundTile, cx - 520, 900, 200, 2400, -44);
+    // High Ground — left flank, elevated stone (450 px band)
+    this.tileRect(MAP_TEXTURES.highGroundTile, high.left, high.top, high.width, high.height, -44);
 
-    // Shadow / Sewer route — right flank
-    this.tileRect(MAP_TEXTURES.shadowRouteTile, cx + 320, 900, 200, 2400, -44);
+    // Shadow / Sewer — right flank, inset narrower (~280 px)
+    this.tileRect(MAP_TEXTURES.shadowRouteTile, shadow.left, shadow.top, shadow.width, shadow.height, -44);
 
-    // Three-route junction at siege ruins
-    this.placeImage(MAP_TEXTURES.roadCrossing, cx, 2100, 224, -40);
+    // Three junction hubs
+    for (const crossing of MAP_ROAD_CROSSINGS) {
+      this.placeImage(MAP_TEXTURES.roadCrossing, crossing.x, crossing.y, 208, -40);
+    }
   }
 
-  private placeStructures(map: MapDefinition): void {
-    const cx = map.width / 2;
+  private placeStructures(_map: MapDefinition): void {
+    const cx = 1500;
 
-    // Spawn platforms
     this.placeImage(MAP_TEXTURES.spawnPlatformBlue, cx, 3900, 220, -35);
     this.placeImage(MAP_TEXTURES.spawnPlatformRed, cx, 300, 220, -35);
 
-    // High ground ramps (left route)
-    this.placeImage(MAP_TEXTURES.highGroundRampUp, cx - 420, 2800, 112, -38);
-    this.placeImage(MAP_TEXTURES.highGroundRampDown, cx - 420, 1400, 112, -38);
+    // High ground ramps (left flank x ≈ 820)
+    this.placeImage(MAP_TEXTURES.highGroundRampUp, 820, 3400, 112, -38);
+    this.placeImage(MAP_TEXTURES.highGroundRampUp, 820, 2300, 112, -38);
+    this.placeImage(MAP_TEXTURES.highGroundRampDown, 820, 1200, 112, -38);
 
-    // Sewer entrance / exit (right route)
-    this.placeImage(MAP_TEXTURES.sewerEntrance, cx + 420, 3000, 112, -38);
-    this.placeImage(MAP_TEXTURES.sewerExit, cx + 420, 1200, 112, -38);
+    // Sewer IO (right flank x ≈ 2150)
+    this.placeImage(MAP_TEXTURES.sewerEntrance, 2150, 3550, 112, -38);
+    this.placeImage(MAP_TEXTURES.sewerEntrance, 2150, 2300, 112, -38);
+    this.placeImage(MAP_TEXTURES.sewerExit, 2150, 1200, 112, -38);
 
-    // Gate-line walls (visual only — physics walls unchanged)
-    this.placeImage(MAP_TEXTURES.battlefieldWallStone, cx - 500, 3200, 180, -36);
-    this.placeImage(MAP_TEXTURES.battlefieldWallStone, cx + 500, 3200, 180, -36);
-    this.placeImage(MAP_TEXTURES.battlefieldWallStone, cx - 500, 1000, 180, -36);
-    this.placeImage(MAP_TEXTURES.battlefieldWallStone, cx + 500, 1000, 180, -36);
+    // Gate wall art — flanking collision segments, not in playable gap (1140–1860)
+    for (const gate of [GATE_LINES.blue, GATE_LINES.red]) {
+      this.placeImage(MAP_TEXTURES.battlefieldWallStone, gate.leftWallX, gate.y - 10, 200, -36, 0, 0.85, 72);
+      this.placeImage(MAP_TEXTURES.battlefieldWallStone, gate.rightWallX, gate.y - 10, 200, -36, 0, 0.85, 72);
+    }
 
-    // Siege ruins rubble + choke
-    this.placeImage(MAP_TEXTURES.battlefieldWallBroken, cx - 200, 2100, 140, -34);
-    this.placeImage(MAP_TEXTURES.battlefieldWallBroken, cx + 200, 2100, 140, -34);
-    this.placeImage(MAP_TEXTURES.chokePointMarker, cx, 2550, 160, -33, 0, 0.75);
-
-    // Bridges linking routes
-    this.placeImage(MAP_TEXTURES.bridgeStone, cx - 280, 1700, 192, -34, Math.PI / 2);
-    this.placeImage(MAP_TEXTURES.bridgeStone, cx + 280, 1700, 192, -34, Math.PI / 2);
-    this.placeImage(MAP_TEXTURES.bridgeBroken, cx + 420, 2100, 160, -33, Math.PI / 2, 0.85);
+    // Siege ruins rubble at mid cross
+    this.placeImage(MAP_TEXTURES.battlefieldWallBroken, cx - 180, 2100, 120, -34, 0, 0.7);
+    this.placeImage(MAP_TEXTURES.battlefieldWallBroken, cx + 180, 2100, 120, -34, 0, 0.7);
+    this.placeImage(MAP_TEXTURES.chokePointMarker, 900, 2550, 120, -33, 0, 0.45);
+    this.placeImage(MAP_TEXTURES.chokePointMarker, 2100, 2550, 120, -33, 0, 0.45);
   }
 
-  private placeGuideMarkers(map: MapDefinition): void {
-    const cx = map.width / 2;
+  private placeGuideMarkers(_map: MapDefinition): void {
+    // Lane pennants at first fork + mid only (no red pennant — reduces noise)
+    this.placeImage(MAP_TEXTURES.laneMarkerBlue, 1280, 3550, 72, -20, 0, 0.9);
+    this.placeImage(MAP_TEXTURES.laneMarkerNeutral, 1500, 2100, 68, -20, 0, 0.85);
 
-    // Lane pennants at route branches
-    this.placeImage(MAP_TEXTURES.laneMarkerBlue, cx - 280, 3500, 80, -20);
-    this.placeImage(MAP_TEXTURES.laneMarkerRed, cx - 280, 700, 80, -20);
-    this.placeImage(MAP_TEXTURES.laneMarkerNeutral, cx, 2100, 72, -20);
-
-    // Path guide arrows (visual only — not pathfinding)
-    this.placeImage(MAP_TEXTURES.pathArrowBlue, cx, 3600, 64, -18, -Math.PI / 2);
-    this.placeImage(MAP_TEXTURES.pathArrowRed, cx, 500, 64, -18, Math.PI / 2);
-    this.placeImage(MAP_TEXTURES.pathArrowBlue, cx - 420, 2400, 56, -18, -Math.PI / 2, 0.8);
-    this.placeImage(MAP_TEXTURES.pathArrowRed, cx - 420, 800, 56, -18, Math.PI / 2, 0.8);
-    this.placeImage(MAP_TEXTURES.pathArrowNeutral, cx + 420, 2400, 56, -18, -Math.PI / 2, 0.75);
-    this.placeImage(MAP_TEXTURES.pathArrowNeutral, cx + 420, 800, 56, -18, Math.PI / 2, 0.75);
+    // Main-route path hints only (3 arrows on center spine)
+    const mainArrows: Array<{ y: number; alpha: number }> = [
+      { y: 3750, alpha: 0.85 },
+      { y: 3550, alpha: 0.75 },
+      { y: 2800, alpha: 0.55 },
+    ];
+    for (const arrow of mainArrows) {
+      this.placeImage(MAP_TEXTURES.pathArrowBlue, 1500, arrow.y, 56, -18, -Math.PI / 2, arrow.alpha);
+    }
   }
 }

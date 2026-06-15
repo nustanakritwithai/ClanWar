@@ -16,13 +16,20 @@
 
 | Zone | Assets |
 |---|---|
-| Blue base (bottom) | `base_floor_blue`, `spawn_platform_blue`, `lane_marker_blue`, `path_arrow_blue` |
-| Red base (top) | `base_floor_red`, `spawn_platform_red`, `lane_marker_red`, `path_arrow_red` |
-| Main route (center) | `main_route_tile`, `road_crossing` |
-| High ground (left) | `high_ground_tile`, `high_ground_ramp_up/down`, path arrows |
-| Shadow/sewer (right) | `shadow_route_tile`, `sewer_entrance/exit`, path arrows |
-| Structures | `battlefield_wall_stone/broken`, `bridge_stone/broken`, `choke_point_marker` |
-| Midfield | `neutral_ground_patch`, `lane_marker_neutral` |
+| Blue base (bottom, y < 3350) | `base_floor_blue`, `spawn_platform_blue` |
+| Red base (top, y > 850) | `base_floor_red`, `spawn_platform_red` |
+| Main route (center, **400 px**) | `main_route_tile` x 1300–1700 |
+| High ground (left, **450 px**) | `high_ground_tile` x 600–1050, ramps @ x≈820 |
+| Shadow/sewer (right, **280 px inset**) | `shadow_route_tile` x 2070–2350, sewer @ x≈2150 |
+| Junctions (×3) | `road_crossing` @ (1500,3550), (1500,2100), (1500,650) |
+| Gate walls | `battlefield_wall_stone` flanking gap x 1140–1860 @ y=3200/1000 |
+
+## Design gate alignment (Agent C / PR #17)
+
+- 3× `road_crossing` per `docs/map-layout-spec.md` §3.3
+- Main route wider than flank routes (400 px vs 450/280 effective bands)
+- Gate wall art outside playable opening — no false corridors
+- Reduced overlays: 3 main-route arrows, 2 lane pennants; midfield labels hidden
 
 ## Loaded but not rendered (by design)
 
