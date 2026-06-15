@@ -218,20 +218,39 @@ export class InputSystem {
     this.buttons.reposition();
   }
 
+  /** Mock cooldown overlay on the matching touch button (keyboard or touch). */
+  public showButtonCooldown(action: ActionKey): void {
+    this.buttons.showMockCooldown(action);
+  }
+
   /**
-   * Stop all movement and release any held joystick/touch state. Called on
-   * window blur, tab hide, or pointer cancel so a player switching apps or
-   * lifting their finger off-screen doesn't leave the character walking.
+   * Stop all movement, pending actions, and action flags. Called on window
+   * blur, tab hide, or scene shutdown so no input leaks across transitions.
    */
   public reset(): void {
     this.joystick.reset();
     this.pendingActions.clear();
+    this.clearActionState();
     this.state.moveX = 0;
     this.state.moveY = 0;
   }
 
+  private clearActionState(): void {
+    const s = this.state;
+    s.attackPressed = false;
+    s.skill1Pressed = false;
+    s.skill2Pressed = false;
+    s.skill3Pressed = false;
+    s.ultimatePressed = false;
+    s.warActionPressed = false;
+    s.item1Pressed = false;
+    s.item2Pressed = false;
+    s.lastAction = '';
+  }
+
   /** Remove all listeners and destroy UI. Call on scene shutdown. */
   public destroy(): void {
+    this.reset();
     this.scene.input.off('pointerdown', this.onPointerDown);
     window.removeEventListener('blur', this.onBlurOrHide);
     document.removeEventListener('visibilitychange', this.onBlurOrHide);

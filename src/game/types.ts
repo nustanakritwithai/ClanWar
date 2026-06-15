@@ -1,5 +1,5 @@
-// Core shared types. Kept deliberately small for Phase 0-1; hero/skill/item
-// schemas (doc section 14) are added when those phases begin.
+// Core shared types. Map/input types for runtime; hero/skill/item/economy specs
+// for Phase 3+ live in src/game/data/*.
 
 export type TeamId = 'blue' | 'red';
 
@@ -69,4 +69,129 @@ export interface InputState {
   item2Pressed: boolean;
   lastAction: string;
   inputMode: InputMode;
+}
+
+// --- Phase 2.5 / Phase 3 data spec types ------------------------------------
+
+export type HeroClassId = 'guardian' | 'warrior' | 'ranger' | 'mage' | 'priest';
+
+export interface HeroStats {
+  hp: number;
+  mana: number;
+  attack: number;
+  armor: number;
+  moveSpeed: number;
+  attackRange: number;
+  magicPower?: number;
+  gateDamageBonus?: number;
+}
+
+export interface HeroDefinition {
+  id: HeroClassId;
+  name: string;
+  stats: HeroStats;
+}
+
+export type SkillSlot = 'skill1' | 'skill2' | 'skill3' | 'ultimate';
+
+export interface SkillDefinition {
+  id: string;
+  heroClass: HeroClassId;
+  slot: SkillSlot;
+  name: string;
+  cooldown: number;
+  manaCost: number;
+  damage?: number;
+  heal?: number;
+  range?: number;
+  radius?: number;
+  duration?: number;
+  stun?: number;
+  slow?: number;
+  arc?: number;
+  projectileSpeed?: number;
+  damageReduction?: number;
+  armorBonus?: number;
+  attackSpeedBonus?: number;
+  gateDamageBonus?: number;
+  damagePerSecond?: number;
+  damagePerWave?: number;
+  waves?: number;
+  healPerSecond?: number;
+  width?: number;
+}
+
+export interface ExpRewards {
+  killHero: number;
+  assist: number;
+  captureObjective: number;
+  damageGateMajor: number;
+  repairGate: number;
+  healAllyMajor: number;
+  holdObjectiveTick: number;
+}
+
+export interface GoldRewards {
+  killGold: number;
+  assistGold: number;
+  captureGold: number;
+  resourceCampTickGold: number;
+  passiveGoldPerSecond: number;
+}
+
+export interface RespawnRules {
+  baseRespawn: number;
+  extraRespawnByMinuteDivisor: number;
+  maxRespawn: number;
+}
+
+export interface EconomyConfig {
+  startingGold: number;
+  passiveGoldPerSecond: number;
+  firstItemTargetTimeSeconds: number;
+  maxLevel: number;
+  startLevel: number;
+  exp: ExpRewards;
+  gold: GoldRewards;
+  respawn: RespawnRules;
+}
+
+export interface ItemDefinition {
+  id: string;
+  name: string;
+  price: number;
+  attack?: number;
+  armor?: number;
+  hp?: number;
+  magicPower?: number;
+  mana?: number;
+  moveSpeed?: number;
+  attackSpeedBonus?: number;
+  gateDamageBonus?: number;
+  healingBonus?: number;
+  activeDamageReduction?: number;
+  activeDuration?: number;
+  activeMoveSpeedBonus?: number;
+  repairAmount?: number;
+  gateDamage?: number;
+  slow?: number;
+  duration?: number;
+  placeholder?: boolean;
+}
+
+export interface EdgeCaseRule {
+  id: string;
+  description: string;
+}
+
+export interface EdgeCaseRules {
+  simultaneousCoreDestruction: EdgeCaseRule;
+  coreDestructionTiebreaker: EdgeCaseRule;
+  respawnWithoutForwardCamp: EdgeCaseRule;
+  warActionCancelOnDeath: EdgeCaseRule;
+  contestedObjective: EdgeCaseRule;
+  matchTimeTiebreaker: EdgeCaseRule;
+  coreHpTiebreaker: EdgeCaseRule;
+  suddenDeathDuration: EdgeCaseRule;
+  suddenDeathTiebreaker: EdgeCaseRule;
 }
