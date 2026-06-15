@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Objective under attack pressure">
+  <!-- Pressure ripple rings (visual feedback only, not damage zone) -->
+  <circle cx="128" cy="128" r="100" fill="none" stroke="#f59e0b" stroke-width="6" opacity="0.35"/>
+  <circle cx="128" cy="128" r="76" fill="none" stroke="#f59e0b" stroke-width="8" opacity="0.55"/>
+  <circle cx="128" cy="128" r="52" fill="#f59e0b" opacity="0.12"/>
+  <!-- Incoming pressure chevrons (four directions) -->
+  <g fill="#f59e0b" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round">
+    <path d="M128 28 L148 56 L108 56 Z"/>
+    <path d="M228 128 L200 148 L200 108 Z"/>
+    <path d="M128 228 L108 200 L148 200 Z"/>
+    <path d="M28 128 L56 108 L56 148 Z"/>
+  </g>
+  <!-- Center strike mark (not a skill hit) -->
+  <circle cx="128" cy="128" r="18" fill="#f59e0b" stroke="#0b0e13" stroke-width="7"/>
+  <line x1="128" y1="104" x2="128" y2="152" stroke="#0b0e13" stroke-width="7" stroke-linecap="round"/>
+  <line x1="104" y1="128" x2="152" y2="128" stroke="#0b0e13" stroke-width="7" stroke-linecap="round"/>
+</svg>

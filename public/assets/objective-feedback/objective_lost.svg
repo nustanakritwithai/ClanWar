@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Objective ownership lost">
+  <!-- Fading ownership ring -->
+  <circle cx="128" cy="140" r="88" fill="none" stroke="#9ca3af" stroke-width="7" stroke-dasharray="10 16" opacity="0.6"/>
+  <!-- Drooping torn pennant -->
+  <line x1="128" y1="200" x2="128" y2="68" stroke="#0b0e13" stroke-width="10" stroke-linecap="round" opacity="0.5"/>
+  <path d="M128 68 L176 88 L160 108 L128 100 L96 112 L80 92 Z"
+        fill="#9ca3af" stroke="#0b0e13" stroke-width="8" stroke-linejoin="round" opacity="0.7"/>
+  <!-- Lost X mark (drawn bars, not text) -->
+  <g stroke="#ef4444" stroke-width="12" stroke-linecap="round">
+    <line x1="96" y1="148" x2="160" y2="212"/>
+    <line x1="160" y1="148" x2="96" y2="212"/>
+  </g>
+  <!-- Fading smoke wisps -->
+  <g fill="#9ca3af" opacity="0.35">
+    <circle cx="108" cy="56" r="14"/>
+    <circle cx="148" cy="48" r="11"/>
+  </g>
+</svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Capture progress pulse visual only">
+  <!-- Ground capture zone (visual only, not capture logic) -->
+  <circle cx="128" cy="128" r="104" fill="#9ca3af" opacity="0.08"/>
+  <!-- Pulsing progress arc segments (runtime animates opacity/scale) -->
+  <g fill="none" stroke="#9ca3af" stroke-width="10" stroke-linecap="round">
+    <path d="M128 36 a92 92 0 0 1 79.7 46" opacity="0.4"/>
+    <path d="M207.7 82 a92 92 0 0 1 0 92" opacity="0.65"/>
+    <path d="M207.7 174 a92 92 0 0 1 -79.7 46" opacity="0.85"/>
+    <path d="M48.3 174 a92 92 0 0 1 0 -92" opacity="1.0"/>
+  </g>
+  <!-- Inner pulse ring -->
+  <circle cx="128" cy="128" r="68" fill="none" stroke="#cbd5e1" stroke-width="5" stroke-dasharray="8 12" opacity="0.7"/>
+  <!-- Center capture pip -->
+  <circle cx="128" cy="128" r="14" fill="#9ca3af" stroke="#0b0e13" stroke-width="6"/>
+  <!-- Outward pulse tick marks -->
+  <g stroke="#9ca3af" stroke-width="6" stroke-linecap="round" opacity="0.5">
+    <line x1="128" y1="16" x2="128" y2="32"/>
+    <line x1="240" y1="128" x2="224" y2="128"/>
+    <line x1="128" y1="240" x2="128" y2="224"/>
+    <line x1="16" y1="128" x2="32" y2="128"/>
+  </g>
+</svg>
