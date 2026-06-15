@@ -2,10 +2,10 @@
 
 Browser-based 2D top-down siege arena (MVP). Built with **Vite + TypeScript + Phaser 3**.
 
-> Status: **Phase 3B-B3** — runtime combat visual integration (SVG projectiles, hit/AoE/heal VFX).
-> No bot AI, shop, objectives, or player death yet.
+> Status: **Phase 4A** — map visual runtime foundation (three-route battlefield SVG tiles in Match).
+> No bot AI, shop, objectives gameplay, or player death yet.
 
-See [docs/phase-3b-b3-runtime-visual-integration.md](docs/phase-3b-b3-runtime-visual-integration.md).
+See [docs/phase-4a-map-visual-runtime-foundation.md](docs/phase-4a-map-visual-runtime-foundation.md).
 
 ## Run
 
@@ -16,7 +16,7 @@ npm run build    # type-check + production build
 npm run preview  # serve the production build
 ```
 
-## What works now (Phase 0–3B-B3)
+## What works now (Phase 0–4A)
 
 - Menu → **Start** → **ClassSelect** → Match with chosen hero class.
 - Five classes with real stats, mana regen, skill cooldown/mana from `skills.ts`.

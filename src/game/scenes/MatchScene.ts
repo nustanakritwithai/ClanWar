@@ -22,6 +22,7 @@ import { Player } from '../entities/Player';
 import { TrainingDummy } from '../entities/TrainingDummy';
 import { InputSystem } from '../systems/InputSystem';
 import { ProjectileSystem } from '../systems/ProjectileSystem';
+import { MapRenderer, loadMapVisualAssets } from '../systems/MapRenderer';
 import { SkillRuntimeSystem } from '../systems/SkillRuntimeSystem';
 import { showCombatText } from '../ui/CombatText';
 import { showAoeMarker, showHealBurst, showHealSpark, showHitSpark, showImpactBurst, showSlashArc, loadCombatVisualAssets } from '../ui/CombatVfx';
@@ -55,6 +56,7 @@ export class MatchScene extends Phaser.Scene {
   private lastPlaceholderReason = '-';
   private lastSkippedSkillReason = '-';
   private projectileSystem!: ProjectileSystem;
+  public mapRenderer!: MapRenderer;
 
   constructor() {
     super(SCENE_KEYS.Match);
@@ -67,6 +69,7 @@ export class MatchScene extends Phaser.Scene {
 
   preload(): void {
     loadCombatVisualAssets(this.load);
+    loadMapVisualAssets(this.load);
   }
 
   create(): void {
@@ -77,6 +80,8 @@ export class MatchScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, map.width, map.height);
 
     this.drawGround(map.width, map.height);
+    this.mapRenderer = new MapRenderer(this, (obj) => this.registerWorldObject(obj));
+    this.mapRenderer.build(map);
     this.buildWalls();
     this.drawMarkers(map.markers);
 
@@ -538,6 +543,7 @@ export class MatchScene extends Phaser.Scene {
     }
 
     this.projectileSystem.destroy();
+    this.mapRenderer.destroy();
     this.movement.destroy();
   }
 
