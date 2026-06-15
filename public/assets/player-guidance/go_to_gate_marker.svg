@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Go to gate guidance marker">
+  <!-- Player guidance only - not pathfinding, not collision -->
+  <ellipse cx="128" cy="210" rx="56" ry="14" fill="#0b0e13" opacity="0.25"/>
+  <!-- Footstep chevrons toward gate -->
+  <g fill="#22d3ee" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round" opacity="0.75">
+    <path d="M128 176 L144 156 L112 156 Z"/>
+    <path d="M128 148 L144 128 L112 128 Z"/>
+    <path d="M128 120 L144 100 L112 100 Z"/>
+  </g>
+  <!-- Mini gate silhouette target -->
+  <path d="M88 92 V52 a40 40 0 0 1 80 0 V92 Z" fill="#3a4658" stroke="#0b0e13" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M108 92 V60 a20 20 0 0 1 40 0 V92 Z" fill="#1a2230"/>
+  <!-- Guidance waypoint diamond -->
+  <path d="M128 28 L148 48 L128 68 L108 48 Z" fill="#22d3ee" stroke="#0b0e13" stroke-width="7" stroke-linejoin="round"/>
+</svg>

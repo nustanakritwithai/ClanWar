@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Retreat to core guidance marker">
+  <!-- Player guidance only - not pathfinding, not teleport -->
+  <ellipse cx="128" cy="210" rx="56" ry="14" fill="#0b0e13" opacity="0.25"/>
+  <!-- Curved retreat arrow (pointing toward core) -->
+  <path d="M180 72 C140 40 80 60 76 120 C72 168 100 196 128 200"
+        fill="none" stroke="#22d3ee" stroke-width="12" stroke-linecap="round"/>
+  <path d="M108 188 L76 200 L100 168 Z" fill="#22d3ee" stroke="#0b0e13" stroke-width="7" stroke-linejoin="round"/>
+  <!-- Core destination crystal -->
+  <path d="M128 148 L160 188 L128 208 L96 188 Z" fill="#f4d35e" stroke="#0b0e13" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M128 112 L160 152 L128 172 L96 152 Z" fill="#cfa14a" stroke="#0b0e13" stroke-width="7" stroke-linejoin="round"/>
+  <!-- Safe zone ring around core -->
+  <circle cx="128" cy="168" r="52" fill="none" stroke="#22d3ee" stroke-width="5" stroke-dasharray="10 10" opacity="0.6"/>
+</svg>
