@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Main route guidance pulse marker">
+  <!-- Visual route pulse only - not pathfinding, not lane logic -->
+  <ellipse cx="128" cy="220" rx="56" ry="12" fill="#0b0e13" opacity="0.2"/>
+  <!-- Main route line -->
+  <line x1="64" y1="200" x2="192" y2="56" stroke="#22d3ee" stroke-width="8" stroke-linecap="round" opacity="0.4"/>
+  <!-- Pulse dots along route (runtime animates opacity along line) -->
+  <g fill="#22d3ee" stroke="#0b0e13" stroke-width="4">
+    <circle cx="80" cy="184" r="10" opacity="0.4"/>
+    <circle cx="104" cy="160" r="12" opacity="0.55"/>
+    <circle cx="128" cy="136" r="14" opacity="0.7"/>
+    <circle cx="152" cy="112" r="12" opacity="0.85"/>
+    <circle cx="176" cy="72" r="10" opacity="1.0"/>
+  </g>
+  <!-- Route endpoint chevron -->
+  <path d="M176 56 L200 72 L152 72 Z" fill="#22d3ee" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round"/>
+  <!-- Route start marker -->
+  <circle cx="64" cy="200" r="12" fill="none" stroke="#22d3ee" stroke-width="5"/>
+</svg>

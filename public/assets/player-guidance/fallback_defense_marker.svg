@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Fallback defense guidance marker">
+  <!-- Player guidance only - not defensive AI, not spawn fallback -->
+  <ellipse cx="128" cy="210" rx="56" ry="14" fill="#0b0e13" opacity="0.25"/>
+  <!-- Fallback position ring -->
+  <circle cx="128" cy="148" r="64" fill="#3b82f6" opacity="0.08"/>
+  <circle cx="128" cy="148" r="64" fill="none" stroke="#3b82f6" stroke-width="6" stroke-dasharray="14 10"/>
+  <!-- Shield with backward retreat arrow -->
+  <path d="M128 56 L188 84 V148 C188 180 164 200 128 210 C92 200 68 180 68 148 V84 Z"
+        fill="#3b82f6" stroke="#0b0e13" stroke-width="9" stroke-linejoin="round" opacity="0.8"/>
+  <!-- Backward arrow (retreat to hold) -->
+  <path d="M156 128 L116 128 L132 108 L116 128 L132 148 Z"
+        fill="#dbeafe" stroke="#0b0e13" stroke-width="5" stroke-linejoin="round"/>
+  <!-- Hold position bar (drawn shape) -->
+  <rect x="118" y="160" width="20" height="32" rx="6" fill="#0b0e13" opacity="0.6"/>
+</svg>
