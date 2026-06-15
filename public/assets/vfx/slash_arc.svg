@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Slash arc">
+  <!-- Crescent slash trail -->
+  <path d="M44 56
+           C 160 40 224 116 220 212
+           C 204 132 132 80 60 96
+           C 120 96 168 132 184 196
+           C 140 120 80 96 44 56 Z"
+        fill="#ffffff" stroke="#0b0e13" stroke-width="7" stroke-linejoin="round"/>
+  <!-- Inner edge highlight -->
+  <path d="M60 70 C 150 64 200 124 204 196" fill="none" stroke="#fca5a5" stroke-width="8" stroke-linecap="round" opacity="0.9"/>
+  <!-- Speed sparks -->
+  <g stroke="#ffffff" stroke-width="7" stroke-linecap="round">
+    <line x1="214" y1="206" x2="236" y2="222"/>
+    <line x1="40" y1="64" x2="22" y2="46"/>
+  </g>
+</svg>

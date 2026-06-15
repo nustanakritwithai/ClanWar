@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Burn status">
+  <defs>
+    <linearGradient id="burnFill" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#f97316"/>
+      <stop offset="1" stop-color="#ef4444"/>
+    </linearGradient>
+  </defs>
+  <!-- Flame -->
+  <path d="M128 28
+           C 176 86 168 124 142 152
+           C 162 138 172 116 170 94
+           C 200 138 192 196 150 224
+           C 168 204 172 178 164 156
+           C 178 192 150 232 128 232
+           C 106 232 78 192 92 156
+           C 84 178 88 204 106 224
+           C 64 196 56 138 86 94
+           C 84 116 94 138 114 152
+           C 88 124 80 86 128 28 Z"
+        fill="url(#burnFill)" stroke="#0b0e13" stroke-width="10" stroke-linejoin="round"/>
+  <!-- Inner ember -->
+  <path d="M128 110 C 146 138 142 168 128 192 C 114 168 110 138 128 110 Z" fill="#fff7d6"/>
+</svg>

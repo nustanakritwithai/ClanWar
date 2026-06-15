@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Armor buff status">
+  <!-- Shield + up-arrow (defense up, blue) -->
+  <circle cx="128" cy="128" r="96" fill="#3b82f6" opacity="0.12"/>
+  <path d="M104 40 L184 70 V146 C184 196 152 224 112 240 C72 224 40 196 40 146 V70 Z"
+        fill="#3b82f6" stroke="#0b0e13" stroke-width="11" stroke-linejoin="round"/>
+  <path d="M112 96 V184 M76 130 H148" stroke="#dbeafe" stroke-width="12" stroke-linecap="round"/>
+  <!-- Up arrow (buff) -->
+  <path d="M192 150 L214 122 L236 150" fill="none" stroke="#fbbf24" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="214" y1="122" x2="214" y2="186" stroke="#fbbf24" stroke-width="14" stroke-linecap="round"/>
+</svg>

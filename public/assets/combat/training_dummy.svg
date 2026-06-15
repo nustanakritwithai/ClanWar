@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Training dummy">
+  <!-- Straw practice dummy on a stand — clearly a target, not a real enemy. -->
+  <!-- Base / stand -->
+  <ellipse cx="128" cy="232" rx="64" ry="14" fill="#9ca3af" opacity="0.3"/>
+  <rect x="118" y="170" width="20" height="58" fill="#7a5a3a" stroke="#0b0e13" stroke-width="8"/>
+  <!-- Burlap body -->
+  <rect x="84" y="92" width="88" height="92" rx="20" fill="#c9a96a" stroke="#0b0e13" stroke-width="9"/>
+  <!-- Cross beam arms (wooden) -->
+  <rect x="44" y="104" width="168" height="18" rx="8" fill="#7a5a3a" stroke="#0b0e13" stroke-width="8"/>
+  <!-- Straw head -->
+  <circle cx="128" cy="70" r="30" fill="#c9a96a" stroke="#0b0e13" stroke-width="9"/>
+  <!-- Sackcloth tie -->
+  <line x1="100" y1="96" x2="156" y2="96" stroke="#0b0e13" stroke-width="6"/>
+  <!-- Target rings on the torso (clearly a dummy) -->
+  <circle cx="128" cy="140" r="28" fill="none" stroke="#ef4444" stroke-width="7"/>
+  <circle cx="128" cy="140" r="13" fill="#ef4444"/>
+  <!-- Straw tufts -->
+  <g stroke="#a8843f" stroke-width="6" stroke-linecap="round">
+    <line x1="84" y1="184" x2="74" y2="200"/>
+    <line x1="172" y1="184" x2="182" y2="200"/>
+    <line x1="128" y1="44" x2="128" y2="30"/>
+  </g>
+</svg>

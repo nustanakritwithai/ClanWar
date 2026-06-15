@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Impact burst">
+  <defs>
+    <radialGradient id="impactCore" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff7d6"/>
+      <stop offset="0.6" stop-color="#fbbf24"/>
+      <stop offset="1" stop-color="#f97316"/>
+    </radialGradient>
+  </defs>
+  <!-- Outer shock ring -->
+  <circle cx="128" cy="128" r="96" fill="none" stroke="#f97316" stroke-width="8" opacity="0.5"/>
+  <!-- Jagged explosion silhouette -->
+  <path d="M128 22 L150 86 L210 60 L176 116 L236 128 L176 140 L210 196 L150 170
+           L128 234 L106 170 L46 196 L80 140 L20 128 L80 116 L46 60 L106 86 Z"
+        fill="url(#impactCore)" stroke="#0b0e13" stroke-width="7" stroke-linejoin="round"/>
+  <!-- Hot core -->
+  <circle cx="128" cy="128" r="30" fill="#ffffff" stroke="#0b0e13" stroke-width="6"/>
+</svg>
