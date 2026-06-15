@@ -6,35 +6,24 @@
 
 ## Summary
 
-| Metric | Count |
-|--------|-------|
-| Open PRs | **3** |
-| Draft | **3** |
-| Ready | **0** |
-| Mergeable (CLEAN) | **3** |
-| Needs base sync | **0** |
+ตอนนี้มี open PR สี่ตัว (รวม Agent E) ทั้งหมดเป็น Draft ไม่มีตัวไหน Ready ทั้งสาม prep PR (#19–#21) mergeable (CLEAN) และ sync กับ base แล้ว ไม่ต้อง rebase
 
 ---
 
-## Open pull requests
+## PR #19 — Agent D (UX / Onboarding)
 
-### PR #19 — Agent D (UX / Onboarding)
+**Phase 4B-D: Objective onboarding and player guidance spec**  
+https://github.com/nustanakritwithai/ClanWar/pull/19
 
-| Field | Value |
-|-------|-------|
-| **Title** | Phase 4B-D: Objective onboarding and player guidance spec |
-| **URL** | https://github.com/nustanakritwithai/ClanWar/pull/19 |
-| **Branch** | `cursor/phase-4b-d-objective-onboarding-guidance-spec` |
-| **Head SHA** | `75e9ac8` |
-| **Base** | `claude/game-file-analysis-a20xup` @ `23ee8cb` |
-| **State** | OPEN |
-| **Draft** | ✅ true |
-| **Mergeable** | MERGEABLE (CLEAN) |
-| **Files** | 7 × `docs/**` only |
-| **Scope guard** | ✅ PASS — docs-only, no runtime/assets |
-| **Agent E recommendation** | **HOLD — NEED REVIEW** — do not Ready/Merge until GPT/User reviews UX spec |
+Branch `cursor/phase-4b-d-objective-onboarding-guidance-spec` @ head `75e9ac8`  
+Base `claude/game-file-analysis-a20xup` @ `23ee8cb`  
+State: OPEN · Draft: true · Mergeable: MERGEABLE (CLEAN)
 
-**Files changed:**
+Scope guard: PASS — docs-only ไม่มี runtime/assets
+
+Agent E แนะนำ: **HOLD — NEED REVIEW** — อย่า Ready/Merge จน GPT/User review UX spec
+
+ไฟล์ที่เปลี่ยน:
 - `docs/mobile-hud-ux-spec.md`
 - `docs/objective-explanation-flow.md`
 - `docs/player-guidance-system.md`
@@ -45,43 +34,37 @@
 
 ---
 
-### PR #20 — Agent B (Assets)
+## PR #20 — Agent B (Assets)
 
-| Field | Value |
-|-------|-------|
-| **Title** | Phase 4B-B2: Player guidance marker asset pack |
-| **URL** | https://github.com/nustanakritwithai/ClanWar/pull/20 |
-| **Branch** | `cursor/phase-4b-b2-player-guidance-marker-asset-pack` |
-| **Head SHA** | `d194bd8` |
-| **Base** | `claude/game-file-analysis-a20xup` @ `23ee8cb` |
-| **State** | OPEN |
-| **Draft** | ✅ true |
-| **Mergeable** | MERGEABLE (CLEAN) |
-| **Files** | 12 × `public/assets/player-guidance/*.svg` + 4 docs |
-| **Scope guard** | ✅ PASS — asset/docs only, no `src/game/**` |
-| **Agent E recommendation** | **HOLD — NEED REVIEW** — independent of #19; merge after Product approval |
+**Phase 4B-B2: Player guidance marker asset pack**  
+https://github.com/nustanakritwithai/ClanWar/pull/20
 
-**Note:** `public/assets/player-guidance/` **not on base** until this PR merges.
+Branch `cursor/phase-4b-b2-player-guidance-marker-asset-pack` @ head `d194bd8`  
+Base `claude/game-file-analysis-a20xup` @ `23ee8cb`  
+State: OPEN · Draft: true · Mergeable: MERGEABLE (CLEAN)
+
+Scope guard: PASS — asset/docs only ไม่มี `src/game/**`
+
+Agent E แนะนำ: **HOLD — NEED REVIEW** — merge ได้หลัง Product approval (ไม่ depend บน #19)
+
+หมายเหตุ: `public/assets/player-guidance/` **ยังไม่อยู่บน base** จนกว่า PR นี้จะ merge
 
 ---
 
-### PR #21 — Agent C (Design / Spec)
+## PR #21 — Agent C (Design / Spec)
 
-| Field | Value |
-|-------|-------|
-| **Title** | Phase 4B-C: Gate/Core objective runtime design spec |
-| **URL** | https://github.com/nustanakritwithai/ClanWar/pull/21 |
-| **Branch** | `cursor/phase-4b-c-gate-core-objective-runtime-spec` |
-| **Head SHA** | `b4d1b56` |
-| **Base** | `claude/game-file-analysis-a20xup` @ `23ee8cb` |
-| **State** | OPEN |
-| **Draft** | ✅ true |
-| **Mergeable** | MERGEABLE (CLEAN) |
-| **Files** | 6 × `docs/**` only |
-| **Scope guard** | ✅ PASS — docs-only, no runtime/assets |
-| **Agent E recommendation** | **HOLD — NEED REVIEW** — **critical gate** for Agent A 4B runtime |
+**Phase 4B-C: Gate/Core objective runtime design spec**  
+https://github.com/nustanakritwithai/ClanWar/pull/21
 
-**Files changed:**
+Branch `cursor/phase-4b-c-gate-core-objective-runtime-spec` @ head `b4d1b56`  
+Base `claude/game-file-analysis-a20xup` @ `23ee8cb`  
+State: OPEN · Draft: true · Mergeable: MERGEABLE (CLEAN)
+
+Scope guard: PASS — docs-only ไม่มี runtime/assets
+
+Agent E แนะนำ: **HOLD — NEED REVIEW** — **critical gate** สำหรับ Agent A 4B runtime
+
+ไฟล์ที่เปลี่ยน:
 - `docs/phase-4b-objective-runtime-spec.md`
 - `docs/gate-core-loop-spec.md`
 - `docs/objective-state-machine-spec.md`
@@ -91,37 +74,37 @@
 
 ---
 
+## PR #22 — Agent E (Audit)
+
+**Agent E: Phase 4A closure and final gate dashboard**  
+https://github.com/nustanakritwithai/ClanWar/pull/22
+
+Branch `cursor/agent-e-phase-4a-closure-dashboard`  
+State: OPEN · Draft · docs-only
+
+---
+
 ## Recently merged (reference)
 
-| PR | Agent | Status | Merge commit |
-|----|-------|--------|--------------|
-| #16 | A | MERGED | `23ee8cb` |
-| #17 | C | MERGED | `266bc91` |
-| #18 | B | MERGED | `9de58e5` |
+- **PR #16 (Agent A)** — Map visual runtime @ `23ee8cb`
+- **PR #17 (Agent C)** — Phase 4A level design docs @ `266bc91`
+- **PR #18 (Agent B)** — Objective feedback assets @ `9de58e5`
 
 ---
 
-## Merge readiness matrix
+## Merge readiness
 
-| PR | Synced | Scope OK | Tests N/A | Review | Ready? | Merge? |
-|----|--------|----------|-----------|--------|--------|--------|
-| #19 | ✅ | ✅ | N/A (docs) | ⏳ Pending | ❌ Draft | ❌ Hold |
-| #20 | ✅ | ✅ | N/A (assets) | ⏳ Pending | ❌ Draft | ❌ Hold |
-| #21 | ✅ | ✅ | N/A (docs) | ⏳ Pending | ❌ Draft | ❌ Hold |
+**#19** — synced, scope OK, review pending, ยัง Draft → Hold  
+**#20** — synced, scope OK, review pending, ยัง Draft → Hold  
+**#21** — synced, scope OK, review pending, ยัง Draft → Hold (critical สำหรับ runtime)
 
 ---
 
-## Agent A 4B runtime — prerequisite checklist
+## Agent A 4B runtime — prerequisites
 
-| Prerequisite | Status |
-|--------------|--------|
-| Phase 4A merged (#16) | ✅ |
-| Phase 4A design docs (#17) | ✅ |
-| Objective feedback assets (#18) | ✅ |
-| Gate/Core design spec (#21) | ⏳ **Draft — not merged** |
-| UX onboarding spec (#19) | ⏳ **Draft — not merged** |
-| Player guidance assets (#20) | ⏳ **Draft — not merged** |
-| Product work order for Agent A | ⏳ **Not issued** |
+**พร้อมแล้ว:** Phase 4A merged (#16), design docs (#17), objective feedback assets (#18)
 
-**Agent A may start 4B runtime when:** #21 merged + Product work order issued.  
-**Recommended before start:** #19 and #20 also merged.
+**ยังไม่พร้อม:** Gate/Core design spec (#21 — Draft), UX spec (#19 — Draft), player guidance assets (#20 — Draft), Product work order (ยังไม่ออก)
+
+Agent A เริ่ม 4B runtime ได้เมื่อ **#21 merge + Product work order**  
+แนะนำให้ **#19 และ #20 merge ด้วย** ก่อนเริ่ม
