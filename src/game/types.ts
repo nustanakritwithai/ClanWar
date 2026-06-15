@@ -200,6 +200,21 @@ export interface MatchSceneData {
   heroClass?: HeroClassId;
 }
 
+// --- Phase 3B-A: combat foundation ----------------------------------------
+
+export interface CombatTarget {
+  currentHp: number;
+  maxHp: number;
+  armor: number;
+}
+
+export interface DamageResult {
+  rawDamage: number;
+  finalDamage: number;
+  targetHpAfter: number;
+  killed: boolean;
+}
+
 export type SkillUseFailReason = 'cooldown' | 'mana' | 'no-skill';
 
 export interface SkillUseResult {

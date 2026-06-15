@@ -8,19 +8,25 @@ import {
 } from '../constants';
 import { getHero } from '../data/heroes';
 import { smallTwinFortress } from '../data/map-small-twin-fortress';
-import type { ActionKey, HeroClassId, MapMarker, MatchSceneData } from '../types';
+import type { ActionKey, HeroClassId, MapMarker, MatchSceneData, SkillDefinition } from '../types';
 import { Player } from '../entities/Player';
+import { TrainingDummy } from '../entities/TrainingDummy';
 import { InputSystem } from '../systems/InputSystem';
 import { SkillRuntimeSystem } from '../systems/SkillRuntimeSystem';
+import { showCombatText } from '../ui/CombatText';
 import { isFullscreenActive, requestGameFullscreen } from '../utils/fullscreen';
 
 const HUD_HINT_NORMAL =
   'WASD/Arrows or joystick • J/Q/E/R/F/Space/1/2 or buttons • ` or F1: debug';
 const HUD_HINT_COMPACT = 'Move: joystick/WASD • Actions: buttons';
 
+/** Half-angle of the attack cone in radians (90° total arc). */
+const ATTACK_CONE_HALF = Math.PI / 4;
+
 export class MatchScene extends Phaser.Scene {
   private heroClass: HeroClassId = 'guardian';
   private player!: Player;
+  private dummy!: TrainingDummy;
   private movement!: InputSystem;
   private skillRuntime!: SkillRuntimeSystem;
   private walls!: Phaser.Physics.Arcade.StaticGroup;
@@ -35,6 +41,7 @@ export class MatchScene extends Phaser.Scene {
   private debugOverlayVisible = SHOW_DEBUG_OVERLAY;
   private debugToggleHandler?: () => void;
   private fullscreenChangeHandler?: () => void;
+  private lastCombatResult = '-';
 
   constructor() {
     super(SCENE_KEYS.Match);
@@ -42,6 +49,7 @@ export class MatchScene extends Phaser.Scene {
 
   init(data: MatchSceneData = {}): void {
     this.heroClass = data.heroClass ?? 'guardian';
+    this.lastCombatResult = '-';
   }
 
   create(): void {
@@ -56,8 +64,11 @@ export class MatchScene extends Phaser.Scene {
     this.drawMarkers(map.markers);
 
     this.player = new Player(this, map.playerSpawn.x, map.playerSpawn.y, hero);
+    this.dummy = new TrainingDummy(this, map.playerSpawn.x, map.playerSpawn.y - 350);
     this.skillRuntime = new SkillRuntimeSystem(this.heroClass);
+
     this.physics.add.collider(this.player.sprite, this.walls);
+    this.physics.add.collider(this.dummy.sprite, this.walls);
 
     this.cameras.main.startFollow(this.player.sprite, true, 0.12, 0.12);
     this.cameras.main.setZoom(this.computeZoom());
@@ -89,6 +100,7 @@ export class MatchScene extends Phaser.Scene {
     const dir = this.movement.getMoveVector(this.moveVec);
     this.player.move(dir);
     this.player.update();
+    this.dummy.update();
 
     this.processActions();
     this.updateStatsHud();
@@ -111,7 +123,25 @@ export class MatchScene extends Phaser.Scene {
   private handleAttack(): void {
     this.player.playActionFeedback('attack');
     this.movement.showButtonCooldown('attack');
-    this.movement.state.lastAction = 'Attack';
+
+    if (!this.dummy.canReceiveDamage()) {
+      this.setCombatResult('Attack missed');
+      return;
+    }
+
+    if (this.isInAttackRange(this.dummy.x, this.dummy.y, this.dummy.radius)) {
+      const result = this.dummy.takeDamage(this.player.attack);
+      const text = showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#ef4444');
+      this.registerWorldObject(text);
+      this.setCombatResult(`Attack hit ${result.finalDamage}`);
+      if (result.killed) {
+        this.time.delayedCall(2100, () => {
+          if (!this.dummy.isDead()) this.setCombatResult('Dummy reset');
+        });
+      }
+    } else {
+      this.setCombatResult('Attack missed');
+    }
   }
 
   private handleSimpleAction(action: ActionKey, label: string): void {
@@ -128,6 +158,7 @@ export class MatchScene extends Phaser.Scene {
       this.player.spendMana(skill.manaCost);
       this.player.playActionFeedback(action);
       this.movement.showButtonCooldown(action, (result.cooldown ?? skill.cooldown) * 1000);
+      this.applySkillCombatEffect(skill);
       this.movement.state.lastAction = result.skillName ?? skill.name;
       return;
     }
@@ -139,6 +170,92 @@ export class MatchScene extends Phaser.Scene {
       this.player.playDeniedFeedback('mana');
       this.movement.state.lastAction = 'Not enough mana';
     }
+  }
+
+  private applySkillCombatEffect(skill: SkillDefinition): void {
+    const name = skill.name;
+
+    if (skill.damage !== undefined) {
+      const range = skill.range ?? 160;
+      if (
+        this.dummy.canReceiveDamage() &&
+        this.isInSkillRange(this.dummy.x, this.dummy.y, this.dummy.radius, range)
+      ) {
+        const result = this.dummy.takeDamage(skill.damage);
+        const text = showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#f87171');
+        this.registerWorldObject(text);
+        this.setCombatResult(`${name} hit ${result.finalDamage}`);
+        if (result.killed) {
+          this.time.delayedCall(2100, () => {
+            if (!this.dummy.isDead()) this.setCombatResult('Dummy reset');
+          });
+        }
+      } else {
+        this.setCombatResult(`${name} missed`);
+      }
+      return;
+    }
+
+    if (skill.heal !== undefined) {
+      const healed = this.player.heal(skill.heal);
+      if (healed > 0) {
+        const text = showCombatText(this, this.player.x, this.player.y - 28, `+${healed}`, '#4ade80');
+        this.registerWorldObject(text);
+        this.setCombatResult(`Heal +${healed}`);
+      } else {
+        this.setCombatResult(`${name} (HP full)`);
+      }
+      return;
+    }
+
+    this.setCombatResult(`used ${name}`);
+  }
+
+  private setCombatResult(message: string): void {
+    this.lastCombatResult = message;
+    this.movement.state.lastAction = message;
+  }
+
+  /** Keep runtime world objects off the fixed UI camera layer. */
+  private registerWorldObject(obj: Phaser.GameObjects.GameObject): void {
+    if (this.uiCamera) {
+      this.uiCamera.ignore(obj);
+    }
+  }
+
+  private isInAttackRange(targetX: number, targetY: number, targetRadius: number): boolean {
+    return (
+      this.isWithinDistance(targetX, targetY, targetRadius, this.player.attackRange) &&
+      this.isInFacingCone(targetX, targetY)
+    );
+  }
+
+  private isInSkillRange(
+    targetX: number,
+    targetY: number,
+    targetRadius: number,
+    range: number,
+  ): boolean {
+    return this.isWithinDistance(targetX, targetY, targetRadius, range);
+  }
+
+  private isWithinDistance(
+    targetX: number,
+    targetY: number,
+    targetRadius: number,
+    range: number,
+  ): boolean {
+    const dx = targetX - this.player.x;
+    const dy = targetY - this.player.y;
+    return Math.hypot(dx, dy) <= range + targetRadius;
+  }
+
+  private isInFacingCone(targetX: number, targetY: number): boolean {
+    const dx = targetX - this.player.x;
+    const dy = targetY - this.player.y;
+    const angleToTarget = Math.atan2(dy, dx);
+    const diff = Phaser.Math.Angle.Wrap(angleToTarget - this.player.getFacingAngle());
+    return Math.abs(diff) <= ATTACK_CONE_HALF;
   }
 
   private setupDebugToggle(): void {
@@ -234,7 +351,7 @@ export class MatchScene extends Phaser.Scene {
     this.menuButton.setPosition(width - rightMargin, topMargin);
 
     if (this.debugText) {
-      const debugY = topMargin + hintH + (compact ? 30 : 36);
+      const debugY = topMargin + hintH + (compact ? 34 : 40);
       this.debugText.setPosition(topMargin, debugY);
       this.debugText.setFontSize(compact ? '10px' : '13px');
     }
@@ -346,7 +463,7 @@ export class MatchScene extends Phaser.Scene {
 
     if (SHOW_DEBUG_OVERLAY) {
       this.debugText = this.add
-        .text(16, compact ? 68 : 88, '', {
+        .text(16, compact ? 72 : 92, '', {
           fontFamily: 'monospace',
           fontSize: compact ? '10px' : '13px',
           color: COLORS.text,
@@ -364,16 +481,19 @@ export class MatchScene extends Phaser.Scene {
 
   private updateStatsHud(): void {
     const p = this.player;
+    const d = this.dummy;
     const mana = `${Math.floor(p.currentMana)}/${p.maxMana}`;
     const hp = `${Math.floor(p.currentHp)}/${p.maxHp}`;
-    const skillStatus = this.skillRuntime.getLastResult() || '-';
+    const dummyHp = `${Math.ceil(d.currentHp)}/${d.maxHp}`;
     const compact = this.isCompactHud();
 
     if (compact) {
-      this.statsHud.setText(`Hero: ${p.heroName}  HP: ${hp}  MP: ${mana}  ${skillStatus}`);
+      this.statsHud.setText(
+        `Hero: ${p.heroName} HP ${hp} MP ${mana} Dummy ${dummyHp} | ${this.lastCombatResult}`,
+      );
     } else {
       this.statsHud.setText(
-        `Hero: ${p.heroName}  HP: ${hp}  Mana: ${mana}  SPD: ${p.moveSpeed}  skill: ${skillStatus}`,
+        `Hero: ${p.heroName}  HP: ${hp}  Mana: ${mana}  Dummy: ${dummyHp}  combat: ${this.lastCombatResult}`,
       );
     }
   }
@@ -382,23 +502,27 @@ export class MatchScene extends Phaser.Scene {
     if (!this.debugText || !this.debugOverlayVisible) return;
     const s = this.movement.state;
     const p = this.player;
+    const d = this.dummy;
     const compact = this.isCompactHud();
     const move = `${s.moveX.toFixed(2)}, ${s.moveY.toFixed(2)}`;
     const mana = `${Math.floor(p.currentMana)}/${p.maxMana}`;
     const hp = `${Math.floor(p.currentHp)}/${p.maxHp}`;
+    const dummyHp = `${Math.ceil(d.currentHp)}/${d.maxHp}`;
+    const dist = Math.hypot(d.x - p.x, d.y - p.y).toFixed(0);
 
     const lines = compact
       ? [
           CURRENT_PHASE_LABEL,
-          `hero: ${p.heroName}`,
-          `hp: ${hp}  mp: ${mana}`,
+          `hero: ${p.heroName} hp: ${hp} mp: ${mana}`,
+          `dummy: ${dummyHp} dist: ${dist}`,
+          `combat: ${this.lastCombatResult}`,
           `last: ${s.lastAction || '-'}`,
-          `skill: ${this.skillRuntime.getLastResult() || '-'}`,
         ]
       : [
           CURRENT_PHASE_LABEL,
-          `hero: ${p.heroName} (${p.heroClass})`,
-          `hp: ${hp}  mana: ${mana}  spd: ${p.moveSpeed}`,
+          `hero: ${p.heroName} (${p.heroClass}) hp: ${hp} mana: ${mana}`,
+          `dummy: ${dummyHp}  dist: ${dist}  atkRange: ${p.attackRange}`,
+          `combat: ${this.lastCombatResult}`,
           `input: ${s.inputMode}  move: ${move}`,
           `last: ${s.lastAction || '-'}`,
           `skill: ${this.skillRuntime.getLastResult() || '-'}`,

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { COLORS, MANA_REGEN_PER_SECOND, PLAYER_RADIUS } from '../constants';
-import type { ActionKey, HeroClassId, HeroDefinition } from '../types';
+import { CombatSystem } from '../systems/CombatSystem';
+import type { ActionKey, DamageResult, HeroClassId, HeroDefinition } from '../types';
 
 const ACTION_FLASH: Record<ActionKey, { color: number; duration: number; scale?: number }> = {
   attack: { color: 0xffffff, duration: 120 },
@@ -13,8 +14,7 @@ const ACTION_FLASH: Record<ActionKey, { color: number; duration: number; scale?:
   item2: { color: 0x38bdf8, duration: 100 },
 };
 
-// Phase 3A: player uses real hero stats for movement, HP/mana display, and skill
-// costs. Combat damage is not applied yet.
+// Phase 3A+: hero stats at runtime; Phase 3B-A adds heal/takeDamage foundation.
 export class Player {
   public readonly sprite: Phaser.GameObjects.Arc;
   public readonly body: Phaser.Physics.Arcade.Body;
@@ -98,6 +98,16 @@ export class Player {
   public regenerateMana(deltaSeconds: number): void {
     if (this.currentMana >= this.maxMana) return;
     this.currentMana = Math.min(this.maxMana, this.currentMana + MANA_REGEN_PER_SECOND * deltaSeconds);
+  }
+
+  public heal(amount: number): number {
+    const before = this.currentHp;
+    this.currentHp = Math.min(this.maxHp, this.currentHp + amount);
+    return this.currentHp - before;
+  }
+
+  public takeDamage(rawDamage: number): DamageResult {
+    return CombatSystem.applyDamage(this, rawDamage);
   }
 
   public playDeniedFeedback(reason: 'mana' | 'cooldown'): void {
