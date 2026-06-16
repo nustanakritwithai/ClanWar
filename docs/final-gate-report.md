@@ -1,124 +1,115 @@
 # Final Gate Report
 
 > **Agent E — Final Gate / Release Auditor**  
-> **Audit date:** 2026-06-15 (refreshed after PR #21 merge)  
-> **Scope:** Phase 4A closure + Phase 4B prep board  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `0509a8c`
+> **Audit date:** 2026-06-16 (Phase 4C-A closure)  
+> **Scope:** Phase 4C-A closure + 4C-B planning readiness  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `8b6882b`
 
 ---
 
 ## 1. Scope
 
-อัปเดต final gate dashboard หลัง PR #21 (gate/core design spec) merge เข้า base แล้ว รายงานนี้เป็น docs-only — PR #22 กำลัง sync board ล่าสุดก่อนอนุมัติ
+Final gate audit and closure for **Phase 4C-A — Objective Capture Foundation**. All four PRs (#28–#31) merged. External live verification passed. Phase 4C-B planning authorized; implementation blocked.
 
 ---
 
-## 2. สถานะ PR ปัจจุบัน
+## 2. Phase 4C-A merged PRs
 
-**PR #16 (Agent A) — Map visual runtime foundation**  
-MERGED @ `23ee8cb`
+**PR #28 (Agent C)** — Objective capture design spec  
+MERGED @ `647b301`
 
-**PR #18 (Agent B) — Objective feedback asset pack**  
-MERGED @ `9de58e5`
+**PR #29 (Agent D)** — Capture UX copy and mobile clarity spec  
+MERGED @ `953d34d`
 
-**PR #20 (Agent B) — Player guidance marker asset pack**  
-MERGED @ `32d283d17fd96c14388e4a716cf47a1b372b4479`
+**PR #30 (Agent B)** — Capture objective visual asset micro-pack  
+MERGED @ `461fab0`
 
-**PR #19 (Agent D) — Objective onboarding UX spec**  
-MERGED @ `b03acc206a6eaed2863da1e524a6d6ad796aaad3`
-
-**PR #21 (Agent C) — Gate/Core objective runtime design spec**  
-MERGED @ `0509a8cca1b6ed3b1b9eefc5657050e9b3669d35`
-
-**PR #22 (Agent E) — Phase 4A closure dashboard**  
-OPEN · Draft · docs-only
+**PR #31 (Agent A)** — Runtime objective capture foundation  
+MERGED @ `8b6882b` (feature commit `1c283ff`)
 
 ---
 
-## 3. Phase 4B prep — ready for runtime work order
+## 3. Verification gates
 
-**Assets (merged):**
-- PR #18 — objective-feedback (20 SVG)
-- PR #20 — player-guidance (12 SVG)
+| Gate | Result |
+|------|--------|
+| Agent F retest | **PASS** (23/23) |
+| Agent E final gate | **PASS** |
+| Ready/Merge execution | **PASS** |
+| External live verification | **PASS** (16/16) |
 
-**UX (merged):**
-- PR #19 — onboarding, HUD spec, copy guide, UX risk register (7 docs)
-
-**Design / spec (merged):**
-- PR #21 — gate/core loop, state machine, damage/win condition, acceptance gate, design risks (6 docs)
-
-Phase 4B prep deliverables ครบบน base แล้ว — **พร้อมสำหรับ Product ออก work order ให้ Agent A**
+**Live URL:** https://clan-siege-arena.onrender.com — verified fresh deploy post-merge
 
 ---
 
-## 4. PR #16 — Phase 4A runtime (unchanged)
+## 4. Test / deploy evidence
 
-MERGED @ `23ee8cb` — map visual only ไม่มี objective runtime / gate HP / capture / pathfinding
-
-**Live deploy:** Agent A reported success ใน PR body แต่ Agent E **ยังไม่ได้ independently verify**
+- `npm run build` — PASS
+- `mobile-multitouch-verify.mjs` — 14/14
+- `phase-3b-b2-regression.mjs` — 11/11
+- `phase-3b-b3-visual-regression.mjs` — 8/8
+- `phase-4a-map-visual-regression.mjs` — 7/7
+- `phase-4b-objective-regression.mjs` — 15/15
+- `phase-4b-b-clarity-regression.mjs` — 13/13 (prior 13/15 was reporting typo)
+- `phase-4c-a-capture-regression.mjs` — 11/11
+- GitHub CI — no registered checks
 
 ---
 
 ## 5. Scope guard
 
-Merged PRs #16–#21 ผ่าน scope guard ทั้งหมด PR #22 docs-only — PASS
-
-ไม่มี BLOCKED scope violation
+Phase 4C-A did not implement Siege Ruins gate bonus, Forward Camp respawn, Watchtower vision, economy, bot AI, minimap, score win condition, or Gate/Core stat changes. **PASS**
 
 ---
 
-## 6. Test / deploy evidence
+## 6. Phase closure status
 
-- `npm run build` — PASS (prior audit)
-- Phase 4A regression 7/7, multitouch 14/14, 3B 11/11 + 8/8 — PASS (prior runs)
-- Live deploy PR #16 — Agent A reported success; Agent E **not independently verified**
-- GitHub CI — ไม่มี checks
+**Phase 4C-A — CLOSED**
 
----
+**Phase 4C-B — READY TO PLAN** (Siege Ruins gate damage bonus)
 
-## 7. Phase closure
-
-**Phase 4A — CLOSE PHASE 4A** (ไม่เปลี่ยน)
-
-**Phase 4B prep — READY FOR RUNTIME WORK ORDER**  
-docs + assets + design spec ครบบน base `0509a8c` แล้ว
-
-**Phase 4B runtime — NOT STARTED**  
-Agent A ยังห้ามเริ่มจนกว่า GPT/User ออก work order
+**Phase 4C-B implementation — NOT STARTED** (requires work order)
 
 ---
 
-## 8. Open PR board
+## 7. Open PR board
 
-เหลือเฉพาะ **PR #22** (Agent E dashboard) — ไม่มี open PR อื่น
+No open PRs. All Phase 4C-A work merged.
+
+---
+
+## 8. Known cautions
+
+- Red-team contest hook-only until bot AI
+- Score is feedback only, not win condition
+- Capture score display minimal in 4C-A
+- 4C-B is separate phase
+
+None are blockers.
 
 ---
 
 ## 9. Next safe action
 
-**Product / GPT can issue Agent A Phase 4B runtime work order**
+**Product / GPT can authorize Phase 4C-B planning**
 
-Agent E ไม่สั่ง Agent A เอง — รอ explicit work order จาก Product/GPT
+Do not start 4C-B implementation without explicit work order.
 
 ---
 
 ## 10. Final verdict
 
-**READY WITH CAUTION**
-
-- Phase 4A: CLOSED
-- Phase 4B prep: **ready for runtime work order**
-- Blockers ที่เหลือ: Product work order + live deploy ยังไม่ verified โดย Agent E
+**PHASE 4C-A CLOSED — READY TO PLAN 4C-B**
 
 ---
 
 ## 11. Do / Don't
 
 **Do**
-- Merge PR #22 dashboard docs เมื่อ GPT/User พร้อม
-- Issue Agent A 4B runtime work order (Product/GPT only)
+- Issue Phase 4C-B planning work order (Product/GPT only)
+- Reference [phase-close-report.md](./phase-close-report.md) for full closure record
 
 **Don't**
-- Agent A: อย่าเริ่ม 4B runtime โดยไม่มี work order
-- อย่า wire assets ก่อน runtime PR scope ชัด
-- Agent E: อย่า Ready/Merge PR เอง
+- Start 4C-B runtime/assets without work order
+- Treat capture score as win condition
+- Agent E: do not Ready/Merge PRs without explicit authorization

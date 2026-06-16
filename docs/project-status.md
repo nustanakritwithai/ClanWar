@@ -1,75 +1,82 @@
 # Project Status
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-15 (refreshed after PR #21 merge)  
-> **Base branch:** `claude/game-file-analysis-a20xup` @ `0509a8c`
+> **Last updated:** 2026-06-16 (Phase 4C-A closure)  
+> **Base branch:** `claude/game-file-analysis-a20xup` @ `8b6882b`
 
 ## Current phase
 
-**Phase 4A — Map Visual Runtime** ปิดแล้ว (#16, #17 merged)
+**Phase 4C-A — Objective Capture Foundation** — **CLOSED**
 
-**Phase 4B prep** — **ready for runtime work order**  
-assets, UX, และ design spec merge ครบแล้ว
+Six capturable objectives live with ownership, progress, contest, score-once, reset, and mobile HUD. Gate/Core loop unchanged.
 
-**Phase 4B runtime** — ยังไม่เริ่ม รอ Product work order
+**Next phase: Phase 4C-B — Siege Ruins Gate Damage Bonus** — **planning ready**
+
+4C-B implementation has **not started**. Requires explicit Product/GPT work order before any runtime, asset, or design work opens.
 
 ## Base snapshot
 
 ```
-0509a8c  Merge pull request #21 (Phase 4B-C gate/core design spec)
-b03acc2  Merge pull request #19 (Phase 4B-D UX/onboarding spec)
-32d283d  Merge pull request #20 (Phase 4B-B2 player guidance assets)
-23ee8cb  Merge pull request #16 (Phase 4A map visual runtime)
-9de58e5  Merge pull request #18 (Phase 4B-B objective feedback assets)
+8b6882b  Merge pull request #31 (Phase 4C-A runtime capture foundation)
+1c283ff  Phase 4C-A: runtime objective capture foundation
+461fab0  Merge pull request #30 (Phase 4C-A capture visual asset micro-pack)
+953d34d  Merge pull request #29 (Phase 4C-A capture UX/mobile copy)
+647b301  Merge pull request #28 (Phase 4C-A objective capture design spec)
+c4dc9e3  Merge pull request #26 (Phase 4B-B runtime objective clarity)
 ```
 
-Live phase label (runtime): `Phase 4A: Map Visual Runtime Foundation`
+**Runtime base SHA:** `8b6882b10c5d4c11070a7232330fb661cdd9d132`
 
-## Merged deliverables
+**Live URL (verified):** https://clan-siege-arena.onrender.com
 
-- **PR #16 (A)** — Map visual runtime @ `23ee8cb`
-- **PR #17 (C)** — Phase 4A level design docs @ `266bc91`
-- **PR #18 (B)** — Objective feedback assets @ `9de58e5`
-- **PR #20 (B)** — Player guidance marker assets @ `32d283d`
-- **PR #19 (D)** — Objective onboarding UX spec @ `b03acc2`
-- **PR #21 (C)** — Gate/Core objective runtime design spec @ `0509a8c`
+## Phase 4C-A merged deliverables
+
+- **PR #28 (C)** — Objective capture design spec @ `647b301`
+- **PR #29 (D)** — Capture UX copy and mobile clarity spec @ `953d34d`
+- **PR #30 (B)** — Capture objective visual asset micro-pack (6 SVGs) @ `461fab0`
+- **PR #31 (A)** — Runtime objective capture foundation @ `8b6882b`
 
 ## Open PRs
 
-- **PR #22 (E)** — Phase 4A closure dashboard — Draft, docs-only
-
-ไม่มี open PR อื่น
+None. All Phase 4C-A PRs merged.
 
 ## Agent lane status
 
-**Agent A** — 4A complete; 4B prep ready; **รอ Product work order** ก่อนเริ่ม runtime
+**Agent A** — 4C-A runtime complete (#31 merged); **blocked on 4C-B** until work order issued
 
-**Agent B** — #18 + #20 merged; lane clear
+**Agent B** — 4C-A assets complete (#30 merged); lane clear
 
-**Agent C** — #17 + #21 merged; lane clear
+**Agent C** — 4C-A design complete (#28 merged); lane clear
 
-**Agent D** — #19 merged; lane clear
+**Agent D** — 4C-A UX complete (#29 merged); lane clear
 
-**Agent E** — refreshing dashboard (PR #22)
+**Agent E** — 4C-A closure complete; monitoring for 4C-B planning authorization
+
+**Agent F** — 4C-A QA sign-off complete (PASS)
 
 ## Test / deploy evidence
 
-- `npm run build` — PASS (prior audit)
-- Regressions 4A/3B/multitouch — PASS (prior runs)
-- Live deploy PR #16 — Agent A reported success; Agent E **not independently verified**
+- `npm run build` — PASS
+- All regression suites — PASS (see [phase-close-report.md](./phase-close-report.md))
+- External live deploy — PASS @ https://clan-siege-arena.onrender.com (16/16 checklist, Agent E verified 2026-06-16)
+- GitHub CI — no registered checks
 
 ## Next safe action
 
-**Product / GPT can issue Agent A Phase 4B runtime work order**
+**Product / GPT can authorize Phase 4C-B planning** (Siege Ruins gate damage bonus)
+
+Planning only — do not start implementation without explicit work order.
 
 ## Must not do
 
-- Agent A: อย่าเริ่ม 4B runtime โดยไม่มี explicit work order
-- Agent E: อย่า Ready/Merge PR เอง
+- Do not start Phase 4C-B runtime, assets, or scope expansion without work order
+- Do not treat capture score as win condition
+- Agent E: do not Ready/Merge PRs without explicit authorization
 
 ## Related docs
 
+- [phase-close-report.md](./phase-close-report.md) — Phase 4C-A closure report
 - [final-gate-report.md](./final-gate-report.md)
 - [open-pr-dashboard.md](./open-pr-dashboard.md)
-- [phase-close-report.md](./phase-close-report.md)
+- [release-checklist.md](./release-checklist.md)
 - [agent-worklog.md](./agent-worklog.md)
