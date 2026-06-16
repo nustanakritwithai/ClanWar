@@ -24,16 +24,20 @@ import { InputSystem } from '../systems/InputSystem';
 import { ProjectileSystem } from '../systems/ProjectileSystem';
 import { MapRenderer, loadMapVisualAssets } from '../systems/MapRenderer';
 import { ObjectiveSystem, loadObjectiveAssets } from '../systems/ObjectiveSystem';
+import { CaptureSystem, loadCaptureAssets } from '../systems/CaptureSystem';
 import { SkillRuntimeSystem } from '../systems/SkillRuntimeSystem';
 import { showCombatText } from '../ui/CombatText';
 import { showAoeMarker, showHealBurst, showHealSpark, showHitSpark, showImpactBurst, showSlashArc, loadCombatVisualAssets } from '../ui/CombatVfx';
 import { isFullscreenActive, requestGameFullscreen } from '../utils/fullscreen';
+
+import { CAPTURE_OBJECTIVE_IDS } from '../data/capture-objectives';
 
 const HUD_HINT_NORMAL =
   'WASD/Arrows or joystick • J/Q/E/R/F/Space/1/2 or buttons • ` or F1: debug';
 const HUD_HINT_COMPACT = 'Move: joystick/WASD • Actions: buttons';
 
 const GATE_CORE_MARKER_IDS = new Set(['blueGate', 'blueCore', 'redGate', 'redCore']);
+const CAPTURE_MARKER_IDS = new Set<string>(CAPTURE_OBJECTIVE_IDS);
 
 export class MatchScene extends Phaser.Scene {
   private heroClass: HeroClassId = 'guardian';
@@ -61,6 +65,7 @@ export class MatchScene extends Phaser.Scene {
   private projectileSystem!: ProjectileSystem;
   public mapRenderer!: MapRenderer;
   public objectiveSystem!: ObjectiveSystem;
+  public captureSystem!: CaptureSystem;
 
   constructor() {
     super(SCENE_KEYS.Match);
@@ -75,6 +80,7 @@ export class MatchScene extends Phaser.Scene {
     loadCombatVisualAssets(this.load);
     loadMapVisualAssets(this.load);
     loadObjectiveAssets(this.load);
+    loadCaptureAssets(this.load);
   }
 
   create(): void {
@@ -94,6 +100,13 @@ export class MatchScene extends Phaser.Scene {
       this.handleMatchEnd(outcome),
     );
     this.objectiveSystem.build();
+
+    this.captureSystem = new CaptureSystem(
+      this,
+      (obj) => this.registerWorldObject(obj),
+      (visible) => this.objectiveSystem.setGateHudVisible(visible),
+    );
+    this.captureSystem.build();
 
     this.player = new Player(this, map.playerSpawn.x, map.playerSpawn.y, hero);
     this.dummy = new TrainingDummy(this, map.playerSpawn.x, map.playerSpawn.y - 350);
@@ -139,6 +152,7 @@ export class MatchScene extends Phaser.Scene {
     this.player.regenerateMana(deltaSeconds);
     this.skillRuntime.update(deltaSeconds);
     this.objectiveSystem.update(delta);
+    this.captureSystem.update(delta, this.player.x, this.player.y, PLAYER_TEAM);
 
     const dir = this.movement.getMoveVector(this.moveVec);
     this.player.move(dir);
@@ -663,6 +677,7 @@ export class MatchScene extends Phaser.Scene {
 
     this.projectileSystem.destroy();
     this.objectiveSystem.destroy();
+    this.captureSystem.destroy();
     this.mapRenderer.destroy();
     this.movement.destroy();
   }
@@ -710,6 +725,7 @@ export class MatchScene extends Phaser.Scene {
     this.uiCamera.setSize(this.scale.width, this.scale.height);
     this.movement.handleResize();
     this.objectiveSystem.layoutHud();
+    this.captureSystem.layoutHud();
     this.layoutTopHud();
   }
 
@@ -739,7 +755,7 @@ export class MatchScene extends Phaser.Scene {
 
   private drawMarkers(markers: MapMarker[]): void {
     for (const m of markers) {
-      if (GATE_CORE_MARKER_IDS.has(m.id)) continue;
+      if (GATE_CORE_MARKER_IDS.has(m.id) || CAPTURE_MARKER_IDS.has(m.id)) continue;
 
       const inBaseBand = m.y >= 3350 || m.y <= 850;
       const color = this.markerColor(m);

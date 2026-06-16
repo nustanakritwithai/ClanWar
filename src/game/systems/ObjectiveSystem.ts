@@ -773,8 +773,22 @@ export class ObjectiveSystem {
     this.hudVictoryText?.setPosition(width / 2, hudY);
   }
 
+  private gateHudVisible = true;
+
+  public setGateHudVisible(visible: boolean): void {
+    this.gateHudVisible = visible;
+    this.refreshHud();
+  }
+
   private refreshHud(): void {
     if (!this.hudIcon || !this.hudLabel || !this.hudVictoryText) return;
+
+    if (!this.gateHudVisible) {
+      this.hudIcon.setVisible(false);
+      this.hudLabel.setVisible(false);
+      this.hudVictoryText.setVisible(false);
+      return;
+    }
 
     const label = PRIORITY_LABELS[this.priority];
 
