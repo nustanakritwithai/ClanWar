@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="HUD gate damage bonus feedback">
+  <!-- Compact HUD icon (UI-space, not map terrain) -->
+  <rect x="32" y="32" width="192" height="192" rx="36" fill="#1a2230" stroke="#0b0e13" stroke-width="10"/>
+  <!-- Gate silhouette target -->
+  <path d="M80 188 V116 a48 48 0 0 1 96 0 V188 Z" fill="#3a4658" stroke="#0b0e13" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M104 188 V132 a24 24 0 0 1 48 0 V188 Z" fill="#1a2230"/>
+  <!-- Upward damage bonus chevrons (gate-only power, not attack-from-above) -->
+  <g fill="#f4d35e" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round">
+    <path d="M128 148 L140 168 L116 168 Z"/>
+    <path d="M128 124 L140 144 L116 144 Z"/>
+  </g>
+  <!-- Impact burst on gate -->
+  <circle cx="128" cy="118" r="12" fill="#f59e0b" stroke="#0b0e13" stroke-width="6"/>
+  <g stroke="#0b0e13" stroke-width="4" stroke-linecap="round">
+    <line x1="128" y1="100" x2="128" y2="92"/>
+    <line x1="114" y1="118" x2="106" y2="118"/>
+    <line x1="142" y1="118" x2="150" y2="118"/>
+  </g>
+</svg>
