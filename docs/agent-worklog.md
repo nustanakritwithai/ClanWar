@@ -5,6 +5,39 @@
 
 ---
 
+## 2026-06-16 — Phase 4C-A closure report and status update
+
+**Agent:** E  
+**Base:** `claude/game-file-analysis-a20xup` @ `8b6882b`  
+**Task:** Authorize and publish Phase 4C-A closure documentation
+
+### Actions taken
+
+1. Created formal **Phase 4C-A Closure Report** in `docs/phase-close-report.md`
+2. Updated `docs/project-status.md` — Phase 4C-A closed, 4C-B planning ready
+3. Created `docs/release-checklist.md` — 4C-A release checklist (all gates checked)
+4. Updated `docs/final-gate-report.md` — Phase 4C-A final gate verdict
+5. Updated `docs/open-pr-dashboard.md` — no open PRs, 4C-B planning status
+6. Recorded verification evidence: Agent F PASS, Agent E gate PASS, live URL PASS (16/16)
+
+### Closure state recorded
+
+- PR #28 @ `647b301`, #29 @ `953d34d`, #30 @ `461fab0`, #31 @ `8b6882b`
+- Live URL verified: https://clan-siege-arena.onrender.com
+- Clarified `phase-4b-b-clarity-regression.mjs` 13/13 (prior 13/15 was typo)
+
+### Actions NOT taken
+
+- Did not start Phase 4C-B implementation
+- Did not open runtime PR
+- Did not edit gameplay code, assets, or features
+
+### Verdict
+
+**PHASE 4C-A CLOSED — READY TO PLAN 4C-B**
+
+---
+
 ## 2026-06-15 — Dashboard refresh after PR #21 merge
 
 **Agent:** E  
