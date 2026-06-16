@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="HUD capture neutral objective">
+  <!-- Compact HUD icon (UI-space, not map terrain) -->
+  <rect x="32" y="32" width="192" height="192" rx="36" fill="#1a2230" stroke="#0b0e13" stroke-width="10"/>
+  <!-- Uncaptured neutral ring -->
+  <circle cx="128" cy="128" r="68" fill="#9ca3af" opacity="0.10"/>
+  <circle cx="128" cy="128" r="68" fill="none" stroke="#9ca3af" stroke-width="8" stroke-dasharray="14 12"/>
+  <circle cx="128" cy="128" r="44" fill="none" stroke="#cbd5e1" stroke-width="5" stroke-dasharray="8 10" opacity="0.7"/>
+  <!-- Neutral objective pip -->
+  <circle cx="128" cy="128" r="16" fill="#9ca3af" stroke="#0b0e13" stroke-width="7"/>
+</svg>
