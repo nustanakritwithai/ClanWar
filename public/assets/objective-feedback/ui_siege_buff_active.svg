@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="HUD siege buff active badge">
+  <!-- Compact HUD icon (UI-space, not map terrain) -->
+  <rect x="32" y="32" width="192" height="192" rx="36" fill="#1a2230" stroke="#0b0e13" stroke-width="10"/>
+  <!-- Subtle power aura ring -->
+  <circle cx="128" cy="136" r="56" fill="#f4d35e" opacity="0.10"/>
+  <circle cx="128" cy="136" r="56" fill="none" stroke="#f4d35e" stroke-width="5" stroke-dasharray="10 8" opacity="0.75"/>
+  <!-- Ruins pillar silhouette -->
+  <path d="M108 176 V108 l20 -6 V176 Z" fill="#4a5870" stroke="#0b0e13" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M148 176 V124 l18 4 V176 Z" fill="#4a5870" stroke="#0b0e13" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Toppled lintel (simplified ruins) -->
+  <path d="M96 104 L160 116 L156 132 L92 120 Z" fill="#3a4658" stroke="#0b0e13" stroke-width="7" stroke-linejoin="round"/>
+  <!-- Upward power mark (buff active, not victory) -->
+  <path d="M128 72 L144 100 L136 100 L136 112 L120 112 L120 100 L112 100 Z"
+        fill="#f4d35e" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round"/>
+</svg>
