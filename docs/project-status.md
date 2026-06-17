@@ -1,8 +1,8 @@
 # Project Status
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-17 (Phase 4D closure)  
-> **Base branch:** `claude/game-file-analysis-a20xup` @ `a9f5645`
+> **Last updated:** 2026-06-17 (Phase 4E planning)  
+> **Base branch:** `claude/game-file-analysis-a20xup` @ `bf08a0b`
 
 ## Current phase
 
@@ -16,9 +16,11 @@
 
 Combat feel polish: hit sparks, Gate/Core hit feedback, skill cast flash, impact rings, damage numbers, micro screen shake, mobile-safe feedback. No balance or rule changes. Prior 4B / 4B-B / 4C-A / 4C-B / 4C-C behavior preserved on live.
 
-**Phase 4E — NOT STARTED**
+**Phase 4E — Visual Direction / MMORPG 2D Pixel Art Upgrade** — **PLANNING — Design Spec Draft**
 
-**Phase 5A — NOT STARTED**
+Product/GPT authorized 4E planning. **4E runtime not started** — requires spec merge + Agent D UX + Agent B assets + explicit work order.
+
+**Phase 5A — NOT STARTED — NOT AUTHORIZED**
 
 ## Base snapshot
 
@@ -53,7 +55,7 @@ c85a7e7  Merge pull request #45 (Phase 4D FX micro-pack)
 
 ## Open PRs
 
-- **Phase 4D closure docs** — Draft (Agent E) — pending review/merge
+- **Phase 4E design spec** — Draft (Agent C) — planning only
 
 No active runtime PRs.
 
@@ -63,7 +65,7 @@ No active runtime PRs.
 
 **Agent B** — 4D assets complete (#45 merged); lane clear
 
-**Agent C** — 4D design complete (#44 merged); lane clear
+**Agent C** — 4E design spec draft in progress; 4D design complete (#44 merged)
 
 **Agent D** — 4D UX complete (#43, #46 merged); lane clear
 
@@ -85,13 +87,13 @@ No active runtime PRs.
 
 ## Next safe action
 
-**Await Phase 4D closure docs PR review/merge.**
+**Review Phase 4E design spec draft (Agent C).** Then Agent D UX constraints, then Agent B asset planning.
 
-Phase 4E and Phase 5A are **NOT STARTED** and **NOT AUTHORIZED**.
+Phase 4E runtime and Phase 5A are **NOT AUTHORIZED** without explicit work order.
 
 ## Must not do
 
-- Do not start Phase 4E / 5A without explicit work order
+- Do not start Phase 4E runtime / 5A without explicit work order (4E planning authorized only)
 - Agent E: do not Ready/Merge PRs without explicit authorization
 
 ## Related docs

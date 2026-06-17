@@ -5,6 +5,32 @@
 
 ---
 
+## 2026-06-17 — Phase 4E visual design spec (planning)
+
+**Agent:** C  
+**Base:** `claude/game-file-analysis-a20xup` @ `bf08a0b`  
+**Task:** Phase 4E MMORPG 2D Pixel Art visual direction design spec (planning only)
+
+### Actions taken
+
+1. Created `docs/phase-4e-visual-design-spec.md` — visual thesis, palettes, class/structure language, environment themes, UI/VFX direction, asset pipeline, runtime plan, VIS-AC1–20, QA checklist
+2. Updated `docs/project-status.md` — 4E PLANNING draft; 4D closed; 5A not authorized
+3. Updated `docs/open-pr-dashboard.md` — 4E draft PR tracking
+4. Opened Draft PR (docs-only) — no runtime/assets/scripts
+
+### Scope
+
+- Visual direction and implementation planning only
+- All 4B / 4C-A / 4C-B / 4C-C / 4D gameplay frozen
+- Phase 5A not started
+
+### Did not do
+
+- Runtime, assets, scripts, package changes
+- Phase 5A work
+
+---
+
 ## 2026-06-17 — Phase 4D closure documentation
 
 **Agent:** E  
