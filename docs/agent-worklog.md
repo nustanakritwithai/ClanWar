@@ -7,6 +7,36 @@
 
 ---
 
+## 2026-06-17 — Phase 4E Theme 1 visual asset mock pack (Agent B)
+
+**Agent:** B
+**Base:** `claude/game-file-analysis-a20xup` @ `8a3ae52`
+**Task:** Phase 4E Theme 1 (Castle Siege Field) visual asset mock pack — asset pack + documentation only
+
+### Actions taken
+
+1. Created `public/assets/phase-4e/theme1/` — 49 `phase4e_`-prefixed SVG mock assets across 6 groups: UI/HUD (9), Gate/Core/Capture Point structures (14), character class concepts (5 required + 2 optional), VFX mocks (7), Castle Siege Field environment/tiles (10), annotated safe-zone mockups (2 — 915×412, 800×360)
+2. Created `public/assets/phase-4e/theme1/manifest.json` — filename/category/intended_use/candidate_key/runtime_status/safe_zone/source/notes for all 49 assets
+3. Created `docs/phase-4e-asset-pack.md` — overview, folder path, asset groups, naming convention, manifest explanation, Agent A wiring guidance, exclusions, mobile safety, non-goals
+4. Created `docs/phase-4e-asset-manifest.md` — readable table mirror of the manifest
+5. Updated `docs/project-status.md` — 4E PLANNING with Agent B pack drafted; 4D stays CLOSED; 5A stays NOT STARTED; Agent A runtime explicitly not started, assets explicitly not wired
+6. Updated `docs/open-pr-dashboard.md` — PR #49/#50 marked merged; this PR tracked as Draft; no runtime PR active
+7. Opened Draft PR (asset pack + docs only) — no runtime/scripts/package changes
+
+### Scope
+
+- SVG mock asset pack for Theme 1 (Castle Siege Field) only, per Agent C (#49) and Agent D (#50) specs
+- All assets namespaced `phase4e_`; no existing runtime asset overwritten, renamed, or removed
+- No asset wired into any loader, scene, UI class, or VFX logic
+
+### Did not do
+
+- Did not edit `src/game/**`, `scripts/**`, `package.json`, `package-lock.json`, README, deploy/render config
+- Did not start Agent A runtime reskin or Phase 5A
+- Did not mark the PR Ready or merge it
+
+---
+
 ## 2026-06-17 — Phase 4E mobile HUD / UX safe zones spec (planning)
 
 **Agent:** D  
