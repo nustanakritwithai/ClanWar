@@ -5,6 +5,34 @@
 
 ---
 
+---
+
+## 2026-06-17 — Phase 4E mobile HUD / UX safe zones spec (planning)
+
+**Agent:** D  
+**Base:** `claude/game-file-analysis-a20xup` @ `cc6cbde`  
+**Task:** Phase 4E mobile HUD and UX safe-zone specification (planning only)
+
+### Actions taken
+
+1. Created `docs/phase-4e-mobile-hud-ux-spec.md` — safe zones 915×412/800×360, HUD hierarchy, MMORPG UI rules, pixel readability, 4D VFX preservation, Agent B/A handoff, UX-4E-AC1–20, QA checklist
+2. Updated `docs/project-status.md` — 4E PLANNING UX draft; 4D closed; 5A not authorized
+3. Updated `docs/open-pr-dashboard.md` — 4E UX draft PR tracking
+4. Opened Draft PR (docs-only) — no runtime/assets/scripts
+
+### Scope
+
+- UX/mobile safe zones and HUD constraints for 4E visual reskin
+- Aligns with Agent C PR #49 visual design spec
+- All 4B–4D gameplay frozen; 5A not started
+
+### Did not do
+
+- Runtime, assets, scripts, package changes
+- Agent B asset production, Agent A runtime, Phase 5A
+
+---
+
 ## 2026-06-17 — Phase 4E visual design spec (planning)
 
 **Agent:** C  

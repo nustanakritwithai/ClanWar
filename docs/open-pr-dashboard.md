@@ -1,25 +1,32 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-17 (Phase 4E planning)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `bf08a0b`
+> **Last updated:** 2026-06-17 (Phase 4E UX spec)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `cc6cbde`
 
 ## Summary
 
 **Phase 4D:** CLOSED — live verified 92/92 (PR #48 closure @ `bf08a0b`).
 
-**Active draft:** Phase 4E visual design spec (Agent C) — planning only.
+**Phase 4E:** PLANNING — design spec merged (#49); UX/mobile safe-zones spec draft (Agent D).
 
-**Phase 4E:** PLANNING — design spec draft (Product/GPT authorized planning).
+**Active draft:** Phase 4E mobile HUD / UX safe zones (Agent D) — planning only.
 
 **Phase 5A:** NOT STARTED — NOT AUTHORIZED.
 
 ---
 
-## Open PR — Phase 4E Design Spec (Draft)
+## Open PR — Phase 4E UX Spec (Draft)
 
-**Agent C: Phase 4E Visual Design Spec — MMORPG 2D Pixel Art Direction**  
-Docs-only — visual direction, asset pipeline, runtime plan, VIS-AC1–20. No runtime/assets.
+**Agent D: Phase 4E Mobile HUD / UX Safe Zones Spec**  
+Docs-only — safe zones, HUD hierarchy, MMORPG UI rules, UX-4E-AC1–20. No runtime/assets.
+
+---
+
+## Recently merged — Phase 4E design
+
+**PR #49 (Agent C)** — Phase 4E visual design spec  
+MERGED @ `cc6cbde4e552f49f13e71c320642a44cb2413d53`
 
 ---
 
@@ -59,8 +66,8 @@ MERGED @ `080d5d245a2d5e12159b80d201736ab0e4ed469d`
 |-------|--------|
 | A | 4D runtime complete (#47 merged); lane clear |
 | B | 4D assets complete (#45 merged); lane clear |
-| C | 4E design spec draft open; 4D complete (#44 merged) |
-| D | 4D UX complete (#43, #46 merged); lane clear |
+| C | 4E design complete (#49 merged); lane clear |
+| D | 4E UX spec draft open; 4D complete (#43, #46 merged) |
 | E | 4D closure complete (#48 merged); gate 4E planning |
 | F | 4D QA PASS (92/92 live) |
 
@@ -68,6 +75,6 @@ MERGED @ `080d5d245a2d5e12159b80d201736ab0e4ed469d`
 
 ## Next safe action
 
-1. Review/merge Phase 4E design spec (Agent C)  
-2. Agent D UX constraints for 4E HUD  
+1. Review/merge Phase 4E mobile HUD / UX spec (Agent D)  
+2. Agent B asset planning for 4E (after D spec merge)  
 3. Phase 4E runtime and Phase 5A remain **NOT AUTHORIZED** without work order
