@@ -29,8 +29,8 @@ import { SiegeBuffSystem, loadSiegeBuffAssets } from '../systems/SiegeBuffSystem
 import { MatchTimerSystem, loadMatchTimerAssets } from '../systems/MatchTimerSystem';
 import { resolveTimeUp, type MatchResolution } from '../data/match-rules';
 import { SkillRuntimeSystem } from '../systems/SkillRuntimeSystem';
-import { showCombatText } from '../ui/CombatText';
-import { showAoeMarker, showHealBurst, showHealSpark, showHitSpark, showImpactBurst, showSlashArc, loadCombatVisualAssets } from '../ui/CombatVfx';
+import { showCombatText, showDamageNumber } from '../ui/CombatText';
+import { showAoeMarker, showHealBurst, showHealSpark, showNormalHit, showSkillCastFlash, showImpactBurst, showSlashArc, loadCombatVisualAssets } from '../ui/CombatVfx';
 import { isFullscreenActive, requestGameFullscreen } from '../utils/fullscreen';
 
 import { CAPTURE_OBJECTIVE_IDS } from '../data/capture-objectives';
@@ -238,7 +238,8 @@ export class MatchScene extends Phaser.Scene {
     let hitMessage = 'Attack missed';
     if (arc.hit && this.dummy.canReceiveDamage()) {
       const result = this.dummy.takeDamage(this.player.attack);
-      const text = showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#f87171');
+      showNormalHit(this, this.dummy.x, this.dummy.y, (o) => this.registerWorldObject(o));
+      const text = showDamageNumber(this, this.dummy.x, this.dummy.y - 20, result.finalDamage, 'normal');
       this.registerWorldObject(text);
       hitMessage = `Attack hit ${result.finalDamage}`;
       if (result.killed) {
@@ -278,6 +279,8 @@ export class MatchScene extends Phaser.Scene {
       this.player.spendMana(skill.manaCost);
       this.player.playActionFeedback(action);
       this.movement.showButtonCooldown(action, (result.cooldown ?? skill.cooldown) * 1000);
+      // Phase 4D: cast flash only on confirmed successful cast start.
+      showSkillCastFlash(this, this.player.x, this.player.y, (o) => this.registerWorldObject(o));
       this.applySkillCombatEffect(skill);
       this.movement.state.lastAction = result.skillName ?? skill.name;
       return;
@@ -347,9 +350,9 @@ export class MatchScene extends Phaser.Scene {
       if (skill.id === 'warrior_cleave' || skill.id === 'guardian_shield_bash' || skill.id === 'warrior_gate_breaker') {
         showSlashArc(this, this.player.x, this.player.y, facing, (o) => this.registerWorldObject(o));
       }
-      showHitSpark(this, this.dummy.x, this.dummy.y, (o) => this.registerWorldObject(o));
+      showNormalHit(this, this.dummy.x, this.dummy.y, (o) => this.registerWorldObject(o));
       const result = this.dummy.takeDamage(skill.damage);
-      const text = showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#f87171');
+      const text = showDamageNumber(this, this.dummy.x, this.dummy.y - 20, result.finalDamage, 'normal');
       this.registerWorldObject(text);
       hitMessage = `${name} hit ${result.finalDamage}`;
     }
@@ -454,7 +457,7 @@ export class MatchScene extends Phaser.Scene {
     if (circle.hit && this.dummy.canReceiveDamage()) {
       showImpactBurst(this, center.x, center.y, (o) => this.registerWorldObject(o));
       const result = this.dummy.takeDamage(rawDamage);
-      const text = showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#f87171');
+      const text = showDamageNumber(this, this.dummy.x, this.dummy.y - 20, result.finalDamage, 'normal');
       this.registerWorldObject(text);
       hitMessage = `${name} hit ${result.finalDamage}`;
     }
@@ -511,7 +514,7 @@ export class MatchScene extends Phaser.Scene {
       ) {
         this.lastHitShapeResult = `${name}: legacy range hit`;
         const result = this.dummy.takeDamage(skill.damage);
-        const text = showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#f87171');
+        const text = showDamageNumber(this, this.dummy.x, this.dummy.y - 20, result.finalDamage, 'normal');
         this.registerWorldObject(text);
         hitMessage = `${name} hit ${result.finalDamage}`;
       } else {
@@ -551,7 +554,7 @@ export class MatchScene extends Phaser.Scene {
     skillName: string;
     impactAoeRadius?: number;
   }): void {
-    showHitSpark(this, event.x, event.y, (o) => this.registerWorldObject(o));
+    showNormalHit(this, event.x, event.y, (o) => this.registerWorldObject(o));
     this.lastHitShapeResult = `${event.skillName}: objective projectile hit`;
     this.setCombatResult(`${event.skillName} hit objective`);
   }
@@ -564,7 +567,7 @@ export class MatchScene extends Phaser.Scene {
     skillName: string;
     impactAoeRadius?: number;
   }): void {
-    showHitSpark(this, event.x, event.y, (o) => this.registerWorldObject(o));
+    showNormalHit(this, event.x, event.y, (o) => this.registerWorldObject(o));
 
     if (event.impactAoeRadius !== undefined && event.impactAoeRadius > 0) {
       showImpactBurst(this, event.x, event.y, (o) => this.registerWorldObject(o));
@@ -648,7 +651,7 @@ export class MatchScene extends Phaser.Scene {
 
   private applyDamageToDummy(rawDamage: number, label: string, suffix = ''): void {
     const result = this.dummy.takeDamage(rawDamage);
-    const text = showCombatText(this, this.dummy.x, this.dummy.y - 20, `-${result.finalDamage}`, '#f87171');
+    const text = showDamageNumber(this, this.dummy.x, this.dummy.y - 20, result.finalDamage, 'normal');
     this.registerWorldObject(text);
     this.setCombatResult(`${label} hit ${result.finalDamage}${suffix}`);
     if (result.killed) {
