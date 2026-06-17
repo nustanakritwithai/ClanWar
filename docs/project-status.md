@@ -1,8 +1,8 @@
 # Project Status
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-17 (Phase 4E planning)  
-> **Base branch:** `claude/game-file-analysis-a20xup` @ `bf08a0b`
+> **Last updated:** 2026-06-17 (Phase 4E UX spec)  
+> **Base branch:** `claude/game-file-analysis-a20xup` @ `cc6cbde`
 
 ## Current phase
 
@@ -16,9 +16,9 @@
 
 Combat feel polish: hit sparks, Gate/Core hit feedback, skill cast flash, impact rings, damage numbers, micro screen shake, mobile-safe feedback. No balance or rule changes. Prior 4B / 4B-B / 4C-A / 4C-B / 4C-C behavior preserved on live.
 
-**Phase 4E — Visual Direction / MMORPG 2D Pixel Art Upgrade** — **PLANNING — Design Spec Draft**
+**Phase 4E — Visual Direction / MMORPG 2D Pixel Art Upgrade** — **PLANNING — UX/Mobile Spec Draft**
 
-Product/GPT authorized 4E planning. **4E runtime not started** — requires spec merge + Agent D UX + Agent B assets + explicit work order.
+Agent C design spec merged (PR #49). Agent D mobile HUD / safe-zones spec in draft. **4E runtime not started** — requires planning merge + Agent B assets + explicit work order. **Agent B assets not started.**
 
 **Phase 5A — NOT STARTED — NOT AUTHORIZED**
 
@@ -55,7 +55,7 @@ c85a7e7  Merge pull request #45 (Phase 4D FX micro-pack)
 
 ## Open PRs
 
-- **Phase 4E design spec** — Draft (Agent C) — planning only
+- **Phase 4E mobile HUD / UX safe zones** — Draft (Agent D) — planning only
 
 No active runtime PRs.
 
@@ -65,9 +65,9 @@ No active runtime PRs.
 
 **Agent B** — 4D assets complete (#45 merged); lane clear
 
-**Agent C** — 4E design spec draft in progress; 4D design complete (#44 merged)
+**Agent C** — 4E design spec complete (#49 merged); lane clear
 
-**Agent D** — 4D UX complete (#43, #46 merged); lane clear
+**Agent D** — 4E UX/mobile safe-zones spec draft in progress; 4D UX complete (#43, #46 merged)
 
 **Agent E** — 4D closure docs prepared; awaiting closure PR review
 
@@ -87,7 +87,7 @@ No active runtime PRs.
 
 ## Next safe action
 
-**Review Phase 4E design spec draft (Agent C).** Then Agent D UX constraints, then Agent B asset planning.
+**Review Phase 4E mobile HUD / UX spec draft (Agent D).** Then Agent B asset planning. Agent B assets and Agent A runtime **not started**.
 
 Phase 4E runtime and Phase 5A are **NOT AUTHORIZED** without explicit work order.
 
