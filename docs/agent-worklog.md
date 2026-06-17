@@ -5,6 +5,41 @@
 
 ---
 
+## 2026-06-17 — Phase 4C-B closure documentation
+
+**Agent:** E  
+**Base:** `claude/game-file-analysis-a20xup` @ `9eaca6d`  
+**Task:** Phase 4C-B closure documentation after live verification PASS
+
+### Actions taken
+
+1. Updated `docs/phase-close-report.md` — formal Phase 4C-B closure report
+2. Updated `docs/project-status.md` — 4C-B closed live verified, 4C-C not started
+3. Updated `docs/release-checklist.md` — 4C-B all gates checked
+4. Updated `docs/final-gate-report.md` — Phase 4C-B final gate verdict
+5. Updated `docs/open-pr-dashboard.md` — PR #36 merged, closure docs draft
+6. Opened Draft PR for closure docs (docs-only)
+
+### Verification recorded
+
+- PR #36 merge commit: `9eaca6db01998d232c4601efe809c303d14b9f04`
+- External live verification: **57/57 PASS** @ https://clan-siege-arena.onrender.com
+- Live bundle: `index-CcckW3-u.js` (post-merge deploy)
+
+### Actions NOT taken
+
+- Did not start Phase 4C-C
+- Did not edit runtime, assets, or scripts
+- Did not mark closure PR Ready or merge
+
+### Verdict
+
+**PHASE 4C-B CLOSED — LIVE VERIFIED** (pending closure docs PR merge)
+
+**Next phase:** Phase 4C-C locked behind explicit work order.
+
+---
+
 ## 2026-06-16 — Phase 4C-A closure report and status update
 
 **Agent:** E  
