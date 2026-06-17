@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { COMPACT_LAYOUT_HEIGHT } from '../constants';
 
 /** Texture keys for combat VFX loaded from public/assets (Agent B lane — read-only). */
 export const COMBAT_TEXTURES = {
@@ -10,6 +11,11 @@ export const COMBAT_TEXTURES = {
   aoeMarker: 'combat_aoe_marker',
   projectileArrow: 'combat_projectile_arrow',
   projectileFireball: 'combat_projectile_fireball',
+  // Phase 4D combat-feel micro-pack (PR #45).
+  gateHitSpark: 'vfx_gate_hit_spark',
+  coreHitPulse: 'vfx_core_hit_pulse',
+  skillCastFlash: 'vfx_skill_cast_flash',
+  impactRing: 'vfx_impact_ring',
 } as const;
 
 const SVG_SOURCES: Array<{ key: string; path: string }> = [
@@ -21,6 +27,10 @@ const SVG_SOURCES: Array<{ key: string; path: string }> = [
   { key: COMBAT_TEXTURES.aoeMarker, path: 'combat/aoe_marker.svg' },
   { key: COMBAT_TEXTURES.projectileArrow, path: 'combat/projectile_arrow.svg' },
   { key: COMBAT_TEXTURES.projectileFireball, path: 'combat/projectile_fireball.svg' },
+  { key: COMBAT_TEXTURES.gateHitSpark, path: 'vfx/fx_gate_hit_spark.svg' },
+  { key: COMBAT_TEXTURES.coreHitPulse, path: 'vfx/fx_core_hit_pulse.svg' },
+  { key: COMBAT_TEXTURES.skillCastFlash, path: 'vfx/fx_skill_cast_flash.svg' },
+  { key: COMBAT_TEXTURES.impactRing, path: 'vfx/fx_impact_ring.svg' },
 ];
 
 /** Register combat SVG textures (256×256 authored size). Call from MatchScene preload. */
@@ -234,4 +244,145 @@ export function showHealBurst(scene: Phaser.Scene, x: number, y: number, registe
     duration: 320,
     onComplete: () => burst.destroy(),
   });
+}
+
+// --- Phase 4D combat-feel helpers ----------------------------------------
+// All VFX stay at depth <= 200 (HUD is depth >= 1090 and the controls live on a
+// separate UI camera), so combat FX can never cover HUD or controls.
+
+/** Normal unit/projectile hit — reduced scale, short life, no shake/ring. */
+export function showNormalHit(scene: Phaser.Scene, x: number, y: number, register: RegisterFn): void {
+  const spark = spawnOrFallback(
+    scene,
+    COMBAT_TEXTURES.hitSpark,
+    x,
+    y,
+    register,
+    { displaySize: 26, depth: 145 },
+    () => scene.add.circle(x, y, 6, 0xfbbf24, 0.9).setDepth(145),
+  );
+
+  scene.tweens.add({
+    targets: spark,
+    scale: 1.5,
+    alpha: 0,
+    duration: 150,
+    ease: 'Cubic.easeOut',
+    onComplete: () => spark.destroy(),
+  });
+}
+
+/** Gate hit — structural spark + small pulse. No destruction implication, no shake. */
+export function showGateHitSpark(scene: Phaser.Scene, x: number, y: number, register: RegisterFn): void {
+  const spark = spawnOrFallback(
+    scene,
+    COMBAT_TEXTURES.gateHitSpark,
+    x,
+    y,
+    register,
+    { displaySize: 52, depth: 146 },
+    () => scene.add.circle(x, y, 14, 0xcfa14a, 0.85).setDepth(146),
+  );
+
+  scene.tweens.add({
+    targets: spark,
+    scale: 1.55,
+    alpha: 0,
+    duration: 240,
+    ease: 'Cubic.easeOut',
+    onComplete: () => spark.destroy(),
+  });
+}
+
+/** Core hit — stronger pulse (cyan ring). Caller may trigger micro-shake separately. */
+export function showCoreHitPulse(scene: Phaser.Scene, x: number, y: number, register: RegisterFn): void {
+  const pulse = spawnOrFallback(
+    scene,
+    COMBAT_TEXTURES.coreHitPulse,
+    x,
+    y,
+    register,
+    { displaySize: 76, depth: 146 },
+    () => scene.add.circle(x, y, 22, 0x22d3ee, 0.3).setStrokeStyle(2, 0x67e8f9, 0.85).setDepth(146),
+  );
+
+  scene.tweens.add({
+    targets: pulse,
+    scale: 2.0,
+    alpha: 0,
+    duration: 320,
+    ease: 'Cubic.easeOut',
+    onComplete: () => pulse.destroy(),
+  });
+}
+
+/** Successful skill cast start flash at the caster. Callers must gate on cast success. */
+export function showSkillCastFlash(scene: Phaser.Scene, x: number, y: number, register: RegisterFn): void {
+  const flash = spawnOrFallback(
+    scene,
+    COMBAT_TEXTURES.skillCastFlash,
+    x,
+    y,
+    register,
+    { displaySize: 60, depth: 142, alpha: 0.9 },
+    () => scene.add.circle(x, y, 24, 0x93c5fd, 0.35).setStrokeStyle(2, 0xbfdbfe, 0.7).setDepth(142),
+  );
+
+  scene.tweens.add({
+    targets: flash,
+    scale: 1.4,
+    alpha: 0,
+    duration: 220,
+    ease: 'Cubic.easeOut',
+    onComplete: () => flash.destroy(),
+  });
+}
+
+/** Heavy structure moment (Gate destroyed / Core destroyed) — expanding ring. */
+export function showImpactRing(scene: Phaser.Scene, x: number, y: number, register: RegisterFn): void {
+  const ring = spawnOrFallback(
+    scene,
+    COMBAT_TEXTURES.impactRing,
+    x,
+    y,
+    register,
+    { displaySize: 84, depth: 146 },
+    () => scene.add.circle(x, y, 26, 0xfbbf24, 0.12).setStrokeStyle(3, 0xfde68a, 0.8).setDepth(146),
+  );
+
+  scene.tweens.add({
+    targets: ring,
+    scale: 2.4,
+    alpha: 0,
+    duration: 420,
+    ease: 'Cubic.easeOut',
+    onComplete: () => ring.destroy(),
+  });
+}
+
+export type ShakeKind = 'core_hit' | 'gate_destroyed' | 'core_destroyed';
+
+/**
+ * Camera-only micro screen shake (main camera). Controls live on a separate UI
+ * camera and are unaffected. Disabled/strongly reduced on compact (800×360):
+ * core-hit shake is dropped and structure-destroy shake is capped to ~0.3px.
+ */
+export function microShake(scene: Phaser.Scene, kind: ShakeKind): void {
+  const compact = scene.scale.height < COMPACT_LAYOUT_HEIGHT;
+  let durationMs = 0;
+  let intensity = 0;
+
+  if (kind === 'core_hit') {
+    if (compact) return; // disabled on small screens
+    durationMs = 90;
+    intensity = 0.0016; // ~1px on a 720px view
+  } else if (kind === 'gate_destroyed') {
+    durationMs = compact ? 70 : 120;
+    intensity = compact ? 0.0009 : 0.0022;
+  } else {
+    durationMs = compact ? 90 : 150;
+    intensity = compact ? 0.001 : 0.003;
+  }
+
+  scene.cameras.main.shake(durationMs, intensity);
 }

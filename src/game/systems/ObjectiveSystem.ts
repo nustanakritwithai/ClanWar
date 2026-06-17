@@ -14,8 +14,8 @@ import { DEFAULT_MELEE_ARC_DEGREES, segmentHitsCircle, testAoeCircle, testMeleeA
 import { CombatSystem } from './CombatSystem';
 import { SIEGE_RUINS_GATE_BONUS } from '../data/siege-buff';
 import type { DamageResult, TeamId } from '../types';
-import { showCombatText } from '../ui/CombatText';
-import { showHitSpark } from '../ui/CombatVfx';
+import { showCombatText, showDamageNumber } from '../ui/CombatText';
+import { showCoreHitPulse, showGateHitSpark, showImpactRing, microShake } from '../ui/CombatVfx';
 
 const UNDER_ATTACK_TIMEOUT_MS = 2000;
 const MATCH_END_DELAY_MS = 500;
@@ -661,14 +661,22 @@ export class ObjectiveSystem {
     this.syncVisuals(obj);
 
     if (obj.def.type === 'gate') {
+      // Phase 4D: heavy structure moment. "Gate Breached" copy stays primary.
+      showImpactRing(this.scene, obj.def.x, obj.def.y, this.registerWorldObject);
+      microShake(this.scene, 'gate_destroyed');
       this.onGateDestroyed(obj.def.team);
       this.refreshPriority();
       if (obj.def.team === 'red') {
         this.showGateBreachedFeedback(obj);
       }
     } else if (obj.def.id === 'redCore') {
+      // Phase 4D: strongest moment. VFX runs during the existing end delay — no added delay.
+      showImpactRing(this.scene, obj.def.x, obj.def.y, this.registerWorldObject);
+      microShake(this.scene, 'core_destroyed');
       this.endMatch('victory');
     } else if (obj.def.id === 'blueCore') {
+      showImpactRing(this.scene, obj.def.x, obj.def.y, this.registerWorldObject);
+      microShake(this.scene, 'core_destroyed');
       this.endMatch('defeat');
     }
   }
@@ -723,10 +731,17 @@ export class ObjectiveSystem {
   }
 
   private showDamageFeedback(obj: RuntimeObjective, finalDamage: number): void {
-    const color = obj.def.type === 'gate' ? '#cfa14a' : '#f4d35e';
-    showHitSpark(this.scene, obj.def.x, obj.def.y, this.registerWorldObject);
-    const text = showCombatText(this.scene, obj.def.x, obj.def.y - 24, `-${finalDamage}`, color);
-    this.registerWorldObject(text);
+    // Phase 4D: Gate vs Core get distinct confirmed-hit feedback. No HP/stat change.
+    if (obj.def.type === 'gate') {
+      showGateHitSpark(this.scene, obj.def.x, obj.def.y, this.registerWorldObject);
+      const text = showDamageNumber(this.scene, obj.def.x, obj.def.y - 24, finalDamage, 'gate');
+      this.registerWorldObject(text);
+    } else {
+      showCoreHitPulse(this.scene, obj.def.x, obj.def.y, this.registerWorldObject);
+      const text = showDamageNumber(this.scene, obj.def.x, obj.def.y - 24, finalDamage, 'core');
+      this.registerWorldObject(text);
+      microShake(this.scene, 'core_hit');
+    }
   }
 
   private syncVisuals(obj: RuntimeObjective): void {
