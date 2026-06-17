@@ -26,6 +26,8 @@ import { MapRenderer, loadMapVisualAssets } from '../systems/MapRenderer';
 import { ObjectiveSystem, loadObjectiveAssets } from '../systems/ObjectiveSystem';
 import { CaptureSystem, loadCaptureAssets } from '../systems/CaptureSystem';
 import { SiegeBuffSystem, loadSiegeBuffAssets } from '../systems/SiegeBuffSystem';
+import { MatchTimerSystem, loadMatchTimerAssets } from '../systems/MatchTimerSystem';
+import { resolveTimeUp, type MatchResolution } from '../data/match-rules';
 import { SkillRuntimeSystem } from '../systems/SkillRuntimeSystem';
 import { showCombatText } from '../ui/CombatText';
 import { showAoeMarker, showHealBurst, showHealSpark, showHitSpark, showImpactBurst, showSlashArc, loadCombatVisualAssets } from '../ui/CombatVfx';
@@ -36,6 +38,9 @@ import { CAPTURE_OBJECTIVE_IDS } from '../data/capture-objectives';
 const HUD_HINT_NORMAL =
   'WASD/Arrows or joystick • J/Q/E/R/F/Space/1/2 or buttons • ` or F1: debug';
 const HUD_HINT_COMPACT = 'Move: joystick/WASD • Actions: buttons';
+
+/** Delay between the "Time Up" feedback and the Result screen transition (ms). */
+const TIME_UP_RESULT_DELAY_MS = 1300;
 
 const GATE_CORE_MARKER_IDS = new Set(['blueGate', 'blueCore', 'redGate', 'redCore']);
 const CAPTURE_MARKER_IDS = new Set<string>(CAPTURE_OBJECTIVE_IDS);
@@ -68,6 +73,8 @@ export class MatchScene extends Phaser.Scene {
   public objectiveSystem!: ObjectiveSystem;
   public captureSystem!: CaptureSystem;
   public siegeBuffSystem!: SiegeBuffSystem;
+  public matchTimerSystem!: MatchTimerSystem;
+  private matchResolved = false;
 
   constructor() {
     super(SCENE_KEYS.Match);
@@ -84,6 +91,7 @@ export class MatchScene extends Phaser.Scene {
     loadObjectiveAssets(this.load);
     loadCaptureAssets(this.load);
     loadSiegeBuffAssets(this.load);
+    loadMatchTimerAssets(this.load);
   }
 
   create(): void {
@@ -121,6 +129,14 @@ export class MatchScene extends Phaser.Scene {
       (team) => this.siegeBuffSystem.getGateBonusMultiplier(team),
       (x, y) => this.siegeBuffSystem.onGateHitWithSiegeBonus(x, y),
     );
+
+    this.matchResolved = false;
+    this.matchTimerSystem = new MatchTimerSystem(
+      this,
+      this.captureSystem,
+      (obj) => this.registerWorldObject(obj),
+    );
+    this.matchTimerSystem.build();
 
     this.player = new Player(this, map.playerSpawn.x, map.playerSpawn.y, hero);
     this.dummy = new TrainingDummy(this, map.playerSpawn.x, map.playerSpawn.y - 350);
@@ -169,6 +185,13 @@ export class MatchScene extends Phaser.Scene {
     this.captureSystem.update(delta, this.player.x, this.player.y, PLAYER_TEAM);
     this.siegeBuffSystem.update(delta);
 
+    if (!this.matchResolved && this.objectiveSystem.getMatchPhase() === 'in_progress') {
+      this.matchTimerSystem.update(delta);
+      if (this.matchTimerSystem.isExpired()) {
+        this.resolveTimeUp();
+      }
+    }
+
     const dir = this.movement.getMoveVector(this.moveVec);
     this.player.move(dir);
     this.player.update();
@@ -181,7 +204,7 @@ export class MatchScene extends Phaser.Scene {
   }
 
   private processActions(): void {
-    if (this.objectiveSystem.getMatchPhase() !== 'in_progress') return;
+    if (this.matchResolved || this.objectiveSystem.getMatchPhase() !== 'in_progress') return;
 
     const s = this.movement.state;
 
@@ -579,8 +602,48 @@ export class MatchScene extends Phaser.Scene {
   }
 
   private handleMatchEnd(outcome: 'victory' | 'defeat'): void {
+    // Core destroyed has priority — stop the timer and skip any time-up resolution.
+    this.matchResolved = true;
+    this.matchTimerSystem.stop();
     const reason = outcome === 'victory' ? 'enemy_core_destroyed' : 'friendly_core_destroyed';
-    this.scene.start(SCENE_KEYS.Result, { outcome, reason });
+    const result = {
+      outcome,
+      reason,
+      blueScore: this.captureSystem.getTeamScore('blue'),
+      redScore: this.captureSystem.getTeamScore('red'),
+      blueCoreHp: this.objectiveSystem.getCoreHp('blue'),
+      redCoreHp: this.objectiveSystem.getCoreHp('red'),
+    };
+    this.game.registry.set('lastMatchResult', result);
+    this.scene.start(SCENE_KEYS.Result, result);
+  }
+
+  /** Compute the time-up result from current live state without mutating anything. */
+  public computeTimeUpResolution(): MatchResolution {
+    return resolveTimeUp({
+      playerTeam: PLAYER_TEAM,
+      blueScore: this.captureSystem.getTeamScore('blue'),
+      redScore: this.captureSystem.getTeamScore('red'),
+      blueCoreHp: this.objectiveSystem.getCoreHp('blue'),
+      redCoreHp: this.objectiveSystem.getCoreHp('red'),
+    });
+  }
+
+  private resolveTimeUp(): void {
+    if (this.matchResolved) return;
+    // Core-destroyed result always wins over a same-frame time-up.
+    if (this.objectiveSystem.getMatchPhase() !== 'in_progress') return;
+
+    this.matchResolved = true;
+    this.objectiveSystem.freeze();
+
+    const result = this.computeTimeUpResolution();
+    this.game.registry.set('lastMatchResult', result);
+    this.matchTimerSystem.showTimeUp();
+
+    this.time.delayedCall(TIME_UP_RESULT_DELAY_MS, () => {
+      this.scene.start(SCENE_KEYS.Result, result);
+    });
   }
 
   private applyDamageToDummy(rawDamage: number, label: string, suffix = ''): void {
@@ -691,6 +754,7 @@ export class MatchScene extends Phaser.Scene {
     }
 
     this.projectileSystem.destroy();
+    this.matchTimerSystem.destroy();
     this.siegeBuffSystem.destroy();
     this.objectiveSystem.destroy();
     this.captureSystem.destroy();
@@ -743,6 +807,7 @@ export class MatchScene extends Phaser.Scene {
     this.objectiveSystem.layoutHud();
     this.captureSystem.layoutHud();
     this.siegeBuffSystem.layoutHud();
+    this.matchTimerSystem.layoutHud();
     this.layoutTopHud();
   }
 

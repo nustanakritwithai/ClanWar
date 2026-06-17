@@ -132,6 +132,7 @@ export class ObjectiveSystem {
 
   private objectives = new Map<ObjectiveId, RuntimeObjective>();
   private matchPhase: MatchObjectivePhase = 'in_progress';
+  private ended = false;
   private priority: PlayerObjectivePriority = 'attack_gate';
   private hudIcon?: Phaser.GameObjects.Image;
   private hudLabel?: Phaser.GameObjects.Text;
@@ -167,6 +168,7 @@ export class ObjectiveSystem {
     this.worldFeedbackCount = 0;
     this.protectedFeedbackCooldownMs = 0;
     this.lastBlockedLog = '';
+    this.ended = false;
 
     for (const def of OBJECTIVE_DEFINITIONS) {
       const baseKey = this.baseTextureFor(def);
@@ -194,7 +196,7 @@ export class ObjectiveSystem {
       this.protectedFeedbackCooldownMs = Math.max(0, this.protectedFeedbackCooldownMs - deltaMs);
     }
 
-    if (this.matchPhase !== 'in_progress') return;
+    if (this.ended || this.matchPhase !== 'in_progress') return;
 
     for (const obj of this.objectives.values()) {
       if (obj.combatState !== 'under_attack') continue;
@@ -226,6 +228,22 @@ export class ObjectiveSystem {
 
   public getMatchPhase(): MatchObjectivePhase {
     return this.matchPhase;
+  }
+
+  /** Current HP of a team's Core — read-only, used by time-up tiebreak resolution. */
+  public getCoreHp(team: TeamId): number {
+    const core = this.objectives.get(team === 'blue' ? 'blueCore' : 'redCore');
+    return core ? core.currentHp : 0;
+  }
+
+  /**
+   * Halt the Gate/Core combat loop without declaring a Core victory/defeat.
+   * Used when the match is decided externally (time-up Objective Score / tiebreak / draw).
+   */
+  public freeze(): void {
+    this.ended = true;
+    this.matchEndTimer?.remove(false);
+    this.matchEndTimer = undefined;
   }
 
   public getPriority(): PlayerObjectivePriority {
@@ -321,7 +339,7 @@ export class ObjectiveSystem {
   }
 
   public applyMeleeArcDamage(ctx: ObjectiveMeleeContext): DamageResult | null {
-    if (this.matchPhase !== 'in_progress') return null;
+    if (this.ended || this.matchPhase !== 'in_progress') return null;
 
     const hits: RuntimeObjective[] = [];
     for (const obj of this.enemyObjectives(ctx.ownerTeam)) {
@@ -363,7 +381,7 @@ export class ObjectiveSystem {
   }
 
   public applyAoeDamage(ctx: ObjectiveAoeContext): DamageResult | null {
-    if (this.matchPhase !== 'in_progress') return null;
+    if (this.ended || this.matchPhase !== 'in_progress') return null;
 
     let last: DamageResult | null = null;
     let protectedCoreHit: RuntimeObjective | null = null;
@@ -411,7 +429,7 @@ export class ObjectiveSystem {
     skillGateDamageBonus?: number;
     playerGateDamageBonus?: number;
   }): DamageResult | null {
-    if (this.matchPhase !== 'in_progress') return null;
+    if (this.ended || this.matchPhase !== 'in_progress') return null;
 
     let protectedCoreHit: RuntimeObjective | null = null;
 
@@ -443,7 +461,7 @@ export class ObjectiveSystem {
   }
 
   public applyProjectileDamage(ctx: ObjectiveProjectileContext): DamageResult | null {
-    if (this.matchPhase !== 'in_progress') return null;
+    if (this.ended || this.matchPhase !== 'in_progress') return null;
 
     let protectedCoreHit: RuntimeObjective | null = null;
 
@@ -477,7 +495,7 @@ export class ObjectiveSystem {
     y2: number,
     hitRadius: number,
   ): ObjectiveId | null {
-    if (this.matchPhase !== 'in_progress') return null;
+    if (this.ended || this.matchPhase !== 'in_progress') return null;
 
     for (const obj of this.enemyObjectives(ownerTeam)) {
       if (!this.canReceiveDamage(obj)) continue;
@@ -497,7 +515,7 @@ export class ObjectiveSystem {
     y2: number,
     hitRadius: number,
   ): ObjectiveId | null {
-    if (this.matchPhase !== 'in_progress') return null;
+    if (this.ended || this.matchPhase !== 'in_progress') return null;
 
     for (const obj of this.enemyObjectives(ownerTeam)) {
       if (!this.isProtectedCore(obj)) continue;
