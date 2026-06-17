@@ -18,7 +18,8 @@
 
 ## Open PR — Agent A Phase 4E Runtime Reskin Integration (Draft)
 
-**Agent A: Phase 4E Runtime Reskin Integration — Theme 1 Siege Field**  
+**PR #52 — Agent A: Phase 4E Runtime Reskin Integration — Theme 1 Siege Field**
+https://github.com/nustanakritwithai/ClanWar/pull/52
 Branch: `cursor/phase-4e-runtime-reskin-theme1` — Base SHA: `be02369e76678f204db8a5a1aac54ccecbf963ae`
 
 Files touched: `src/game/theme/Phase4ETheme.ts` (new), `src/game/entities/Objective.ts`, `src/game/scenes/{ClassSelectScene,MatchScene,ResultScene}.ts`, `src/game/systems/{ObjectiveSystem,CaptureSystem,SiegeBuffSystem}.ts`, `src/game/ui/{CombatVfx,SkillButtons,VirtualJoystick}.ts`, `scripts/phase-4e-visual-reskin-regression.mjs` (new). Read-only asset source: `public/assets/phase-4e/theme1/**` (PR #51). No `package.json`/lockfile/README/deploy-config/existing-asset changes. No gameplay rule, formula, timer, or scoring changes.

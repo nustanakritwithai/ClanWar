@@ -63,7 +63,7 @@ a9f5645  Merge pull request #47 (Phase 4D combat feel runtime integration)
 
 ## Open PRs
 
-- **Agent A: Phase 4E Runtime Reskin Integration — Theme 1 Siege Field** — Draft, branch `cursor/phase-4e-runtime-reskin-theme1`, base `be02369` — runtime texture wiring only, gameplay frozen. Not Ready, not merged.
+- **PR #52 — Agent A: Phase 4E Runtime Reskin Integration — Theme 1 Siege Field** — https://github.com/nustanakritwithai/ClanWar/pull/52 — Draft, branch `cursor/phase-4e-runtime-reskin-theme1`, base `be02369` — runtime texture wiring only, gameplay frozen. Not Ready, not merged.
 
 ## Agent lane status
 

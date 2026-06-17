@@ -10,7 +10,7 @@
 
 ## 2. Draft PR URL
 
-Not yet opened in this session (GitHub MCP tooling not invoked for PR creation in this pass — branch is committed and pushed; open as Draft PR titled **"Agent A: Phase 4E Runtime Reskin Integration — Theme 1 Siege Field"** against `claude/game-file-analysis-a20xup` when ready). This report, `docs/project-status.md`, and `docs/open-pr-dashboard.md` are written as if the Draft PR is open, per the work order.
+https://github.com/nustanakritwithai/ClanWar/pull/52 — **Draft**, titled "Agent A: Phase 4E Runtime Reskin Integration — Theme 1 Siege Field", base `claude/game-file-analysis-a20xup`.
 
 ## 3. Base SHA used
 
