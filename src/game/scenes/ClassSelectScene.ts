@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { COLORS, COMPACT_LAYOUT_HEIGHT, SCENE_KEYS } from '../constants';
 import { HEROES, HERO_CLASS_ORDER, HERO_ROLE_LABEL } from '../data/heroes';
 import type { HeroClassId } from '../types';
+import { loadPhase4eTheme1Assets, resolvePhase4eCharacterTexture } from '../theme/Phase4ETheme';
 
 /** Viewport height below which class cards use ultra-compact stacking. */
 const ULTRA_COMPACT_HEIGHT = 390;
@@ -11,6 +12,10 @@ type LayoutMode = 'normal' | 'compact' | 'ultra';
 export class ClassSelectScene extends Phaser.Scene {
   constructor() {
     super(SCENE_KEYS.ClassSelect);
+  }
+
+  preload(): void {
+    loadPhase4eTheme1Assets(this.load);
   }
 
   create(): void {
@@ -119,6 +124,20 @@ export class ClassSelectScene extends Phaser.Scene {
       .setStrokeStyle(2, COLORS.blue)
       .setInteractive({ useHandCursor: true });
 
+    // Phase 4E Theme 1: optional class preview art, additive only — falls
+    // back to the existing text-only card layout when no themed texture is
+    // loaded. Preview is tinted with the player's team color (class select
+    // is always pre-match, so PLAYER_TEAM is the only relevant team here).
+    const previewTexture = resolvePhase4eCharacterTexture(this, heroClass);
+    const previewSize = Math.min(h - 12, mode === 'ultra' ? 36 : mode === 'compact' ? 44 : 56);
+    const textIndent = previewTexture ? previewSize + 16 : 10;
+    if (previewTexture) {
+      this.add
+        .image(x - w / 2 + 10 + previewSize / 2, y, previewTexture)
+        .setDisplaySize(previewSize, previewSize)
+        .setTint(COLORS.blue);
+    }
+
     const title = `${name} — ${role}`;
     const statsLine =
       mode === 'ultra'
@@ -133,7 +152,7 @@ export class ClassSelectScene extends Phaser.Scene {
     const statsOffset = mode === 'ultra' ? 8 : mode === 'compact' ? 10 : 14;
 
     const titleText = this.add
-      .text(x - w / 2 + 10, y - titleOffset, title, {
+      .text(x - w / 2 + textIndent, y - titleOffset, title, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: titleSize,
         color: COLORS.text,
@@ -142,7 +161,7 @@ export class ClassSelectScene extends Phaser.Scene {
       .setOrigin(0, 0.5);
 
     const statsText = this.add
-      .text(x - w / 2 + 10, y + statsOffset, statsLine, {
+      .text(x - w / 2 + textIndent, y + statsOffset, statsLine, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: statsSize,
         color: '#9ca3af',

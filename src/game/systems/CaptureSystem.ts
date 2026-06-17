@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { COMPACT_LAYOUT_HEIGHT } from '../constants';
+import { hasPhase4eTexture, PHASE4E_THEME1_TEXTURES } from '../theme/Phase4ETheme';
 import {
   CAPTURE_OBJECTIVE_DEFINITIONS,
   type CaptureObjectiveDefinition,
@@ -403,7 +404,29 @@ export class CaptureSystem {
     obj.entity.applyVisual(texture, obj.captureState, obj.captureProgress);
   }
 
+  // Phase 4E Theme 1: the mock Capture Point pack ships one generic
+  // neutral/player/enemy/contested family rather than a texture per objective
+  // type, so all 4 types (resourceCamp/siegeRuins/forwardCamp/watchtower)
+  // share the same themed body art when enabled — per-type visual
+  // differentiation is deferred (documented, no gameplay impact). "Player" /
+  // "enemy" map to PLAYER_TEAM ('blue' today); this only changes if/when a
+  // second human team exists.
+  private themedTextureForOwner(owner: CaptureOwner): string | undefined {
+    if (owner === 'blue' && hasPhase4eTexture(this.scene, PHASE4E_THEME1_TEXTURES.objCapturePlayer)) {
+      return PHASE4E_THEME1_TEXTURES.objCapturePlayer;
+    }
+    if (owner === 'red' && hasPhase4eTexture(this.scene, PHASE4E_THEME1_TEXTURES.objCaptureEnemy)) {
+      return PHASE4E_THEME1_TEXTURES.objCaptureEnemy;
+    }
+    if (owner === 'neutral' && hasPhase4eTexture(this.scene, PHASE4E_THEME1_TEXTURES.objCaptureNeutral)) {
+      return PHASE4E_THEME1_TEXTURES.objCaptureNeutral;
+    }
+    return undefined;
+  }
+
   private textureForOwner(type: ObjectiveType, owner: CaptureOwner): string {
+    const themed = this.themedTextureForOwner(owner);
+    if (themed) return themed;
     if (type === 'watchtower') {
       if (owner === 'blue') return CAPTURE_TEXTURES.watchtowerBlue;
       if (owner === 'red') return CAPTURE_TEXTURES.watchtowerRed;

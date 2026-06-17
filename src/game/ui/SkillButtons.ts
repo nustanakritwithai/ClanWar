@@ -1,6 +1,25 @@
 import Phaser from 'phaser';
 import { COLORS, COMPACT_LAYOUT_HEIGHT } from '../constants';
 import type { ActionKey } from '../types';
+import { hasPhase4eTexture, PHASE4E_THEME1_TEXTURES } from '../theme/Phase4ETheme';
+
+/**
+ * Phase 4E Theme 1 ships only attack/skill button frame mocks, so warAction
+ * and the item slots fall back to the existing plain circle (documented gap,
+ * not a runtime hook risk).
+ */
+function themeFrameTextureFor(scene: Phaser.Scene, action: ActionKey): string | undefined {
+  if (action === 'attack' && hasPhase4eTexture(scene, PHASE4E_THEME1_TEXTURES.uiAttackButtonFrame)) {
+    return PHASE4E_THEME1_TEXTURES.uiAttackButtonFrame;
+  }
+  if (
+    (action === 'skill1' || action === 'skill2' || action === 'skill3' || action === 'ultimate') &&
+    hasPhase4eTexture(scene, PHASE4E_THEME1_TEXTURES.uiSkillButtonFrame)
+  ) {
+    return PHASE4E_THEME1_TEXTURES.uiSkillButtonFrame;
+  }
+  return undefined;
+}
 
 interface ButtonDef {
   action: ActionKey;
@@ -12,6 +31,7 @@ interface ButtonHandle extends ButtonDef {
   bg: Phaser.GameObjects.Arc;
   text: Phaser.GameObjects.Text;
   cooldownOverlay?: Phaser.GameObjects.Arc;
+  themeFrame?: Phaser.GameObjects.Image;
 }
 
 const NORMAL_RADII: Record<ActionKey, number> = {
@@ -107,6 +127,17 @@ export class SkillButtons {
       .setDepth(2001);
 
     const handle: ButtonHandle = { ...def, bg, text };
+
+    // Purely decorative backdrop behind the interactive circle (bg keeps the
+    // exact same hit area, position, and pointer handling).
+    const themeTexture = themeFrameTextureFor(this.scene, def.action);
+    if (themeTexture) {
+      handle.themeFrame = this.scene.add
+        .image(0, 0, themeTexture)
+        .setDisplaySize(def.radius * 2, def.radius * 2)
+        .setScrollFactor(0)
+        .setDepth(1999);
+    }
 
     // Action buttons accept their own pointer independently of the joystick.
     bg.on('pointerdown', (_pointer: Phaser.Input.Pointer) => {
@@ -264,6 +295,7 @@ export class SkillButtons {
       const pos = positions[handle.action];
       handle.bg.setPosition(pos.x, pos.y);
       handle.text.setPosition(pos.x, pos.y);
+      handle.themeFrame?.setPosition(pos.x, pos.y).setDisplaySize(handle.radius * 2, handle.radius * 2);
       if (handle.cooldownOverlay) {
         handle.cooldownOverlay.setPosition(pos.x, pos.y);
         handle.cooldownOverlay.setRadius(handle.radius);
@@ -282,6 +314,7 @@ export class SkillButtons {
       handle.bg.removeAllListeners();
       handle.bg.destroy();
       handle.text.destroy();
+      handle.themeFrame?.destroy();
     }
     this.buttons = [];
   }

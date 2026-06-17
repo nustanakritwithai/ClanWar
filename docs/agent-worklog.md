@@ -5,6 +5,62 @@
 
 ---
 
+## 2026-06-17 — Phase 4E Theme 1 runtime reskin integration (Agent A)
+
+**Agent:** A
+**Branch:** `cursor/phase-4e-runtime-reskin-theme1`
+**Base:** `claude/game-file-analysis-a20xup` @ `be02369e76678f204db8a5a1aac54ccecbf963ae`
+**Task:** Wire Agent B's Phase 4E Theme 1 (Castle Siege Field) asset mock pack (PR #51) into runtime as a visual-only reskin. No gameplay rule changes. Draft PR only.
+
+### Actions taken
+
+1. Created `src/game/theme/Phase4ETheme.ts` — single `PHASE4E_THEME1_ENABLED` toggle, 47 namespaced `phase4e_theme1_*` texture keys, `loadPhase4eTheme1Assets()` loader (excludes the 2 documentation-only safe-zone mockups and the manifest self-entry), `hasPhase4eTexture()` guard, `resolvePhase4eVfxTexture()` / `resolvePhase4eCharacterTexture()` lookup helpers with legacy fallback.
+2. Wired HUD/control backdrops: attack/skill button frames (`SkillButtons.ts`), joystick frame (`VirtualJoystick.ts`), Siege Buff badge icon (`SiegeBuffSystem.ts`), Result panel backdrop (`ResultScene.ts`) — all additive, existing hitboxes/positions/text untouched.
+3. Wired Gate states (idle team-tinted, hit overlay, destroyed) and Core states (hit overlay, destroyed) in `ObjectiveSystem.ts` / `Objective.ts` — Core base texture stays team-colored per the hard team-color requirement; overlay-vs-base-replace distinction documented in code comments.
+4. Wired Capture Point owner textures (neutral/player/enemy) in `CaptureSystem.ts` — trades per-type visual distinction for owner-based team-color clarity, documented as a deliberate tradeoff.
+5. Wired 5 combat-feel VFX call sites (normal hit, Gate hit, Core pulse, skill cast flash, impact ring) in `CombatVfx.ts` via `resolvePhase4eVfxTexture()` — depth/lifetime/easing values byte-for-byte unchanged.
+6. Wired character class-select previews (guardian/warrior/ranger/mage/priest) in `ClassSelectScene.ts`, team-tinted blue (the only relevant team pre-match).
+7. Added a single conservative environment background layer (`bgCastleParallax`, depth -99, alpha 0.32) in `MatchScene.ts` — no geometry/collision/pathing change.
+8. Created `scripts/phase-4e-visual-reskin-regression.mjs` (18 assertions) — boot, texture load, no asset 404s, Gate/Core/Capture themed states, VFX themed + depth-safe, both mobile viewports, no forbidden copy, Menu↔Match×3 texture persistence, class-select previews, no fatal console errors.
+9. Ran full regression stack: `npm run build` PASS; new script 18/18 PASS; prior suites re-run (see Verification recorded).
+10. Updated `docs/project-status.md`, `docs/open-pr-dashboard.md` — 4E now RUNTIME DRAFT, Agent A draft PR tracked, PR #49/#50/#51 confirmed merged, Phase 5A still not authorized.
+11. Created `docs/phase-4e-runtime-reskin-report.md` — full 18-section integration report.
+12. Opened Draft PR. Not marked Ready. Not merged.
+
+### Assets intentionally not wired (documented gaps, not oversights)
+
+- `vfxDeniedFlash`, `vfxCapturePulse` — loaded but no safe existing hook found at a denied-action/capture-complete call site without touching gameplay trigger logic
+- `objGateDamaged`, `objGateBreached` (intermediate Gate states), `objCoreProtected`/`objCoreVulnerable`/`objCoreLow` (Core base swaps), `objCaptureContested` — "smallest safe subset" chosen: Gate idle/hit/destroyed and Core hit/destroyed cover the minimum acceptable bar without restructuring `ObjectiveSystem`'s state→texture mapping or `CaptureSystem`'s owner-keyed (not state-keyed) texture lookup
+- `charRogueIdle`, `charSummonerIdle` — loaded but unused; no locked/future-art preview slot exists in `ClassSelectScene` today (roster is 5 classes only), and creating one was out of scope
+- `uiHudPanel`, `uiTimerScoreChip`, `uiObjectivePlaque`, `uiCaptureHudPanel` — loaded but no backdrop wired; existing HUD text/label call sites were not touched to avoid readability risk
+- Tile/prop set (`tileGroundGrass`, `tileGroundDirt`, `tileStonePath`, `tileBrokenWall`, `propBannerBlue/Red`, `propCrystalSmall`, `propRuinStone`) and `bgSiegeSmokeParallax` — loaded but not placed; only the single base parallax layer was added, per the conservative environment-integration requirement
+
+### Verification recorded
+
+- `npm run build` — PASS
+- `scripts/phase-4e-visual-reskin-regression.mjs` (new) — **18/18 PASS**
+- `scripts/phase-4d-combat-feel-regression.mjs` — 12/17 PASS; R1/R4/R5/R6/R7 fail only because they assert the literal legacy VFX texture key (e.g. `vfx_hit_spark`) is present on the live sprite; Theme 1 swaps that sprite's texture to the namespaced `phase4e_theme1_vfx_*` equivalent when loaded, so the old key-identity assertion no longer matches the same (still-correct) VFX node. Re-verified independently by the new script's T9–T12 (VFX present, themed, depth < 1090) and by the unaffected 4D checks in the same run (R2/R3 damage numbers, R8/R9 Core-destroyed result flow, R10–R15 depth/mobile, R16–R19 Siege Buff/capture/timer/HUD, R20/R21 copy/console) — no behavior, lifetime, or depth regression.
+- `scripts/phase-4b-objective-regression.mjs` — 15/15 PASS
+- `scripts/phase-4b-b-clarity-regression.mjs` — 13/13 PASS
+- `scripts/phase-4c-a-capture-regression.mjs` — 11/11 PASS
+- `scripts/phase-4c-b-siege-buff-regression.mjs` — 18/18 PASS
+- `scripts/phase-4c-c-timer-score-regression.mjs` — 18/18 PASS
+- Mobile 915×412 — PASS; Mobile 800×360 — PASS (both phases)
+
+### Did not do
+
+- Did not change any damage formula, HP/armor, attack speed, cooldown, projectile speed, capture score/timing, Siege Buff %, timer length, Objective Score win logic, Gate/Core HP logic, protected-Core rule, or result priority
+- Did not add bot/monster AI, economy, EXP, Gold, shop, ranking, minimap, route/lane UI, respawn, vision/fog, multiplayer, login, clan, payment, tutorial overhaul, new objective type, or any Phase 5A system
+- Did not create a new playable hero class (rogue/summoner remain non-playable)
+- Did not edit `package.json`, `package-lock.json`, README, deploy/render config, or any existing asset outside `phase-4e/theme1`
+- Did not rename/remove/overwrite any PR #51 asset
+- Did not mark the PR Ready or merge it
+- Did not start Phase 5A
+
+### Verdict
+
+**RUNTIME RESKIN READY FOR REVIEW** (Draft PR open, gameplay frozen, regression stack run and documented — pending Agent E gate review)
+
 ---
 
 ## 2026-06-17 — Phase 4E Theme 1 visual asset mock pack (Agent B)

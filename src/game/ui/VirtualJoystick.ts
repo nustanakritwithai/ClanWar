@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { MOVEMENT_ZONE_WIDTH_RATIO } from '../constants';
+import { hasPhase4eTexture, PHASE4E_THEME1_TEXTURES } from '../theme/Phase4ETheme';
 
 export interface VirtualJoystickOptions {
   x: number;
@@ -24,6 +25,7 @@ export class VirtualJoystick {
   private scene: Phaser.Scene;
   private base: Phaser.GameObjects.Arc;
   private knob: Phaser.GameObjects.Arc;
+  private themeFrame?: Phaser.GameObjects.Image;
   private baseRadius: number;
   private knobRadius: number;
   private deadZone: number;
@@ -65,6 +67,17 @@ export class VirtualJoystick {
       .setStrokeStyle(2, 0xffffff, 0.6)
       .setScrollFactor(0)
       .setDepth(2001);
+
+    // Phase 4E Theme 1: purely decorative backdrop behind the existing base
+    // circle. The base circle remains the interactive hit area — its size,
+    // position, and pointer handling are unchanged.
+    if (hasPhase4eTexture(scene, PHASE4E_THEME1_TEXTURES.uiJoystickFrame)) {
+      this.themeFrame = scene.add
+        .image(options.x, options.y, PHASE4E_THEME1_TEXTURES.uiJoystickFrame)
+        .setDisplaySize(this.baseRadius * 2, this.baseRadius * 2)
+        .setScrollFactor(0)
+        .setDepth(1999);
+    }
 
     const input = scene.input;
     input.on('pointerdown', this.onPointerDown);
@@ -124,6 +137,7 @@ export class VirtualJoystick {
   public reposition(x: number, y: number): void {
     this.origin.set(x, y);
     this.base.setPosition(x, y);
+    this.themeFrame?.setPosition(x, y);
     if (!this.isActive) {
       this.knob.setPosition(x, y);
     }
@@ -135,6 +149,7 @@ export class VirtualJoystick {
     this.knobRadius = knobRadius;
     this.base.setRadius(baseRadius);
     this.knob.setRadius(knobRadius);
+    this.themeFrame?.setDisplaySize(baseRadius * 2, baseRadius * 2);
     if (!this.isActive) {
       this.knob.setPosition(this.origin.x, this.origin.y);
     }
@@ -149,5 +164,6 @@ export class VirtualJoystick {
     input.off('pointercancel', this.onPointerRelease);
     this.base.destroy();
     this.knob.destroy();
+    this.themeFrame?.destroy();
   }
 }

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { COMPACT_LAYOUT_HEIGHT } from '../constants';
+import { resolvePhase4eVfxTexture } from '../theme/Phase4ETheme';
 
 /** Texture keys for combat VFX loaded from public/assets (Agent B lane — read-only). */
 export const COMBAT_TEXTURES = {
@@ -254,7 +255,7 @@ export function showHealBurst(scene: Phaser.Scene, x: number, y: number, registe
 export function showNormalHit(scene: Phaser.Scene, x: number, y: number, register: RegisterFn): void {
   const spark = spawnOrFallback(
     scene,
-    COMBAT_TEXTURES.hitSpark,
+    resolvePhase4eVfxTexture(scene, COMBAT_TEXTURES.hitSpark),
     x,
     y,
     register,
@@ -276,7 +277,7 @@ export function showNormalHit(scene: Phaser.Scene, x: number, y: number, registe
 export function showGateHitSpark(scene: Phaser.Scene, x: number, y: number, register: RegisterFn): void {
   const spark = spawnOrFallback(
     scene,
-    COMBAT_TEXTURES.gateHitSpark,
+    resolvePhase4eVfxTexture(scene, COMBAT_TEXTURES.gateHitSpark),
     x,
     y,
     register,
@@ -298,7 +299,7 @@ export function showGateHitSpark(scene: Phaser.Scene, x: number, y: number, regi
 export function showCoreHitPulse(scene: Phaser.Scene, x: number, y: number, register: RegisterFn): void {
   const pulse = spawnOrFallback(
     scene,
-    COMBAT_TEXTURES.coreHitPulse,
+    resolvePhase4eVfxTexture(scene, COMBAT_TEXTURES.coreHitPulse),
     x,
     y,
     register,
@@ -320,7 +321,7 @@ export function showCoreHitPulse(scene: Phaser.Scene, x: number, y: number, regi
 export function showSkillCastFlash(scene: Phaser.Scene, x: number, y: number, register: RegisterFn): void {
   const flash = spawnOrFallback(
     scene,
-    COMBAT_TEXTURES.skillCastFlash,
+    resolvePhase4eVfxTexture(scene, COMBAT_TEXTURES.skillCastFlash),
     x,
     y,
     register,
@@ -342,7 +343,7 @@ export function showSkillCastFlash(scene: Phaser.Scene, x: number, y: number, re
 export function showImpactRing(scene: Phaser.Scene, x: number, y: number, register: RegisterFn): void {
   const ring = spawnOrFallback(
     scene,
-    COMBAT_TEXTURES.impactRing,
+    resolvePhase4eVfxTexture(scene, COMBAT_TEXTURES.impactRing),
     x,
     y,
     register,
