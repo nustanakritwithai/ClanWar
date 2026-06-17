@@ -12,6 +12,7 @@ import {
 import { Objective } from '../entities/Objective';
 import { DEFAULT_MELEE_ARC_DEGREES, segmentHitsCircle, testAoeCircle, testMeleeArc } from '../combat/HitShapes';
 import { CombatSystem } from './CombatSystem';
+import { SIEGE_RUINS_GATE_BONUS } from '../data/siege-buff';
 import type { DamageResult, TeamId } from '../types';
 import { showCombatText } from '../ui/CombatText';
 import { showHitSpark } from '../ui/CombatVfx';
@@ -69,6 +70,9 @@ interface RuntimeObjective {
   shownGateBreachedFeedback: boolean;
   shownCoreOpenFeedback: boolean;
 }
+
+type SiegeGateBonusProvider = (attackerTeam: TeamId) => number;
+type SiegeGateHitCallback = (gateX: number, gateY: number) => void;
 
 export interface ObjectiveMeleeContext {
   ownerTeam: TeamId;
@@ -137,6 +141,8 @@ export class ObjectiveSystem {
   private protectedFeedbackCooldownMs = 0;
   private lastWorldFeedback = '';
   private worldFeedbackCount = 0;
+  private getSiegeGateBonus: SiegeGateBonusProvider = () => 0;
+  private onSiegeGateHit?: SiegeGateHitCallback;
 
   constructor(
     scene: Phaser.Scene,
@@ -146,6 +152,14 @@ export class ObjectiveSystem {
     this.scene = scene;
     this.registerWorldObject = registerWorldObject;
     this.onMatchEnd = onMatchEnd;
+  }
+
+  public setSiegeBuffHandlers(
+    getSiegeGateBonus: SiegeGateBonusProvider,
+    onSiegeGateHit: SiegeGateHitCallback,
+  ): void {
+    this.getSiegeGateBonus = getSiegeGateBonus;
+    this.onSiegeGateHit = onSiegeGateHit;
   }
 
   public build(): void {
@@ -259,7 +273,7 @@ export class ObjectiveSystem {
     return this.worldFeedbackCount;
   }
 
-  /** Debug/test hook — deal damage from an attacker team without hit-shape checks. */
+  /** Debug/test hook — deal damage from an attacker team without hit-shape or protected-core checks. */
   public debugDealDamage(
     objectiveId: ObjectiveId,
     rawDamage: number,
@@ -270,19 +284,40 @@ export class ObjectiveSystem {
     if (!obj || obj.combatState === 'destroyed') return null;
     if (obj.def.team === attackerTeam) return null;
 
+    const raw = this.computeRawDamage(obj, rawDamage, attackerTeam);
     const combatTarget = {
       currentHp: obj.currentHp,
       maxHp: obj.def.maxHp,
       armor: obj.def.armor,
     };
-    const result = CombatSystem.applyDamage(combatTarget, rawDamage);
+    const result = CombatSystem.applyDamage(combatTarget, raw);
     obj.currentHp = combatTarget.currentHp;
     this.enterUnderAttack(obj);
     this.showDamageFeedback(obj, result.finalDamage);
+    if (obj.def.type === 'gate' && this.getSiegeGateBonus(attackerTeam) > 0) {
+      this.onSiegeGateHit?.(obj.def.x, obj.def.y);
+    }
     if (result.killed) {
       this.setDestroyed(obj);
     }
     return result;
+  }
+
+  /** Test hook — compute raw gate damage through the unified bonus pipeline. */
+  public debugComputeGateRawDamage(
+    objectiveId: ObjectiveId,
+    baseDamage: number,
+    attackerTeam: TeamId,
+    skillGateBonus?: number,
+    playerGateBonus?: number,
+  ): number {
+    const obj = this.objectives.get(objectiveId);
+    if (!obj) return baseDamage;
+    return this.computeRawDamage(obj, baseDamage, attackerTeam, skillGateBonus, playerGateBonus);
+  }
+
+  public getSiegeGateBonusConstant(): number {
+    return SIEGE_RUINS_GATE_BONUS;
   }
 
   public applyMeleeArcDamage(ctx: ObjectiveMeleeContext): DamageResult | null {
@@ -311,6 +346,7 @@ export class ObjectiveSystem {
       const raw = this.computeRawDamage(
         damageTarget,
         ctx.rawDamage,
+        ctx.ownerTeam,
         ctx.skillGateDamageBonus,
         ctx.playerGateDamageBonus,
       );
@@ -344,7 +380,13 @@ export class ObjectiveSystem {
       if (!circle.hit) continue;
 
       if (this.canReceiveDamage(obj)) {
-        const raw = this.computeRawDamage(obj, ctx.rawDamage, ctx.skillGateDamageBonus, ctx.playerGateDamageBonus);
+        const raw = this.computeRawDamage(
+          obj,
+          ctx.rawDamage,
+          ctx.ownerTeam,
+          ctx.skillGateDamageBonus,
+          ctx.playerGateDamageBonus,
+        );
         const result = this.applyDamageToObjective(obj, raw, ctx.ownerTeam);
         if (result) last = result;
       } else if (this.isProtectedCore(obj)) {
@@ -378,7 +420,13 @@ export class ObjectiveSystem {
       if (dist > ctx.range + obj.def.radius) continue;
 
       if (this.canReceiveDamage(obj)) {
-        const raw = this.computeRawDamage(obj, ctx.rawDamage, ctx.skillGateDamageBonus, ctx.playerGateDamageBonus);
+        const raw = this.computeRawDamage(
+          obj,
+          ctx.rawDamage,
+          ctx.ownerTeam,
+          ctx.skillGateDamageBonus,
+          ctx.playerGateDamageBonus,
+        );
         return this.applyDamageToObjective(obj, raw, ctx.ownerTeam);
       }
       if (this.isProtectedCore(obj)) {
@@ -404,7 +452,8 @@ export class ObjectiveSystem {
       if (dist > obj.def.radius + 14) continue;
 
       if (this.canReceiveDamage(obj)) {
-        return this.applyDamageToObjective(obj, ctx.rawDamage, ctx.ownerTeam);
+        const raw = this.computeRawDamage(obj, ctx.rawDamage, ctx.ownerTeam);
+        return this.applyDamageToObjective(obj, raw, ctx.ownerTeam);
       }
       if (this.isProtectedCore(obj)) {
         protectedCoreHit = obj;
@@ -464,10 +513,13 @@ export class ObjectiveSystem {
     objectiveId: ObjectiveId,
     rawDamage: number,
     attackerTeam: TeamId,
+    skillGateBonus?: number,
+    playerGateBonus?: number,
   ): DamageResult | null {
     const obj = this.objectives.get(objectiveId);
     if (!obj) return null;
-    return this.applyDamageToObjective(obj, rawDamage, attackerTeam);
+    const raw = this.computeRawDamage(obj, rawDamage, attackerTeam, skillGateBonus, playerGateBonus);
+    return this.applyDamageToObjective(obj, raw, attackerTeam);
   }
 
   public handleProjectileSegmentHit(
@@ -515,13 +567,16 @@ export class ObjectiveSystem {
   private computeRawDamage(
     obj: RuntimeObjective,
     baseDamage: number,
+    attackerTeam: TeamId,
     skillGateBonus?: number,
     playerGateBonus?: number,
   ): number {
     let raw = baseDamage;
-    if (obj.def.type === 'gate') {
+    if (obj.def.type === 'gate' && obj.def.team !== attackerTeam) {
       raw *= 1 + (playerGateBonus ?? 0);
       if (skillGateBonus) raw *= 1 + skillGateBonus;
+      const siegeBonus = this.getSiegeGateBonus(attackerTeam);
+      if (siegeBonus > 0) raw *= 1 + siegeBonus;
     }
     return Math.round(raw);
   }
@@ -550,6 +605,10 @@ export class ObjectiveSystem {
 
     this.enterUnderAttack(obj);
     this.showDamageFeedback(obj, result.finalDamage);
+
+    if (obj.def.type === 'gate' && this.getSiegeGateBonus(attackerTeam) > 0) {
+      this.onSiegeGateHit?.(obj.def.x, obj.def.y);
+    }
 
     if (result.killed) {
       this.setDestroyed(obj);

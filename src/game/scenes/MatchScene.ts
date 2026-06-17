@@ -25,6 +25,7 @@ import { ProjectileSystem } from '../systems/ProjectileSystem';
 import { MapRenderer, loadMapVisualAssets } from '../systems/MapRenderer';
 import { ObjectiveSystem, loadObjectiveAssets } from '../systems/ObjectiveSystem';
 import { CaptureSystem, loadCaptureAssets } from '../systems/CaptureSystem';
+import { SiegeBuffSystem, loadSiegeBuffAssets } from '../systems/SiegeBuffSystem';
 import { SkillRuntimeSystem } from '../systems/SkillRuntimeSystem';
 import { showCombatText } from '../ui/CombatText';
 import { showAoeMarker, showHealBurst, showHealSpark, showHitSpark, showImpactBurst, showSlashArc, loadCombatVisualAssets } from '../ui/CombatVfx';
@@ -41,8 +42,8 @@ const CAPTURE_MARKER_IDS = new Set<string>(CAPTURE_OBJECTIVE_IDS);
 
 export class MatchScene extends Phaser.Scene {
   private heroClass: HeroClassId = 'guardian';
-  private player!: Player;
-  private dummy!: TrainingDummy;
+  public player!: Player;
+  public dummy!: TrainingDummy;
   private movement!: InputSystem;
   private skillRuntime!: SkillRuntimeSystem;
   private walls!: Phaser.Physics.Arcade.StaticGroup;
@@ -66,6 +67,7 @@ export class MatchScene extends Phaser.Scene {
   public mapRenderer!: MapRenderer;
   public objectiveSystem!: ObjectiveSystem;
   public captureSystem!: CaptureSystem;
+  public siegeBuffSystem!: SiegeBuffSystem;
 
   constructor() {
     super(SCENE_KEYS.Match);
@@ -81,6 +83,7 @@ export class MatchScene extends Phaser.Scene {
     loadMapVisualAssets(this.load);
     loadObjectiveAssets(this.load);
     loadCaptureAssets(this.load);
+    loadSiegeBuffAssets(this.load);
   }
 
   create(): void {
@@ -107,6 +110,17 @@ export class MatchScene extends Phaser.Scene {
       (visible) => this.objectiveSystem.setGateHudVisible(visible),
     );
     this.captureSystem.build();
+
+    this.siegeBuffSystem = new SiegeBuffSystem(
+      this,
+      this.captureSystem,
+      (obj) => this.registerWorldObject(obj),
+    );
+    this.siegeBuffSystem.build();
+    this.objectiveSystem.setSiegeBuffHandlers(
+      (team) => this.siegeBuffSystem.getGateBonusMultiplier(team),
+      (x, y) => this.siegeBuffSystem.onGateHitWithSiegeBonus(x, y),
+    );
 
     this.player = new Player(this, map.playerSpawn.x, map.playerSpawn.y, hero);
     this.dummy = new TrainingDummy(this, map.playerSpawn.x, map.playerSpawn.y - 350);
@@ -153,6 +167,7 @@ export class MatchScene extends Phaser.Scene {
     this.skillRuntime.update(deltaSeconds);
     this.objectiveSystem.update(delta);
     this.captureSystem.update(delta, this.player.x, this.player.y, PLAYER_TEAM);
+    this.siegeBuffSystem.update(delta);
 
     const dir = this.movement.getMoveVector(this.moveVec);
     this.player.move(dir);
@@ -676,6 +691,7 @@ export class MatchScene extends Phaser.Scene {
     }
 
     this.projectileSystem.destroy();
+    this.siegeBuffSystem.destroy();
     this.objectiveSystem.destroy();
     this.captureSystem.destroy();
     this.mapRenderer.destroy();
@@ -726,6 +742,7 @@ export class MatchScene extends Phaser.Scene {
     this.movement.handleResize();
     this.objectiveSystem.layoutHud();
     this.captureSystem.layoutHud();
+    this.siegeBuffSystem.layoutHud();
     this.layoutTopHud();
   }
 
