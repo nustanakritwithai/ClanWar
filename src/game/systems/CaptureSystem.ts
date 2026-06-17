@@ -8,6 +8,7 @@ import {
   type CaptureState,
 } from '../data/capture-objectives';
 import { CaptureObjective } from '../entities/CaptureObjective';
+import { siegeBuffActive, type SiegeRuinsState } from '../data/siege-buff';
 import type { ObjectiveType, TeamId } from '../types';
 import { showCombatText } from '../ui/CombatText';
 
@@ -303,6 +304,27 @@ export class CaptureSystem {
   /** Test hook — simulate enemy presence inside an objective circle (headless contest). */
   public simulateEnemyAtObjective(id: CaptureObjectiveId | null): void {
     this.simulatedEnemyObjectiveId = id;
+  }
+
+  public getSiegeRuinsState(): SiegeRuinsState | null {
+    const obj = this.objectives.get('siegeRuins');
+    if (!obj) return null;
+    return { owner: obj.owner, captureState: obj.captureState };
+  }
+
+  public siegeBuffActive(team: TeamId): boolean {
+    return siegeBuffActive(this.getSiegeRuinsState(), team);
+  }
+
+  /** Test hook — set Siege Ruins owner/capture state without standing in circle. */
+  public debugSetSiegeRuinsState(owner: CaptureOwner, captureState: CaptureState): void {
+    const obj = this.objectives.get('siegeRuins');
+    if (!obj) return;
+    obj.owner = owner;
+    obj.captureState = captureState;
+    obj.capturingTeam = owner === 'neutral' ? null : owner;
+    obj.captureProgress = owner === 'neutral' ? 0 : 100;
+    this.syncVisual(obj);
   }
 
   /** Test hook — force capture progress for regression (does not award score). */
