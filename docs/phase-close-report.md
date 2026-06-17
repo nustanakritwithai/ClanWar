@@ -1,33 +1,29 @@
-# Phase 4C-B Closure Report — Siege Ruins Gate Damage Bonus
+# Phase 4C-C Closure Report — Match Timer and Objective Score Win
 
 > **Agent E closure audit**  
 > **Date:** 2026-06-17  
-> **Phase:** 4C-B — Siege Ruins Gate Damage Bonus  
-> **Verdict:** **PHASE 4C-B COMPLETE — LIVE VERIFIED**
+> **Phase:** 4C-C — Match Timer and Objective Score Win  
+> **Verdict:** **PHASE 4C-C COMPLETE — LIVE VERIFIED**
 
 ---
 
 ## 1. Phase summary
 
-Phase 4C-B delivered the **Siege Ruins Gate Damage Bonus** — a combat modifier that rewards owning uncontested Siege Ruins without changing win conditions or the Gate/Core loop.
+Phase 4C-C delivered the **Match Timer** and **Objective Score win condition** — completing the MVP match loop without introducing economy, Sudden Death, or new objective types.
 
 ### Implemented behavior
 
-- **Siege Buff active** when a team owns Siege Ruins and the objective is **not contested**
-- **Neutral Siege Ruins** gives no bonus to either team
-- **Contested Siege Ruins** disables the buff for **both** teams
-- Bonus applies **only to enemy Gate** (not friendly gate, Core, heroes, dummies, or capture objectives)
-- Default bonus: **+30% raw gate damage before armor** (`SIEGE_RUINS_GATE_BONUS = 0.3`, config-driven)
-- **Unified damage pipeline** covers melee, AoE, range, projectile point, and projectile segment gate hits via `computeRawDamage`
-- **Siege Buff UI** added with approved copy:
-  - Siege Buff Active
-  - Siege Buff Lost
-  - Enemy Siege Buff Active
-  - Siege Bonus (throttled gate-hit feedback)
-  - Siege Buff persistent badge
-- **Mobile verified:** 915×412 and 800×360 (icon-only badge on compact layout)
-- **Gate/Core loop unchanged** — Attack the Gate → Destroy Gate first → Gate Breached → Destroy the Core → Victory/Defeat
-- **Phase 4C-C not started** — timer/score win condition remains deferred
+- **Match timer starts at 300 seconds** (`MATCH_DURATION_SEC = 300`)
+- **Timer counts down** during active match; **Final Minute** and **Time Up** feedback shown
+- **Core destroyed remains immediate victory/defeat** — highest priority over timer and score
+- **Timer reaches 0 with no Core destroyed** → **Objective Score** decides winner
+- **Score tie at time-up** → remaining **Core HP tiebreak**
+- **Score and Core HP tie** → **Draw**
+- **No Sudden Death**
+- **Objective Score** remains non-currency, non-economy, non-EXP, non-Gold, non-ranking (capture points only)
+- **Timer / Objective Score HUD** on desktop and mobile (915×412 full labels; 800×360 compact)
+- **ResultScene copy** covers Core destroyed, score win/defeat, HP tiebreak, and draw with detail lines
+- **Prior 4B / 4B-B / 4C-A / 4C-B behavior preserved** on live deploy
 
 ---
 
@@ -37,17 +33,17 @@ Phase 4C-B delivered the **Siege Ruins Gate Damage Bonus** — a combat modifier
 
 | PR | Agent | Purpose | Status |
 |----|-------|---------|--------|
-| [#33](https://github.com/nustanakritwithai/ClanWar/pull/33) | C | Siege Ruins gate damage bonus design spec | **MERGED** @ `0e6e30e` |
-| [#34](https://github.com/nustanakritwithai/ClanWar/pull/34) | D | Siege buff UX copy and mobile clarity spec | **MERGED** @ `2244a6b` |
-| [#35](https://github.com/nustanakritwithai/ClanWar/pull/35) | B | Siege buff asset micro-pack (2 HUD SVGs) | **MERGED** @ `d819f48` |
+| [#38](https://github.com/nustanakritwithai/ClanWar/pull/38) | C | Match timer and Objective Score win spec | **MERGED** @ `0364faa` |
+| [#39](https://github.com/nustanakritwithai/ClanWar/pull/39) | D | Timer and Objective Score UX spec + mobile checklist | **MERGED** @ `e0ada76` |
+| [#40](https://github.com/nustanakritwithai/ClanWar/pull/40) | B | Timer/score asset micro-pack (3 HUD SVGs) | **MERGED** @ `ee2a2dd` |
 
 ### Runtime
 
 | PR | Agent | Purpose | Status |
 |----|-------|---------|--------|
-| [#36](https://github.com/nustanakritwithai/ClanWar/pull/36) | A | Runtime Siege Ruins gate damage bonus (`SiegeBuffSystem`, unified pipeline) | **MERGED** @ `9eaca6d` |
+| [#41](https://github.com/nustanakritwithai/ClanWar/pull/41) | A | Runtime match timer + Objective Score win | **MERGED** @ `4e928fb` |
 
-Merge order: design (#33) → UX (#34) → assets (#35) → runtime (#36).
+Merge order: design (#38) → UX (#39) → assets (#40) → runtime (#41).
 
 ---
 
@@ -55,10 +51,10 @@ Merge order: design (#33) → UX (#34) → assets (#35) → runtime (#36).
 
 | Item | SHA / branch |
 |------|--------------|
-| Planning base (before runtime merge) | `d819f48313a5b35997aba61719219e8e32bbcb0f` |
-| Runtime PR #36 head | `553f3a2b093f22e9abe44b6936d4682204ae79a4` |
-| Runtime merge commit / current base | `9eaca6db01998d232c4601efe809c303d14b9f04` |
-| Final base branch | `claude/game-file-analysis-a20xup` @ `9eaca6d` |
+| Planning base (before runtime merge) | `ee2a2dd073a2bb0417b83e13bd10c016fc3b69f4` |
+| Runtime PR #41 head | `79728b0bcd365ce7851b1acbe898e2ae80cd26bb` |
+| Runtime merge commit / current base | `4e928fb536bc2790cd834248723ad43ab4545189` |
+| Final base branch | `claude/game-file-analysis-a20xup` @ `4e928fb` |
 
 ---
 
@@ -67,62 +63,74 @@ Merge order: design (#33) → UX (#34) → assets (#35) → runtime (#36).
 ### Agent A — Runtime implementation
 
 - Runtime implementation complete
-- Full suite reported pass
-- `phase-4c-b-siege-buff-regression.mjs` — **18/18 PASS**
+- `phase-4c-c-timer-score-regression.mjs` — **18/18 PASS**
 
 ### Agent F — Independent QA
 
 - Independent QA **PASS**
 - Metadata/scope clean
 - Build **PASS**
-- All required suites **PASS**
-- Independent QA suite **7/7 PASS**
+- Regression **18/18 PASS**
+- Independent probe **20/20 PASS**
+- Mobile 915×412 and 800×360 **PASS**
 - No blockers
 
 ### Agent E — Final gate and merge
 
 - Final gate **PASS** — ready for user-approved Ready/Merge
-- Ready/Merge executed for PR #36
+- Ready/Merge executed for PR #41
 - External live verification **PASS**
 
 ### External live verification
 
 **Live URL:** https://clan-siege-arena.onrender.com
 
-- HTTP 200, game canvas visible
-- Live bundle fresh (`index-CcckW3-u.js`, deploy post-merge)
-- Siege Buff markers present; `ui_siege_buff_active` and `ui_gate_damage_bonus` loaded
-- **57/57 live assertions PASS:**
-  - `phase-4c-b-siege-buff-regression.mjs` — 18/18
-  - `phase-4b-objective-regression.mjs` — 15/15
-  - `phase-4b-b-clarity-regression.mjs` — 13/13
-  - `phase-4c-a-capture-regression.mjs` — 11/11
-- Zero fatal console errors
+- HTTP 200
+- Deploy timestamp after PR #41 merge (`2026-06-17T15:28:26Z` merge; live `last-modified` ~15:31 UTC)
+- Live bundle fresh: **`index-MXeXdYxs.js`** (prior 4C-B bundle: `index-CcckW3-u.js`)
+- Phase 4C-C markers present; `ui_match_timer`, `ui_objective_score`, `ui_time_up` loaded
+- **90/90 live assertions PASS:**
+  - `phase-4c-c-timer-score-regression.mjs` — 18/18
+  - Prior phase suites — 57/57 (4B 15/15, 4B-B 13/13, 4C-A 11/11, 4C-B 18/18)
+  - Extended live probe (ResultScene copy, caution, assets) — 15/15
+- Zero fatal console errors; no asset load failures; Menu ↔ Match restart stable
 - Mobile 915×412 **PASS**
 - Mobile 800×360 **PASS**
-- No Phase 4C-C behavior present
+- Scope guard **PASS** — no economy / 4D / 4E / 5A leak
 
 ---
 
-## 5. Known cautions
+## 5. Scope guard
 
-None of the following are blockers for 4C-B closure:
+Phase 4C-C did **not** add:
 
-- **`debugDealDamage`** bypasses protected-core checks — debug/test-only (`SHOW_DEBUG_OVERLAY`); not player-reachable
-- **`debugSetSiegeRuinsState`** exists as test hook for headless regression
-- **Siege badge depth/y-position** accepted as mobile-readable and non-blocking (secondary top-right slot)
-- **Manual live contest testing** still uses hooks — bot AI not implemented
-- **Phase 4C-C timer/score win** not implemented
-- **Objective score** remains feedback-only until 4C-C
-- **Forward Camp respawn, Watchtower vision, Resource Camp payoff, bot AI** not implemented
+- Bot AI, economy, EXP, Gold, shop, ranking, reward currency
+- Minimap, route arrows, lane tracker, edge indicators
+- Forward Camp respawn, Watchtower vision/fog, Resource Camp payoff
+- Multiplayer, login, clan, payment
+- Sudden Death, new objective types, tutorial overhaul
+- Phase 4D / 4E / 5A work
+
+**PASS**
 
 ---
 
-## 6. Formal closure verdict
+## 6. Known cautions
 
-### PHASE 4C-B COMPLETE — LIVE VERIFIED
+None of the following are blockers for 4C-C closure:
 
-Phase 4C-C planning may begin after this closure PR merges, via **separate explicit work order**. 4C-C runtime is **not authorized**.
+- **Same-frame timer/core race (MVP caution):** If timer expiry is evaluated before a would-be killing blow in the exact same frame, time-up may resolve first. Already-destroyed Core results are **not** overridden by score/time-up. Live probe preserved Core priority. **Accepted as non-blocking MVP caution.**
+- **`debugDealDamage` / `debugSetSiegeRuinsState` / capture debug hooks** — test-only; not player-facing
+- **`networkidle0` stall** in older suites — environmental; independent proof accepted
+- **Siege badge depth/y-position** — accepted, mobile readable
+
+---
+
+## 7. Formal closure verdict
+
+### PHASE 4C-C COMPLETE — LIVE VERIFIED
+
+Phase 4D is the recommended next candidate (**Combat Feel MVP / Player Combat Polish**) but is **NOT STARTED** and requires a **separate explicit Product/GPT work order**.
 
 ---
 
@@ -132,7 +140,16 @@ Phase 4C-C planning may begin after this closure PR merges, via **separate expli
 - **Phase 4B-A** — CLOSED (PR #23 Gate/Core runtime MVP)
 - **Phase 4B-B** — CLOSED (PR #24–#26 clarity polish)
 - **Phase 4C-A** — CLOSED (PR #28–#31, live verified 2026-06-16)
-- **Phase 4C-B** — **CLOSED** (PR #33–#36, live verified 2026-06-17)
+- **Phase 4C-B** — CLOSED (PR #33–#36, live verified 2026-06-17)
+- **Phase 4C-C** — **CLOSED** (PR #38–#41, live verified 2026-06-17)
+
+---
+
+# Phase 4C-B Closure Report — Siege Ruins Gate Damage Bonus
+
+> **Closed:** 2026-06-17 · **Verdict:** PHASE 4C-B COMPLETE — LIVE VERIFIED
+
+Phase 4C-B delivered Siege Ruins Gate Damage Bonus (+30% enemy Gate when uncontested). PRs #33–#36 merged @ `9eaca6d`. External live verification 57/57 PASS. Full record retained in git history @ Phase 4C-B closure docs PR #37.
 
 ---
 
@@ -140,4 +157,4 @@ Phase 4C-C planning may begin after this closure PR merges, via **separate expli
 
 > **Closed:** 2026-06-16 · **Verdict:** PHASE 4C-A COMPLETE
 
-Phase 4C-A implemented six capturable objectives with ownership, 7s capture fill, contest freeze, score-once, reset, and mobile HUD. PRs #28–#31 merged @ `8b6882b`. External live verification 16/16 PASS. Full record retained above in project history; see git history @ `f7cbb94` closure docs PR #32.
+Phase 4C-A implemented six capturable objectives with ownership, 7s capture fill, contest freeze, score-once, reset, and mobile HUD. PRs #28–#31 merged @ `8b6882b`. External live verification 16/16 PASS. Full record retained in git history @ closure docs PR #32.
