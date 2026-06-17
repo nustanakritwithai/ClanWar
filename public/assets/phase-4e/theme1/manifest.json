@@ -1,0 +1,508 @@
+{
+  "phase": "4E",
+  "theme": "theme1-castle-siege-field",
+  "generatedBy": "Agent B",
+  "assetCount": 49,
+  "assets": [
+    {
+      "filename": "phase4e_ui_hud_panel.svg",
+      "category": "ui",
+      "intended_use": "Generic top HUD strip background panel",
+      "candidate_key": "phase4e_ui_hud_panel",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone A - top HUD strip",
+      "source": "Agent C visual spec Section H / Agent D UX spec Section 5",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_ui_timer_score_chip.svg",
+      "category": "ui",
+      "intended_use": "Timer and Objective Score chip",
+      "candidate_key": "phase4e_ui_timer_score_chip",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone A - top HUD strip",
+      "source": "Agent C visual spec Section H / Agent D UX spec Section 5",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_ui_objective_plaque.svg",
+      "category": "ui",
+      "intended_use": "Objective prompt plaque/frame",
+      "candidate_key": "phase4e_ui_objective_plaque",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone B - objective prompt band",
+      "source": "Agent C visual spec Section H / Agent D UX spec Section 5",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_ui_joystick_frame.svg",
+      "category": "ui",
+      "intended_use": "Joystick base ring frame",
+      "candidate_key": "phase4e_ui_joystick_frame",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone C - joystick area",
+      "source": "Agent C visual spec Section H / Agent D UX spec Section 5",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_ui_attack_button_frame.svg",
+      "category": "ui",
+      "intended_use": "Attack button frame",
+      "candidate_key": "phase4e_ui_attack_button_frame",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone D - attack/skill cluster",
+      "source": "Agent C visual spec Section H / Agent D UX spec Section 5",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_ui_skill_button_frame.svg",
+      "category": "ui",
+      "intended_use": "Skill button frame",
+      "candidate_key": "phase4e_ui_skill_button_frame",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone D - attack/skill cluster",
+      "source": "Agent C visual spec Section H / Agent D UX spec Section 5",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_ui_capture_hud_panel.svg",
+      "category": "ui",
+      "intended_use": "Capture HUD panel (progress arc)",
+      "candidate_key": "phase4e_ui_capture_hud_panel",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone I - capture point HUD",
+      "source": "Agent C visual spec Section H / Agent D UX spec Section 5",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_ui_siege_buff_badge.svg",
+      "category": "ui",
+      "intended_use": "Siege Buff badge icon",
+      "candidate_key": "phase4e_ui_siege_buff_badge",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone G - siege buff badge",
+      "source": "Agent C visual spec Section H / Agent D UX spec Section 5",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_ui_result_panel.svg",
+      "category": "ui",
+      "intended_use": "Result screen frame (victory/defeat/draw)",
+      "candidate_key": "phase4e_ui_result_panel",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone F - result screen",
+      "source": "Agent C visual spec Section H / Agent D UX spec Section 5",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_obj_gate_idle.svg",
+      "category": "structure-gate",
+      "intended_use": "Gate idle/intact state",
+      "candidate_key": "phase4e_obj_gate_idle",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone H - Gate/Core world visual",
+      "source": "Agent C visual spec Section F",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_obj_gate_hit.svg",
+      "category": "structure-gate",
+      "intended_use": "Gate hit feedback state (4D hit tier)",
+      "candidate_key": "phase4e_obj_gate_hit",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone H - Gate/Core world visual",
+      "source": "Agent C visual spec Section F",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_obj_gate_damaged.svg",
+      "category": "structure-gate",
+      "intended_use": "Gate damaged/cracked state",
+      "candidate_key": "phase4e_obj_gate_damaged",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone H - Gate/Core world visual",
+      "source": "Agent C visual spec Section F",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_obj_gate_breached.svg",
+      "category": "structure-gate",
+      "intended_use": "Gate breached state",
+      "candidate_key": "phase4e_obj_gate_breached",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone H - Gate/Core world visual",
+      "source": "Agent C visual spec Section F",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_obj_gate_destroyed.svg",
+      "category": "structure-gate",
+      "intended_use": "Gate destroyed/rubble state",
+      "candidate_key": "phase4e_obj_gate_destroyed",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone H - Gate/Core world visual",
+      "source": "Agent C visual spec Section F",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_obj_core_protected.svg",
+      "category": "structure-core",
+      "intended_use": "Core protected state (shield ring active)",
+      "candidate_key": "phase4e_obj_core_protected",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone H - Gate/Core world visual",
+      "source": "Agent C visual spec Section F",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_obj_core_vulnerable.svg",
+      "category": "structure-core",
+      "intended_use": "Core vulnerable state (post gate-breach)",
+      "candidate_key": "phase4e_obj_core_vulnerable",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone H - Gate/Core world visual",
+      "source": "Agent C visual spec Section F",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_obj_core_hit.svg",
+      "category": "structure-core",
+      "intended_use": "Core hit feedback state (4D hit tier)",
+      "candidate_key": "phase4e_obj_core_hit",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone H - Gate/Core world visual",
+      "source": "Agent C visual spec Section F",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_obj_core_low.svg",
+      "category": "structure-core",
+      "intended_use": "Core low-HP warning state",
+      "candidate_key": "phase4e_obj_core_low",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone H - Gate/Core world visual",
+      "source": "Agent C visual spec Section F",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_obj_core_destroyed.svg",
+      "category": "structure-core",
+      "intended_use": "Core destroyed state (match end)",
+      "candidate_key": "phase4e_obj_core_destroyed",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone H - Gate/Core world visual",
+      "source": "Agent C visual spec Section F",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_obj_capture_neutral.svg",
+      "category": "structure-capture",
+      "intended_use": "Capture point neutral state",
+      "candidate_key": "phase4e_obj_capture_neutral",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone I - capture point zone",
+      "source": "Agent C visual spec Section F",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_obj_capture_player.svg",
+      "category": "structure-capture",
+      "intended_use": "Capture point captured-by-player state",
+      "candidate_key": "phase4e_obj_capture_player",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone I - capture point zone",
+      "source": "Agent C visual spec Section F",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_obj_capture_enemy.svg",
+      "category": "structure-capture",
+      "intended_use": "Capture point captured-by-enemy state",
+      "candidate_key": "phase4e_obj_capture_enemy",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone I - capture point zone",
+      "source": "Agent C visual spec Section F",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_obj_capture_contested.svg",
+      "category": "structure-capture",
+      "intended_use": "Capture point contested state",
+      "candidate_key": "phase4e_obj_capture_contested",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone I - capture point zone",
+      "source": "Agent C visual spec Section F",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_char_guardian_idle.svg",
+      "category": "character",
+      "intended_use": "Guardian (tank) idle concept sprite",
+      "candidate_key": "phase4e_char_guardian_idle",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone E - center combat readable zone",
+      "source": "Agent C visual spec Section E",
+      "notes": "Team color applied via runtime tint overlay, not baked into asset."
+    },
+    {
+      "filename": "phase4e_char_warrior_idle.svg",
+      "category": "character",
+      "intended_use": "Warrior (berserker) idle concept sprite",
+      "candidate_key": "phase4e_char_warrior_idle",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone E - center combat readable zone",
+      "source": "Agent C visual spec Section E",
+      "notes": "Team color applied via runtime tint overlay, not baked into asset."
+    },
+    {
+      "filename": "phase4e_char_ranger_idle.svg",
+      "category": "character",
+      "intended_use": "Ranger (archer) idle concept sprite",
+      "candidate_key": "phase4e_char_ranger_idle",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone E - center combat readable zone",
+      "source": "Agent C visual spec Section E",
+      "notes": "Team color applied via runtime tint overlay, not baked into asset."
+    },
+    {
+      "filename": "phase4e_char_mage_idle.svg",
+      "category": "character",
+      "intended_use": "Mage (arcanist) idle concept sprite",
+      "candidate_key": "phase4e_char_mage_idle",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone E - center combat readable zone",
+      "source": "Agent C visual spec Section E",
+      "notes": "Team color applied via runtime tint overlay, not baked into asset."
+    },
+    {
+      "filename": "phase4e_char_priest_idle.svg",
+      "category": "character",
+      "intended_use": "Priest (cleric) idle concept sprite",
+      "candidate_key": "phase4e_char_priest_idle",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone E - center combat readable zone",
+      "source": "Agent C visual spec Section E",
+      "notes": "Team color applied via runtime tint overlay, not baked into asset."
+    },
+    {
+      "filename": "phase4e_char_rogue_idle.svg",
+      "category": "character",
+      "intended_use": "Rogue idle concept sprite (optional, future-art-only, not added to runtime class roster)",
+      "candidate_key": "phase4e_char_rogue_idle",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone E - center combat readable zone",
+      "source": "Agent C visual spec Section E",
+      "notes": "Optional concept asset; class not implemented in runtime in Phase 4E."
+    },
+    {
+      "filename": "phase4e_char_summoner_idle.svg",
+      "category": "character",
+      "intended_use": "Summoner idle concept sprite (optional, future-art-only, not added to runtime class roster)",
+      "candidate_key": "phase4e_char_summoner_idle",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone E - center combat readable zone",
+      "source": "Agent C visual spec Section E",
+      "notes": "Optional concept asset; class not implemented in runtime in Phase 4E."
+    },
+    {
+      "filename": "phase4e_vfx_normal_hit_spark.svg",
+      "category": "vfx",
+      "intended_use": "Normal hit spark (smallest tier, L1)",
+      "candidate_key": "phase4e_vfx_normal_hit_spark",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone E - center combat readable zone (short-lived only)",
+      "source": "Agent C visual spec Section I / Phase 4D intensity ladder",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_vfx_gate_hit_spark.svg",
+      "category": "vfx",
+      "intended_use": "Gate hit spark (medium tier, L3)",
+      "candidate_key": "phase4e_vfx_gate_hit_spark",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone E - center combat readable zone (short-lived only)",
+      "source": "Agent C visual spec Section I / Phase 4D intensity ladder",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_vfx_core_hit_pulse.svg",
+      "category": "vfx",
+      "intended_use": "Core hit pulse (strongest contained tier, L4)",
+      "candidate_key": "phase4e_vfx_core_hit_pulse",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone E - center combat readable zone (short-lived only)",
+      "source": "Agent C visual spec Section I / Phase 4D intensity ladder",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_vfx_skill_cast_flash.svg",
+      "category": "vfx",
+      "intended_use": "Skill cast flash (short, local, at caster feet)",
+      "candidate_key": "phase4e_vfx_skill_cast_flash",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone E - center combat readable zone (short-lived only)",
+      "source": "Agent C visual spec Section I / Phase 4D intensity ladder",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_vfx_impact_ring.svg",
+      "category": "vfx",
+      "intended_use": "Impact ring (gate/core destroy, short readable ring)",
+      "candidate_key": "phase4e_vfx_impact_ring",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone E - center combat readable zone (short-lived only)",
+      "source": "Agent C visual spec Section I / Phase 4D intensity ladder",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_vfx_denied_flash.svg",
+      "category": "vfx",
+      "intended_use": "Denied/blocked action flash",
+      "candidate_key": "phase4e_vfx_denied_flash",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone E - center combat readable zone (short-lived only)",
+      "source": "Agent C visual spec Section I / Phase 4D intensity ladder",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_vfx_capture_pulse.svg",
+      "category": "vfx",
+      "intended_use": "Capture feedback pulse (team-color ground arc)",
+      "candidate_key": "phase4e_vfx_capture_pulse",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone E - center combat readable zone (short-lived only)",
+      "source": "Agent C visual spec Section I / Phase 4D intensity ladder",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_tile_ground_grass.svg",
+      "category": "environment",
+      "intended_use": "Ground tile - grass (32x32 seamless)",
+      "candidate_key": "phase4e_tile_ground_grass",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone 9 (environment/parallax, lowest HUD priority, must not reduce contrast)",
+      "source": "Agent C visual spec Section G (Theme 1: Castle Siege Field)",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_tile_ground_dirt.svg",
+      "category": "environment",
+      "intended_use": "Ground tile - dirt (32x32 seamless)",
+      "candidate_key": "phase4e_tile_ground_dirt",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone 9 (environment/parallax, lowest HUD priority, must not reduce contrast)",
+      "source": "Agent C visual spec Section G (Theme 1: Castle Siege Field)",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_tile_stone_path.svg",
+      "category": "environment",
+      "intended_use": "Ground tile - stone path (32x32 seamless)",
+      "candidate_key": "phase4e_tile_stone_path",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone 9 (environment/parallax, lowest HUD priority, must not reduce contrast)",
+      "source": "Agent C visual spec Section G (Theme 1: Castle Siege Field)",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_tile_broken_wall.svg",
+      "category": "environment",
+      "intended_use": "Broken wall tile/prop (no collision)",
+      "candidate_key": "phase4e_tile_broken_wall",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone 9 (environment/parallax, lowest HUD priority, must not reduce contrast)",
+      "source": "Agent C visual spec Section G (Theme 1: Castle Siege Field)",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_prop_banner_blue.svg",
+      "category": "environment",
+      "intended_use": "Decorative blue team banner prop",
+      "candidate_key": "phase4e_prop_banner_blue",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone 9 (environment/parallax, lowest HUD priority, must not reduce contrast)",
+      "source": "Agent C visual spec Section G (Theme 1: Castle Siege Field)",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_prop_banner_red.svg",
+      "category": "environment",
+      "intended_use": "Decorative red team banner prop",
+      "candidate_key": "phase4e_prop_banner_red",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone 9 (environment/parallax, lowest HUD priority, must not reduce contrast)",
+      "source": "Agent C visual spec Section G (Theme 1: Castle Siege Field)",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_prop_crystal_small.svg",
+      "category": "environment",
+      "intended_use": "Small decorative crystal prop (distinct from Core)",
+      "candidate_key": "phase4e_prop_crystal_small",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone 9 (environment/parallax, lowest HUD priority, must not reduce contrast)",
+      "source": "Agent C visual spec Section G (Theme 1: Castle Siege Field)",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_prop_ruin_stone.svg",
+      "category": "environment",
+      "intended_use": "Decorative ruin/rubble prop (no collision)",
+      "candidate_key": "phase4e_prop_ruin_stone",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone 9 (environment/parallax, lowest HUD priority, must not reduce contrast)",
+      "source": "Agent C visual spec Section G (Theme 1: Castle Siege Field)",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_bg_castle_parallax.svg",
+      "category": "environment",
+      "intended_use": "Castle Siege Field parallax background layer",
+      "candidate_key": "phase4e_bg_castle_parallax",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone 9 (environment/parallax, lowest HUD priority, must not reduce contrast)",
+      "source": "Agent C visual spec Section G (Theme 1: Castle Siege Field)",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_bg_siege_smoke_parallax.svg",
+      "category": "environment",
+      "intended_use": "Siege smoke parallax overlay layer (low opacity)",
+      "candidate_key": "phase4e_bg_siege_smoke_parallax",
+      "runtime_status": "not wired",
+      "safe_zone": "Zone 9 (environment/parallax, lowest HUD priority, must not reduce contrast)",
+      "source": "Agent C visual spec Section G (Theme 1: Castle Siege Field)",
+      "notes": ""
+    },
+    {
+      "filename": "phase4e_mockup_915x412.svg",
+      "category": "mockup",
+      "intended_use": "Annotated safe-zone mockup, 915x412 landscape",
+      "candidate_key": "phase4e_mockup_915x412",
+      "runtime_status": "documentation only - not a runtime asset",
+      "safe_zone": "All zones (documentation overlay)",
+      "source": "Agent D UX spec Sections 3-4",
+      "notes": "Annotation labels permitted (documentation asset, not in-game player-facing UI)."
+    },
+    {
+      "filename": "phase4e_mockup_800x360.svg",
+      "category": "mockup",
+      "intended_use": "Annotated safe-zone mockup, 800x360 compact",
+      "candidate_key": "phase4e_mockup_800x360",
+      "runtime_status": "documentation only - not a runtime asset",
+      "safe_zone": "All zones (documentation overlay)",
+      "source": "Agent D UX spec Sections 3-4",
+      "notes": "Annotation labels permitted (documentation asset, not in-game player-facing UI)."
+    },
+    {
+      "filename": "manifest.json",
+      "category": "manifest",
+      "intended_use": "Machine-readable index of all Phase 4E Theme 1 mock pack assets",
+      "candidate_key": null,
+      "runtime_status": "not wired",
+      "safe_zone": "n/a",
+      "source": "Agent B asset pack task",
+      "notes": "Self-referential entry for completeness; not an asset."
+    }
+  ]
+}

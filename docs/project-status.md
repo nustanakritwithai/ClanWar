@@ -1,8 +1,8 @@
 # Project Status
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-17 (Phase 4E UX spec)  
-> **Base branch:** `claude/game-file-analysis-a20xup` @ `cc6cbde`
+> **Last updated:** 2026-06-17 (Agent B Phase 4E asset mock pack draft)  
+> **Base branch:** `claude/game-file-analysis-a20xup` @ `8a3ae52`
 
 ## Current phase
 
@@ -16,9 +16,9 @@
 
 Combat feel polish: hit sparks, Gate/Core hit feedback, skill cast flash, impact rings, damage numbers, micro screen shake, mobile-safe feedback. No balance or rule changes. Prior 4B / 4B-B / 4C-A / 4C-B / 4C-C behavior preserved on live.
 
-**Phase 4E — Visual Direction / MMORPG 2D Pixel Art Upgrade** — **PLANNING — UX/Mobile Spec Draft**
+**Phase 4E — Visual Direction / MMORPG 2D Pixel Art Upgrade** — **PLANNING — Agent B asset mock pack draft**
 
-Agent C design spec merged (PR #49). Agent D mobile HUD / safe-zones spec in draft. **4E runtime not started** — requires planning merge + Agent B assets + explicit work order. **Agent B assets not started.**
+Agent C design spec merged (PR #49). Agent D mobile HUD / safe-zones spec merged (PR #50). Agent B Theme 1 (Castle Siege Field) visual asset mock pack opened as Draft PR (asset pack + docs only). **4E runtime not started** — requires Agent B pack review + explicit Agent A work order. **Agent A runtime not started. Assets are not wired into runtime.**
 
 **Phase 5A — NOT STARTED — NOT AUTHORIZED**
 
@@ -55,21 +55,21 @@ c85a7e7  Merge pull request #45 (Phase 4D FX micro-pack)
 
 ## Open PRs
 
-- **Phase 4E mobile HUD / UX safe zones** — Draft (Agent D) — planning only
+- **Phase 4E Agent B asset mock pack — Theme 1 Siege Field** — Draft (Agent B) — asset pack + docs only, not wired into runtime
 
 No active runtime PRs.
 
 ## Agent lane status
 
-**Agent A** — 4D runtime complete (#47 merged); lane clear
+**Agent A** — 4D runtime complete (#47 merged); 4E runtime **not started** — lane clear, awaiting explicit work order after Agent B pack review
 
-**Agent B** — 4D assets complete (#45 merged); lane clear
+**Agent B** — 4D assets complete (#45 merged); 4E Theme 1 asset mock pack drafted (this PR) — not wired into runtime
 
 **Agent C** — 4E design spec complete (#49 merged); lane clear
 
-**Agent D** — 4E UX/mobile safe-zones spec draft in progress; 4D UX complete (#43, #46 merged)
+**Agent D** — 4E UX/mobile safe-zones spec complete (#50 merged); 4D UX complete (#43, #46 merged); lane clear
 
-**Agent E** — 4D closure docs prepared; awaiting closure PR review
+**Agent E** — 4D closure docs prepared; awaiting closure PR review; 4E Agent B pack awaiting gate review
 
 **Agent F** — 4D QA PASS (live corroboration 92/92)
 
@@ -87,7 +87,7 @@ No active runtime PRs.
 
 ## Next safe action
 
-**Review Phase 4E mobile HUD / UX spec draft (Agent D).** Then Agent B asset planning. Agent B assets and Agent A runtime **not started**.
+**Review Agent B Phase 4E Theme 1 asset mock pack draft.** Agent A runtime reskin remains **not started** pending explicit work order after this pack is reviewed.
 
 Phase 4E runtime and Phase 5A are **NOT AUTHORIZED** without explicit work order.
 

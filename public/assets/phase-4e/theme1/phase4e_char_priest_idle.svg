@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+
+<circle cx="24" cy="14" r="8" fill="#f5e6c8" stroke="#0b0e13" stroke-width="1.5"/>
+<polygon points="8,42 40,42 34,20 14,20" fill="#f5e6c8" fill-opacity="0.92" stroke="#0b0e13" stroke-width="1.5" id="phase4e-team-slot"/>
+<line x1="38" y1="4" x2="38" y2="40" stroke="#cfa14a" stroke-width="2.5"/>
+<line x1="33" y1="9" x2="43" y2="9" stroke="#cfa14a" stroke-width="2.5"/>
+<circle cx="38" cy="2" r="3" fill="#f4d35e"/>
+
+</svg>

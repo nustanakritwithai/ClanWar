@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="915" height="412" viewBox="0 0 915 412">
+
+<rect width="915" height="412" fill="#182230"/>
+<rect x="0" y="0" width="915" height="52" fill="#22d3ee" fill-opacity="0.14" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="4" y="12" font-family="monospace" font-size="10" fill="#22d3ee">ZONE A - top HUD (timer/score/menu)</text>
+<rect x="183" y="8" width="549" height="72" fill="#cfa14a" fill-opacity="0.14" stroke="#cfa14a" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="187" y="20" font-family="monospace" font-size="10" fill="#cfa14a">ZONE B - objective prompt band</text>
+<rect x="835" y="48" width="80" height="40" fill="#f59e0b" fill-opacity="0.14" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="839" y="60" font-family="monospace" font-size="10" fill="#f59e0b">ZONE G - siege buff badge</text>
+<rect x="120" y="80" width="675" height="168" fill="#22c55e" fill-opacity="0.14" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="124" y="92" font-family="monospace" font-size="10" fill="#22c55e">ZONE E - center combat readable zone</text>
+<rect x="0" y="248" width="210" height="164" fill="#60a5fa" fill-opacity="0.14" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="4" y="260" font-family="monospace" font-size="10" fill="#60a5fa">ZONE C - joystick</text>
+<rect x="630" y="216" width="285" height="196" fill="#f87171" fill-opacity="0.14" stroke="#f87171" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="634" y="228" font-family="monospace" font-size="10" fill="#f87171">ZONE D - attack/skill cluster</text>
+<rect x="420" y="150" width="80" height="80" fill="#cfa14a" fill-opacity="0.14" stroke="#cfa14a" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="424" y="162" font-family="monospace" font-size="10" fill="#cfa14a">Gate/Core (Zone H)</text>
+<rect x="560" y="170" width="40" height="40" fill="#3b82f6" fill-opacity="0.14" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="564" y="182" font-family="monospace" font-size="10" fill="#3b82f6">Capture Pt (Zone I)</text>
+<text x="8" y="408" font-family="monospace" font-size="11" fill="#f5e6c8">Phase 4E mockup - 915x412 landscape - documentation only (Agent D safe zones)</text>
+
+</svg>
