@@ -1,29 +1,32 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-17 (Phase 4D closure)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `a9f5645`
+> **Last updated:** 2026-06-17 (Phase 4E planning)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `bf08a0b`
 
 ## Summary
 
-**Phase 4D runtime complete** — PR #47 merged @ `a9f5645`, live verified 92/92 PASS.
+**Phase 4D:** CLOSED — live verified 92/92 (PR #48 closure @ `bf08a0b`).
 
-**Active draft:** Phase 4D closure docs (Agent E) — pending review/merge.
+**Active draft:** Phase 4E visual design spec (Agent C) — planning only.
 
-**Phase 4E:** NOT STARTED — not authorized.
+**Phase 4E:** PLANNING — design spec draft (Product/GPT authorized planning).
 
-**Phase 5A:** NOT STARTED — not authorized.
-
----
-
-## Open PR — Phase 4D Closure (Draft)
-
-**Agent E: Phase 4D Closure Docs — Combat Feel Live Verified**  
-Docs-only — closure report, project status, release checklist, dashboard refresh.
+**Phase 5A:** NOT STARTED — NOT AUTHORIZED.
 
 ---
 
-## Recently merged — Phase 4D (complete)
+## Open PR — Phase 4E Design Spec (Draft)
+
+**Agent C: Phase 4E Visual Design Spec — MMORPG 2D Pixel Art Direction**  
+Docs-only — visual direction, asset pipeline, runtime plan, VIS-AC1–20. No runtime/assets.
+
+---
+
+## Recently merged — Phase 4D closure
+
+**PR #48 (Agent E)** — Phase 4D closure docs  
+MERGED @ `bf08a0bc847c3dfa319b782d8d8c2556dc337171`
 
 **PR #47 (Agent A)** — Runtime combat feel integration  
 MERGED @ `a9f5645d09dcdfee5685f7a563583f1f0f70e048`
@@ -56,14 +59,15 @@ MERGED @ `080d5d245a2d5e12159b80d201736ab0e4ed469d`
 |-------|--------|
 | A | 4D runtime complete (#47 merged); lane clear |
 | B | 4D assets complete (#45 merged); lane clear |
-| C | 4D design complete (#44 merged); lane clear |
+| C | 4E design spec draft open; 4D complete (#44 merged) |
 | D | 4D UX complete (#43, #46 merged); lane clear |
-| E | 4D closure docs draft open |
+| E | 4D closure complete (#48 merged); gate 4E planning |
 | F | 4D QA PASS (92/92 live) |
 
 ---
 
 ## Next safe action
 
-1. Review/merge Phase 4D closure docs PR  
-2. Phase 4E and Phase 5A remain **NOT STARTED** — require explicit work order
+1. Review/merge Phase 4E design spec (Agent C)  
+2. Agent D UX constraints for 4E HUD  
+3. Phase 4E runtime and Phase 5A remain **NOT AUTHORIZED** without work order
