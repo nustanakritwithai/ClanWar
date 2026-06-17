@@ -1,8 +1,8 @@
 # Project Status
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-17 (Phase 4C-B closure)  
-> **Base branch:** `claude/game-file-analysis-a20xup` @ `9eaca6d`
+> **Last updated:** 2026-06-17 (Phase 4C-C closure)  
+> **Base branch:** `claude/game-file-analysis-a20xup` @ `4e928fb`
 
 ## Current phase
 
@@ -10,84 +10,87 @@
 
 **Phase 4C-B — Siege Ruins Gate Damage Bonus** — **CLOSED — live verified** (2026-06-17)
 
-Siege Buff active when team owns uncontested Siege Ruins. +30% raw gate damage vs enemy Gate only. Unified damage pipeline. Gate/Core loop unchanged.
+**Phase 4C-C — Match Timer and Objective Score Win** — **CLOSED — live verified** (2026-06-17)
 
-**Phase 4C-C — Score/Timer Win Condition** — **NOT STARTED**
+Match timer (300s), Objective Score win at time-up, Core HP tiebreak, Draw. Core destroyed remains immediate win/loss. No Sudden Death. Prior 4B / 4B-B / 4C-A / 4C-B behavior preserved on live.
 
-Planning may begin after Phase 4C-B closure PR merges. **4C-C runtime not authorized** — requires separate explicit work order.
+**Phase 4D — Combat Feel MVP / Player Combat Polish** — **NOT STARTED**
+
+Recommended next candidate only. **4D is not started** and requires a **separate explicit Product/GPT work order**.
 
 ## Base snapshot
 
 ```
+4e928fb  Merge pull request #41 (Phase 4C-C runtime match timer + score win)
+79728b0  feat(4C-C): match timer + Objective Score win runtime
+ee2a2dd  Merge pull request #40 (Phase 4C-C timer/score asset micro-pack)
+e0ada76  Merge pull request #39 (Phase 4C-C timer/score UX spec)
+0364faa  Merge pull request #38 (Phase 4C-C match timer + score win spec)
 9eaca6d  Merge pull request #36 (Phase 4C-B runtime siege gate bonus)
-553f3a2  feat(4C-B): Siege Ruins gate damage bonus runtime
-d819f48  Merge pull request #35 (Phase 4C-B siege buff asset micro-pack)
-2244a6b  Merge pull request #34 (Phase 4C-B siege buff UX/mobile copy)
-0e6e30e  Merge pull request #33 (Phase 4C-B siege ruins gate bonus spec)
-8b6882b  Merge pull request #31 (Phase 4C-A runtime capture foundation)
 ```
 
-**Runtime base SHA:** `9eaca6db01998d232c4601efe809c303d14b9f04`
+**Runtime base SHA:** `4e928fb536bc2790cd834248723ad43ab4545189`
 
 **Live URL (verified):** https://clan-siege-arena.onrender.com
 
-**Live bundle:** `index-CcckW3-u.js` (4C-B build, verified 2026-06-17)
+**Live bundle:** `index-MXeXdYxs.js` (4C-C build, verified 2026-06-17)
 
-## Phase 4C-B merged deliverables
+## Phase 4C-C merged deliverables
 
 ### Planning
 
-- **PR #33 (C)** — Siege Ruins gate damage bonus spec @ `0e6e30e`
-- **PR #34 (D)** — Siege buff UX copy and mobile clarity @ `2244a6b`
-- **PR #35 (B)** — Siege buff asset micro-pack @ `d819f48`
+- **PR #38 (C)** — Match timer and Objective Score win spec @ `0364faa`
+- **PR #39 (D)** — Timer and Objective Score UX spec @ `e0ada76`
+- **PR #40 (B)** — Timer/score asset micro-pack @ `ee2a2dd`
 
 ### Runtime
 
-- **PR #36 (A)** — Runtime Siege Ruins gate damage bonus @ `9eaca6d`
+- **PR #41 (A)** — Runtime match timer + Objective Score win @ `4e928fb`
 
 ## Open PRs
 
-- **Phase 4C-B closure docs** — Draft (Agent E) — pending merge
+- **Phase 4C-C closure docs** — Draft (Agent E) — pending review/merge
 
 No active runtime PRs.
 
 ## Agent lane status
 
-**Agent A** — 4C-B runtime complete (#36 merged); **blocked on 4C-C** until work order issued
+**Agent A** — 4C-C runtime complete (#41 merged); **blocked on 4D** until work order issued
 
-**Agent B** — 4C-B assets complete (#35 merged); lane clear
+**Agent B** — 4C-C assets complete (#40 merged); lane clear
 
-**Agent C** — 4C-B design complete (#33 merged); lane clear
+**Agent C** — 4C-C design complete (#38 merged); lane clear
 
-**Agent D** — 4C-B UX complete (#34 merged); lane clear
+**Agent D** — 4C-C UX complete (#39 merged); lane clear
 
-**Agent E** — 4C-B closure docs prepared; awaiting closure PR review
+**Agent E** — 4C-C closure docs prepared; awaiting closure PR review
 
-**Agent F** — 4C-B QA PASS (independent retest + live corroboration)
+**Agent F** — 4C-C QA PASS (independent retest + live corroboration 90/90)
 
 ## Test / deploy evidence
 
 - `npm run build` — PASS
-- `phase-4c-b-siege-buff-regression.mjs` — 18/18 (live verified)
-- Prior suites (4B, 4C-A, multitouch) — PASS on live (57/57 total live assertions)
+- `phase-4c-c-timer-score-regression.mjs` — 18/18 (live verified)
+- Prior suites (4B, 4B-B, 4C-A, 4C-B) — PASS on live (57/57)
+- Extended live probe — 15/15 PASS
+- **Combined live assertions: 90/90 PASS**
 - External live deploy — PASS @ https://clan-siege-arena.onrender.com (2026-06-17)
 - GitHub CI — no registered checks
 
 ## Next safe action
 
-**Product / GPT can authorize Phase 4C-C planning** (score/timer win condition design readiness)
+**Product / GPT can authorize Phase 4D planning** (Combat Feel MVP / Player Combat Polish design readiness)
 
-Planning only — do not start 4C-C runtime without explicit work order.
+Planning only — do not start 4D runtime without explicit work order.
 
 ## Must not do
 
-- Do not start Phase 4C-C runtime without work order
-- Do not treat objective score as win condition yet
+- Do not start Phase 4D / 4E / 5A without work order
 - Agent E: do not Ready/Merge PRs without explicit authorization
 
 ## Related docs
 
-- [phase-close-report.md](./phase-close-report.md) — Phase 4C-B closure report
+- [phase-close-report.md](./phase-close-report.md) — Phase 4C-C closure report
 - [final-gate-report.md](./final-gate-report.md)
 - [open-pr-dashboard.md](./open-pr-dashboard.md)
 - [release-checklist.md](./release-checklist.md)

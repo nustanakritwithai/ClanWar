@@ -5,49 +5,57 @@
 
 ---
 
-## Phase 4C-B — Siege Ruins Gate Damage Bonus (CLOSED)
+## Phase 4C-C — Match Timer and Objective Score Win (CLOSED)
 
-**Runtime base:** `9eaca6db01998d232c4601efe809c303d14b9f04`  
+**Runtime base:** `4e928fb536bc2790cd834248723ad43ab4545189`  
 **Live URL:** https://clan-siege-arena.onrender.com  
-**Live bundle:** `index-CcckW3-u.js`  
+**Live bundle:** `index-MXeXdYxs.js`  
 **Closure date:** 2026-06-17
 
 ### Planning gates
 
-- [x] PR #33 design spec merged
-- [x] PR #34 UX/mobile copy merged
-- [x] PR #35 asset micro-pack merged
+- [x] PR #38 design spec merged @ `0364faa`
+- [x] PR #39 UX/mobile copy merged @ `e0ada76`
+- [x] PR #40 asset micro-pack merged @ `ee2a2dd`
 
 ### Runtime gates
 
-- [x] PR #36 runtime merged
-- [x] Agent F retest PASS
+- [x] PR #41 runtime merged @ `4e928fb`
+- [x] Agent F retest PASS (18/18 + 20/20 probe)
 - [x] Agent E final gate PASS
 - [x] Ready/Merge executed
 
 ### Post-merge live verification
 
 - [x] HTTP 200 on live URL
-- [x] Live bundle fresh after PR #36 merge
-- [x] Siege Buff system present on live
-- [x] `ui_siege_buff_active` and `ui_gate_damage_bonus` load
-- [x] `phase-4c-b-siege-buff-regression.mjs` — 18/18 PASS on live
-- [x] `phase-4b-objective-regression.mjs` — 15/15 PASS on live
-- [x] `phase-4b-b-clarity-regression.mjs` — 13/13 PASS on live
-- [x] `phase-4c-a-capture-regression.mjs` — 11/11 PASS on live
-- [x] Total live assertions: 57/57 PASS
+- [x] Live bundle fresh after PR #41 merge
+- [x] Match timer + Objective Score system present on live
+- [x] `ui_match_timer`, `ui_objective_score`, `ui_time_up` load
+- [x] `phase-4c-c-timer-score-regression.mjs` — 18/18 PASS on live
+- [x] Prior phase suites — 57/57 PASS on live
+- [x] Extended live probe — 15/15 PASS
+- [x] Total live assertions: 90/90 PASS
 - [x] Live mobile 915×412 PASS
 - [x] Live mobile 800×360 PASS
 - [x] Scope guard PASS
-- [x] No 4C-C behavior present
 - [x] Zero fatal console errors
+- [x] Menu ↔ Match restart stable
 
 ### Closure
 
-- [x] Phase 4C-B closure report prepared
+- [x] Phase 4C-C closure report prepared
 - [x] Project status updated
-- [ ] Phase 4C-B closure docs PR merged (pending)
-- [ ] Phase 4C-C planning authorized (pending Product/GPT after closure merge)
+- [ ] Phase 4C-C closure docs PR merged (pending)
+- [ ] Phase 4D planning authorized (pending Product/GPT after closure merge)
+
+---
+
+## Phase 4C-B — Siege Ruins Gate Damage Bonus (CLOSED)
+
+**Runtime base:** `9eaca6db01998d232c4601efe809c303d14b9f04`  
+**Closure date:** 2026-06-17
+
+All gates checked — see git history @ closure PR #37.
 
 ---
 
@@ -60,7 +68,7 @@ All gates checked — see git history @ closure PR #32.
 
 ---
 
-## Phase 4C-C — Score/Timer Win Condition (NOT STARTED)
+## Phase 4D — Combat Feel MVP / Player Combat Polish (NOT STARTED)
 
 Do not check implementation items until work order issued.
 
