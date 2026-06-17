@@ -5,6 +5,49 @@
 
 ---
 
+## 2026-06-17 — Phase 4D closure documentation
+
+**Agent:** E  
+**Base:** `claude/game-file-analysis-a20xup` @ `a9f5645`  
+**Task:** Phase 4D closure documentation after live verification PASS
+
+### Actions taken
+
+1. Created `docs/phase-4d-close-report.md` — formal Phase 4D closure report
+2. Updated `docs/phase-close-report.md` — Phase 4D closure section prepended
+3. Updated `docs/project-status.md` — 4D closed live verified, 4E/5A not started
+4. Updated `docs/release-checklist.md` — 4D all gates checked
+5. Updated `docs/final-gate-report.md` — Phase 4D final gate verdict appended
+6. Updated `docs/open-pr-dashboard.md` — PR #43–#47 merged, closure docs draft
+7. Opened Draft PR for closure docs (docs-only)
+
+### Verification recorded
+
+- PR #43 merge: `080d5d245a2d5e12159b80d201736ab0e4ed469d`
+- PR #44 merge: `856aed46e3fcc842d58347517bc0255a296cc6da`
+- PR #45 merge: `c85a7e7c320a1e8bd4b8865ee1c85151691dcc04`
+- PR #46 merge: `5ce5b2934d3e5f5b6ccadac2a8b21bae2e79b4e9`
+- PR #47 merge: `a9f5645d09dcdfee5685f7a563583f1f0f70e048`
+- External live verification: **92/92 PASS** @ https://clan-siege-arena.onrender.com
+- Live bundle: `index-BRB6GZcv.js` (post-merge deploy)
+- Mobile 915×412 — PASS
+- Mobile 800×360 — PASS
+- Scope guard — PASS
+
+### Actions NOT taken
+
+- Did not start Phase 4E / 5A
+- Did not edit runtime, assets, or scripts
+- Did not mark closure PR Ready or merge
+
+### Verdict
+
+**PHASE 4D CLOSED — LIVE VERIFIED** (pending closure docs PR merge)
+
+**Next phase:** Phase 4E **NOT STARTED**. Phase 5A **NOT STARTED**.
+
+---
+
 ## 2026-06-17 — Phase 4C-C closure documentation
 
 **Agent:** E  

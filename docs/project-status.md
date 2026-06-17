@@ -1,8 +1,8 @@
 # Project Status
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-17 (Phase 4C-C closure)  
-> **Base branch:** `claude/game-file-analysis-a20xup` @ `4e928fb`
+> **Last updated:** 2026-06-17 (Phase 4D closure)  
+> **Base branch:** `claude/game-file-analysis-a20xup` @ `a9f5645`
 
 ## Current phase
 
@@ -12,85 +12,92 @@
 
 **Phase 4C-C — Match Timer and Objective Score Win** — **CLOSED — live verified** (2026-06-17)
 
-Match timer (300s), Objective Score win at time-up, Core HP tiebreak, Draw. Core destroyed remains immediate win/loss. No Sudden Death. Prior 4B / 4B-B / 4C-A / 4C-B behavior preserved on live.
+**Phase 4D — Combat Feel MVP / Player Combat Polish** — **CLOSED — live verified** (2026-06-17)
 
-**Phase 4D — Combat Feel MVP / Player Combat Polish** — **NOT STARTED**
+Combat feel polish: hit sparks, Gate/Core hit feedback, skill cast flash, impact rings, damage numbers, micro screen shake, mobile-safe feedback. No balance or rule changes. Prior 4B / 4B-B / 4C-A / 4C-B / 4C-C behavior preserved on live.
 
-Recommended next candidate only. **4D is not started** and requires a **separate explicit Product/GPT work order**.
+**Phase 4E — NOT STARTED**
+
+**Phase 5A — NOT STARTED**
 
 ## Base snapshot
 
 ```
+a9f5645  Merge pull request #47 (Phase 4D combat feel runtime integration)
+09d0e16  feat(4D): combat feel runtime integration (polish only)
+5ce5b29  Merge pull request #46 (Phase 4D UI/UX addendum)
+c85a7e7  Merge pull request #45 (Phase 4D FX micro-pack)
+856aed4  Merge pull request #44 (Phase 4D combat feel design spec)
+080d5d2  Merge pull request #43 (Phase 4D UX/mobile spec)
 4e928fb  Merge pull request #41 (Phase 4C-C runtime match timer + score win)
-79728b0  feat(4C-C): match timer + Objective Score win runtime
-ee2a2dd  Merge pull request #40 (Phase 4C-C timer/score asset micro-pack)
-e0ada76  Merge pull request #39 (Phase 4C-C timer/score UX spec)
-0364faa  Merge pull request #38 (Phase 4C-C match timer + score win spec)
-9eaca6d  Merge pull request #36 (Phase 4C-B runtime siege gate bonus)
 ```
 
-**Runtime base SHA:** `4e928fb536bc2790cd834248723ad43ab4545189`
+**Runtime base SHA:** `a9f5645d09dcdfee5685f7a563583f1f0f70e048`
 
 **Live URL (verified):** https://clan-siege-arena.onrender.com
 
-**Live bundle:** `index-MXeXdYxs.js` (4C-C build, verified 2026-06-17)
+**Live bundle:** `index-BRB6GZcv.js` (4D build, verified 2026-06-17)
 
-## Phase 4C-C merged deliverables
+## Phase 4D merged deliverables
 
-### Planning
+### Planning and assets
 
-- **PR #38 (C)** — Match timer and Objective Score win spec @ `0364faa`
-- **PR #39 (D)** — Timer and Objective Score UX spec @ `e0ada76`
-- **PR #40 (B)** — Timer/score asset micro-pack @ `ee2a2dd`
+- **PR #43 (D)** — UX/Mobile Spec @ `080d5d2`
+- **PR #44 (C)** — Combat Feel Design Spec @ `856aed4`
+- **PR #45 (B)** — FX Micro-Pack (4 SVGs) @ `c85a7e7`
+- **PR #46 (D)** — UI/UX Addendum @ `5ce5b29`
 
 ### Runtime
 
-- **PR #41 (A)** — Runtime match timer + Objective Score win @ `4e928fb`
+- **PR #47 (A)** — Runtime Integration @ `a9f5645`
 
 ## Open PRs
 
-- **Phase 4C-C closure docs** — Draft (Agent E) — pending review/merge
+- **Phase 4D closure docs** — Draft (Agent E) — pending review/merge
 
 No active runtime PRs.
 
 ## Agent lane status
 
-**Agent A** — 4C-C runtime complete (#41 merged); **blocked on 4D** until work order issued
+**Agent A** — 4D runtime complete (#47 merged); lane clear
 
-**Agent B** — 4C-C assets complete (#40 merged); lane clear
+**Agent B** — 4D assets complete (#45 merged); lane clear
 
-**Agent C** — 4C-C design complete (#38 merged); lane clear
+**Agent C** — 4D design complete (#44 merged); lane clear
 
-**Agent D** — 4C-C UX complete (#39 merged); lane clear
+**Agent D** — 4D UX complete (#43, #46 merged); lane clear
 
-**Agent E** — 4C-C closure docs prepared; awaiting closure PR review
+**Agent E** — 4D closure docs prepared; awaiting closure PR review
 
-**Agent F** — 4C-C QA PASS (independent retest + live corroboration 90/90)
+**Agent F** — 4D QA PASS (live corroboration 92/92)
 
 ## Test / deploy evidence
 
 - `npm run build` — PASS
-- `phase-4c-c-timer-score-regression.mjs` — 18/18 (live verified)
-- Prior suites (4B, 4B-B, 4C-A, 4C-B) — PASS on live (57/57)
-- Extended live probe — 15/15 PASS
-- **Combined live assertions: 90/90 PASS**
+- `phase-4d-combat-feel-regression.mjs` — 17/17 (live verified)
+- Prior suites (4B, 4B-B, 4C-A, 4C-B, 4C-C) — PASS on live (75/75)
+- **Combined live assertions: 92/92 PASS**
 - External live deploy — PASS @ https://clan-siege-arena.onrender.com (2026-06-17)
+- Mobile 915×412 — PASS
+- Mobile 800×360 — PASS
+- Scope guard — PASS
 - GitHub CI — no registered checks
 
 ## Next safe action
 
-**Product / GPT can authorize Phase 4D planning** (Combat Feel MVP / Player Combat Polish design readiness)
+**Await Phase 4D closure docs PR review/merge.**
 
-Planning only — do not start 4D runtime without explicit work order.
+Phase 4E and Phase 5A are **NOT STARTED** and **NOT AUTHORIZED**.
 
 ## Must not do
 
-- Do not start Phase 4D / 4E / 5A without work order
+- Do not start Phase 4E / 5A without explicit work order
 - Agent E: do not Ready/Merge PRs without explicit authorization
 
 ## Related docs
 
-- [phase-close-report.md](./phase-close-report.md) — Phase 4C-C closure report
+- [phase-4d-close-report.md](./phase-4d-close-report.md) — Phase 4D closure report
+- [phase-close-report.md](./phase-close-report.md)
 - [final-gate-report.md](./final-gate-report.md)
 - [open-pr-dashboard.md](./open-pr-dashboard.md)
 - [release-checklist.md](./release-checklist.md)
