@@ -1,31 +1,34 @@
 # Final Gate Report
 
 > **Agent E — Final Gate / Release Auditor**  
-> **Audit date:** 2026-06-17 (Phase 4C-C closure)  
-> **Scope:** Phase 4C-C closure + 4D planning readiness  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `4e928fb`
+> **Audit date:** 2026-06-17 (Phase 4D closure)  
+> **Scope:** Phase 4D closure  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `a9f5645`
 
 ---
 
 ## 1. Scope
 
-Final gate audit, merge, and live verification for **Phase 4C-C — Match Timer and Objective Score Win**. Planning PRs #38–#40 and runtime PR #41 merged. External live verification 90/90 PASS. Phase 4D blocked.
+Final gate audit, merge, and live verification for **Phase 4D — Combat Feel MVP / Player Combat Polish**. Planning PRs #43–#46 and runtime PR #47 merged. External live verification 92/92 PASS.
 
 ---
 
-## 2. Phase 4C-C merged PRs
+## 2. Phase 4D merged PRs
 
-**PR #38 (Agent C)** — Match timer and Objective Score win spec  
-MERGED @ `0364faa`
+**PR #43 (Agent D)** — UX/Mobile Spec  
+MERGED @ `080d5d245a2d5e12159b80d201736ab0e4ed469d`
 
-**PR #39 (Agent D)** — Timer and Objective Score UX spec + mobile checklist  
-MERGED @ `e0ada76`
+**PR #44 (Agent C)** — Combat Feel Design Spec  
+MERGED @ `856aed46e3fcc842d58347517bc0255a296cc6da`
 
-**PR #40 (Agent B)** — Timer/score asset micro-pack (3 HUD SVGs)  
-MERGED @ `ee2a2dd`
+**PR #45 (Agent B)** — FX Micro-Pack (4 SVGs)  
+MERGED @ `c85a7e7c320a1e8bd4b8865ee1c85151691dcc04`
 
-**PR #41 (Agent A)** — Runtime match timer + Objective Score win  
-MERGED @ `4e928fb` (feature commit `79728b0`)
+**PR #46 (Agent D)** — UI/UX Addendum  
+MERGED @ `5ce5b2934d3e5f5b6ccadac2a8b21bae2e79b4e9`
+
+**PR #47 (Agent A)** — Runtime combat feel integration  
+MERGED @ `a9f5645d09dcdfee5685f7a563583f1f0f70e048` (feature commit `09d0e16`)
 
 ---
 
@@ -33,33 +36,32 @@ MERGED @ `4e928fb` (feature commit `79728b0`)
 
 | Gate | Result |
 |------|--------|
-| Agent A implementation | **PASS** — 18/18 regression |
-| Agent F independent QA | **PASS** — 18/18 + 20/20 probe + mobile |
+| Agent A implementation | **PASS** — 17/17 regression |
+| Agent F independent QA | **PASS** — 17/17 + mobile |
 | Agent E final gate | **PASS** |
-| Ready/Merge execution | **PASS** — PR #41 merged |
-| External live verification | **PASS** — 90/90 live assertions |
+| Ready/Merge execution | **PASS** — PR #47 merged |
+| External live verification | **PASS** — 92/92 live assertions |
 
-**Live URL:** https://clan-siege-arena.onrender.com — bundle `index-MXeXdYxs.js`, deploy post-merge
+**Live URL:** https://clan-siege-arena.onrender.com — bundle `index-BRB6GZcv.js`, deploy post-merge
 
 ---
 
 ## 4. Test / deploy evidence
 
 - `npm run build` — PASS
-- `phase-4c-c-timer-score-regression.mjs` — 18/18 (live verified)
+- `phase-4d-combat-feel-regression.mjs` — 17/17 (live verified)
 - `phase-4b-objective-regression.mjs` — 15/15 (live verified)
 - `phase-4b-b-clarity-regression.mjs` — 13/13 (live verified)
 - `phase-4c-a-capture-regression.mjs` — 11/11 (live verified)
 - `phase-4c-b-siege-buff-regression.mjs` — 18/18 (live verified)
-- Extended live probe (ResultScene, caution, assets) — 15/15 (live verified)
-- Prior suites (multitouch, 3B, 4A) — PASS on merged base
+- `phase-4c-c-timer-score-regression.mjs` — 18/18 (live verified)
 - GitHub CI — no registered checks
 
 ---
 
 ## 5. Scope guard
 
-Phase 4C-C implemented match timer and Objective Score win only. Did not implement bot AI, economy, EXP, Gold, shop, ranking, minimap, respawn, vision/fog, Sudden Death, new objective types, or Phase 4D / 4E / 5A work. **PASS**
+Phase 4D implemented combat feel polish only (VFX, damage numbers, micro-shake). Did not implement bot AI, economy, balance changes, rule changes, or Phase 4E / 5A work. **PASS**
 
 ---
 
@@ -71,26 +73,27 @@ Phase 4C-C implemented match timer and Objective Score win only. Did not impleme
 
 **Phase 4C-C — CLOSED** (live verified)
 
-**Phase 4D — NOT STARTED** (planning may begin after closure docs merge + explicit work order)
+**Phase 4D — CLOSED** (live verified)
 
-**Phase 4D runtime — NOT AUTHORIZED**
+**Phase 4E — NOT STARTED** (not authorized)
+
+**Phase 5A — NOT STARTED** (not authorized)
 
 ---
 
 ## 7. Open PR board
 
-**Draft:** Phase 4C-C closure docs (Agent E)
+**Draft:** Phase 4D closure docs (Agent E)
 
 No active runtime PRs.
 
 ---
 
-## 8. Known cautions
+## 8. Known cautions (non-blocking)
 
-- **Same-frame timer/core race** — if timer expiry runs before a would-be killing blow in the exact same frame, time-up may resolve first; already-destroyed Core results are not overridden; live probe preserved Core priority; **accepted MVP caution**
-- `debugDealDamage` / capture debug hooks — test hooks only
-- `networkidle0` old-suite stall — environmental; independent proof accepted
-- Siege badge depth/y-position — accepted, mobile readable
+- **Damage-number cluster cap** can briefly overshoot under near-simultaneous burst hits — cosmetic only; recommend cull/fade oldest entries beyond cap
+- **Micro-shake** may jiggle main-camera HUD ~1px; UI camera controls unaffected
+- **`debugDealDamage` on protected Core** — test hook only; 4B-B live regression confirms correct gameplay behavior
 
 None are blockers.
 
@@ -98,24 +101,42 @@ None are blockers.
 
 ## 9. Next safe action
 
-**Product / GPT can authorize Phase 4D planning** (Combat Feel MVP / Player Combat Polish design readiness)
+**Await Phase 4D closure docs PR review/merge.**
 
-Do not start 4D runtime without explicit work order.
+Phase 4E and Phase 5A are **NOT STARTED** and **NOT AUTHORIZED**.
 
 ---
 
 ## 10. Final verdict
 
-**PHASE 4C-C CLOSED — LIVE VERIFIED — READY TO PLAN 4D**
+**PHASE 4D CLOSED — LIVE VERIFIED — CLOSURE DOCS PENDING MERGE**
 
 ---
 
 ## 11. Do / Don't
 
 **Do**
-- Merge Phase 4C-C closure docs PR when approved
-- Issue Phase 4D planning work order (Product/GPT only)
+- Merge Phase 4D closure docs PR when approved
 
 **Don't**
-- Start 4D / 4E / 5A runtime without work order
+- Start 4E / 5A without explicit work order
 - Agent E: do not Ready/Merge PRs without explicit authorization
+
+---
+
+## Phase 4D Final Gate Summary (append)
+
+**Agent F QA:** PASS
+
+**Agent E Final Gate:** MERGED — PHASE 4D RUNTIME ON BASE
+
+**Live Verification:** LIVE VERIFY PASS — READY FOR 4D CLOSURE DOCS
+
+---
+
+## Prior phase final gate (Phase 4C-C — reference)
+
+> **Audit date:** 2026-06-17 (Phase 4C-C closure)  
+> **Latest base:** `4e928fb`
+
+Phase 4C-C merged PRs #38–#41. External live verification 90/90 PASS. Verdict: **PHASE 4C-C CLOSED — LIVE VERIFIED**.

@@ -1,3 +1,98 @@
+# Phase 4D Closure Report — Combat Feel MVP / Player Combat Polish
+
+> **Agent E closure audit**  
+> **Date:** 2026-06-17  
+> **Phase:** 4D — Combat Feel MVP / Player Combat Polish  
+> **Verdict:** **PHASE 4D COMPLETE — LIVE VERIFIED**
+
+See also: [phase-4d-close-report.md](./phase-4d-close-report.md)
+
+---
+
+## 1. Phase summary
+
+Phase 4D delivered **player combat feel polish** — visual and feedback improvements only, with no balance or rule changes.
+
+### Delivered scope
+
+- Normal hit spark feedback
+- Gate hit feedback
+- Core hit pulse feedback
+- Skill cast flash
+- Gate/Core destroyed impact ring
+- Damage number visual polish
+- Mobile-safe combat feedback
+- Micro screen shake for allowed events
+- New 4D regression suite
+- Preserved all 4B / 4B-B / 4C-A / 4C-B / 4C-C systems
+
+---
+
+## 2. Merged PR list
+
+| PR | Agent | Purpose | Status |
+|----|-------|---------|--------|
+| [#43](https://github.com/nustanakritwithai/ClanWar/pull/43) | D | UX/Mobile Spec | **MERGED** @ `080d5d2` |
+| [#44](https://github.com/nustanakritwithai/ClanWar/pull/44) | C | Combat Feel Design Spec | **MERGED** @ `856aed4` |
+| [#45](https://github.com/nustanakritwithai/ClanWar/pull/45) | B | FX Micro-Pack (4 SVGs) | **MERGED** @ `c85a7e7` |
+| [#46](https://github.com/nustanakritwithai/ClanWar/pull/46) | D | UI/UX Addendum | **MERGED** @ `5ce5b29` |
+| [#47](https://github.com/nustanakritwithai/ClanWar/pull/47) | A | Runtime Integration | **MERGED** @ `a9f5645` |
+
+---
+
+## 3. Final commit state
+
+| Item | SHA / branch |
+|------|--------------|
+| Runtime merge commit / current base | `a9f5645d09dcdfee5685f7a563583f1f0f70e048` |
+| Final base branch | `claude/game-file-analysis-a20xup` @ `a9f5645` |
+
+---
+
+## 4. Verification summary
+
+**Live URL:** https://clan-siege-arena.onrender.com  
+**Live bundle:** `index-BRB6GZcv.js`  
+**Combined live regression:** **92/92 PASS**
+
+| Suite | Result |
+|-------|--------|
+| `phase-4d-combat-feel-regression.mjs` | 17/17 PASS |
+| `phase-4b-objective-regression.mjs` | 15/15 PASS |
+| `phase-4b-b-clarity-regression.mjs` | 13/13 PASS |
+| `phase-4c-a-capture-regression.mjs` | 11/11 PASS |
+| `phase-4c-b-siege-buff-regression.mjs` | 18/18 PASS |
+| `phase-4c-c-timer-score-regression.mjs` | 18/18 PASS |
+
+Mobile 915×412 **PASS** · Mobile 800×360 **PASS** · Scope guard **PASS**
+
+---
+
+## 5. Preserved systems
+
+**4B:** Gate/Core flow, protected Core before Gate breach, Core destroyed result  
+**4B-B:** Destroy Gate first, Gate Breached, Destroy the Core prompts  
+**4C-A:** Capture scoring, capture HUD  
+**4C-B:** Siege Buff +30% enemy Gate only, no Core bonus, no hero bonus  
+**4C-C:** 300s timer, Objective Score win, Core HP tiebreak, Draw, no Sudden Death
+
+---
+
+## 6. Known cautions (non-blocking)
+
+- **Damage-number cluster cap** can briefly overshoot under near-simultaneous burst hits — cosmetic only; recommend cull/fade oldest entries beyond cap
+- **Micro-shake** may jiggle main-camera HUD ~1px; UI camera controls unaffected
+
+---
+
+## 7. Formal closure verdict
+
+### PHASE 4D COMPLETE — LIVE VERIFIED
+
+Phase 4E is **NOT STARTED**. Phase 5A is **NOT STARTED**.
+
+---
+
 # Phase 4C-C Closure Report — Match Timer and Objective Score Win
 
 > **Agent E closure audit**  
