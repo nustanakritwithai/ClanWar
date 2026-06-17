@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="HUD objective score chip">
+  <!-- Compact HUD icon (UI-space, not map terrain) -->
+  <rect x="32" y="32" width="192" height="192" rx="36" fill="#1a2230" stroke="#0b0e13" stroke-width="10"/>
+  <!-- Objective pennant marker (not coin/currency) -->
+  <line x1="108" y1="172" x2="108" y2="88" stroke="#0b0e13" stroke-width="8" stroke-linecap="round"/>
+  <path d="M108 88 L140 100 L108 112 Z" fill="#9ca3af" stroke="#0b0e13" stroke-width="6" stroke-linejoin="round"/>
+  <!-- Tally marks (objective points, not gold) -->
+  <g stroke="#cbd5e1" stroke-width="7" stroke-linecap="round">
+    <line x1="148" y1="108" x2="148" y2="148"/>
+    <line x1="164" y1="108" x2="164" y2="148"/>
+    <line x1="180" y1="108" x2="180" y2="148"/>
+  </g>
+  <!-- Star pip (objective marker) -->
+  <path d="M164 168 L170 184 L154 174 L174 174 L158 184 Z"
+        fill="#cbd5e1" stroke="#0b0e13" stroke-width="5" stroke-linejoin="round"/>
+</svg>
