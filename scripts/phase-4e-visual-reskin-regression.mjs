@@ -386,6 +386,115 @@ async function main() {
     );
   }
 
+  // ---------- T30–T40: ranged normal attack visual projectiles ----------
+  async function countProjectiles(page, kind) {
+    return page.evaluate((expectedKind) => {
+      const s = window.__CLANWAR_GAME__.scene.getScene('MatchScene');
+      const list = s.children.list.filter(
+        (o) => o.getData && o.getData('normalAttackProjectile') === expectedKind,
+      );
+      const any = s.children.list.filter((o) => o.getData && o.getData('normalAttackProjectile'));
+      const dmg = s.children.list.some((o) => typeof o.text === 'string' && /^-\d+$/.test(o.text));
+      const spark = s.children.list.some(
+        (o) =>
+          o.texture &&
+          (o.texture.key === 'phase4e_theme1_vfx_normal_hit_spark' || o.texture.key === 'vfx_hit_spark'),
+      );
+      const maxDepth = Math.max(0, ...list.map((o) => o.depth ?? 0));
+      return { count: list.length, any: any.length, dmg, spark, maxDepth };
+    }, kind);
+  }
+
+  async function fireNormalAttack(page) {
+    await page.evaluate(() => {
+      const s = window.__CLANWAR_GAME__.scene.getScene('MatchScene');
+      s.dummy.sprite.setPosition(s.player.x + 48, s.player.y);
+    });
+    await page.keyboard.down('j');
+    await sleep(40);
+    await page.keyboard.up('j');
+    await sleep(60);
+  }
+
+  for (const [heroClass, kind, label] of [
+    ['ranger', 'arrow', 'T30 ranger arrow projectile'],
+    ['mage', 'magic_bolt', 'T31 mage magic projectile'],
+    ['priest', 'holy_bolt', 'T32 priest holy projectile'],
+  ]) {
+    await startMatch(page, { width: 1280, height: 720 }, heroClass);
+    const stats = await page.evaluate(() => ({
+      attack: window.__CLANWAR_GAME__.scene.getScene('MatchScene').player.attack,
+      range: window.__CLANWAR_GAME__.scene.getScene('MatchScene').player.attackRange,
+    }));
+    await fireNormalAttack(page);
+    const row = await countProjectiles(page, kind);
+    log(
+      label,
+      row.count >= 1 && row.dmg && row.spark && row.maxDepth < 1090,
+      JSON.stringify({ ...row, attack: stats.attack, range: stats.range }),
+    );
+  }
+
+  for (const [heroClass, label] of [
+    ['guardian', 'T33 guardian no normal attack projectile'],
+    ['warrior', 'T34 warrior no normal attack projectile'],
+  ]) {
+    await startMatch(page, { width: 1280, height: 720 }, heroClass);
+    await fireNormalAttack(page);
+    const row = await countProjectiles(page, null);
+    log(label, row.any === 0, JSON.stringify(row));
+  }
+
+  await startMatch(page, { width: 1280, height: 720 }, 'ranger');
+  await page.evaluate(() => {
+    const s = window.__CLANWAR_GAME__.scene.getScene('MatchScene');
+    s.dummy.sprite.setPosition(s.player.x + 48, s.player.y);
+  });
+  const hpBefore = await page.evaluate(() => window.__CLANWAR_GAME__.scene.getScene('MatchScene').dummy.currentHp);
+  await page.keyboard.down('j');
+  await sleep(40);
+  await page.keyboard.up('j');
+  await sleep(120);
+  const dmgAfter = await page.evaluate((before) => {
+    const s = window.__CLANWAR_GAME__.scene.getScene('MatchScene');
+    const loss = before - s.dummy.currentHp;
+    const expected = Math.max(1, Math.round(s.player.attack * (100 / (100 + s.dummy.armor))));
+    return { loss, expected, attack: s.player.attack, range: s.player.attackRange };
+  }, hpBefore);
+  log(
+    'T35 damage value unchanged for ranged normal attack',
+    dmgAfter.loss === dmgAfter.expected,
+    JSON.stringify(dmgAfter),
+  );
+
+  let leakMax = 0;
+  for (let i = 0; i < 3; i++) {
+    await startMatch(page, { width: 1280, height: 720 }, 'mage');
+    await fireNormalAttack(page);
+    await sleep(450);
+    const left = await page.evaluate(() =>
+      window.__CLANWAR_GAME__.scene
+        .getScene('MatchScene')
+        .children.list.filter((o) => o.getData && o.getData('normalAttackProjectile')).length,
+    );
+    leakMax = Math.max(leakMax, left);
+  }
+  log('T36 Menu<->Match x3 no normal attack projectile leak', leakMax === 0, `left=${leakMax}`);
+
+  for (const [w, h, id] of [
+    [915, 412, 'T37'],
+    [800, 360, 'T38'],
+  ]) {
+    await startMatch(page, { width: w, height: h }, 'ranger');
+    await fireNormalAttack(page);
+    const mobile = await countProjectiles(page, 'arrow');
+    log(
+      `${id} mobile ${w}x${h} ranged projectile visible and below HUD`,
+      mobile.count >= 1 && mobile.maxDepth < 1090,
+      JSON.stringify(mobile),
+    );
+  }
+
   // ---------- T18: no fatal console errors ----------
   log('T18 no fatal console errors', errs.length === 0, errs.join('; ') || 'none');
 

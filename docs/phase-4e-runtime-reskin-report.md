@@ -245,3 +245,24 @@ Rogue and summoner are not playable; `HERO_CLASS_ORDER` unchanged.
 
 **Hotfix verdict:** **HOTFIX READY FOR RE-QA** — Draft PR only; gameplay rules unchanged.
 
+## 21. Ranged normal attack projectile follow-up
+
+Follow-up branch: `cursor/phase-4e-ranged-normal-attack-projectile` (Draft PR).
+
+**Issue:** Ranged classes (Ranger/Mage/Priest) had in-match character sprites after PR #53, but normal attacks still had no visible projectile — attacks felt like invisible melee.
+
+**Fix:** Visual-only normal attack projectiles in `CombatVfx.showNormalAttackProjectile()`. Spawned from `MatchScene.handleAttack()` for ranged classes only. Existing melee-arc hit detection, damage, range, and cooldown paths unchanged.
+
+**Projectile mapping:**
+
+| Class | Visual | Source |
+|---|---|---|
+| ranger | arrow | `combat_projectile_arrow` SVG (graphics line fallback) |
+| mage | magic bolt | `combat_projectile_fireball` tinted blue (orb fallback) |
+| priest | holy bolt | gold orb graphics fallback |
+| guardian | none | melee-only |
+| warrior | none | melee-only |
+
+**Regression:** `phase-4e-visual-reskin-regression.mjs` T30–T38 — per-class projectile spawn, melee classes excluded, damage/spark preserved, no HUD overlap, Menu ↔ Match ×3 leak check, mobile 915×412 and 800×360.
+
+**Verdict:** **RUNTIME READY FOR REVIEW** — Draft PR only; no gameplay balance changes.

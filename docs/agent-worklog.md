@@ -40,6 +40,34 @@
 
 ---
 
+## 2026-06-18 — Phase 4E ranged normal attack projectile hotfix (Agent A)
+
+**Agent:** A (Runtime Engineer)
+**Branch:** `cursor/phase-4e-ranged-normal-attack-projectile`
+**Base:** `claude/game-file-analysis-a20xup` @ `87675806df9dcd1762bd3afc07a77ac861f504ef`
+**Task:** Add visual-only normal attack projectiles for Ranger/Mage/Priest. Melee classes unchanged. No gameplay balance changes.
+
+### Actions taken
+
+1. Added `showNormalAttackProjectile()` + class helpers in `src/game/ui/CombatVfx.ts` — arrow/magic/holy visuals with SVG or graphics fallback; tagged with `normalAttackProjectile` data for regression.
+2. Wired spawn in `MatchScene.handleAttack()` before existing melee-arc hit detection (damage/range/cooldown unchanged).
+3. Extended `scripts/phase-4e-visual-reskin-regression.mjs` with T30–T38 ranged projectile checks.
+4. Updated docs (`phase-4e-runtime-reskin-report.md` §21, `project-status.md`, `open-pr-dashboard.md`, `agent-worklog.md`).
+
+### Regression
+
+- `npm run build` — PASS
+- `phase-4e-visual-reskin-regression.mjs` — 38/38
+- `phase-4d-combat-feel-regression.mjs` — 17/17
+- `phase-4c-c-timer-score-regression.mjs` — 18/18
+- Prior stack — 57/57
+
+### Verdict
+
+**RUNTIME READY FOR REVIEW** — Draft PR only.
+
+---
+
 ## 2026-06-17 — Phase 4E in-match character sprite hotfix (Agent A)
 
 **Agent:** A (Runtime Engineer)

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { COMPACT_LAYOUT_HEIGHT } from '../constants';
+import type { HeroClassId } from '../types';
 import { resolvePhase4eVfxTexture } from '../theme/Phase4ETheme';
 
 /** Texture keys for combat VFX loaded from public/assets (Agent B lane — read-only). */
@@ -358,6 +359,124 @@ export function showImpactRing(scene: Phaser.Scene, x: number, y: number, regist
     duration: 420,
     ease: 'Cubic.easeOut',
     onComplete: () => ring.destroy(),
+  });
+}
+
+export type NormalAttackProjectileKind = 'arrow' | 'magic_bolt' | 'holy_bolt';
+
+const RANGED_NORMAL_ATTACK_CLASS_SET = new Set<HeroClassId>(['ranger', 'mage', 'priest']);
+
+/** True when normal attack should spawn a visual-only ranged projectile. */
+export function isRangedNormalAttackClass(heroClass: string): boolean {
+  return RANGED_NORMAL_ATTACK_CLASS_SET.has(heroClass as HeroClassId);
+}
+
+export function normalAttackProjectileKind(heroClass: string): NormalAttackProjectileKind | null {
+  switch (heroClass) {
+    case 'ranger':
+      return 'arrow';
+    case 'mage':
+      return 'magic_bolt';
+    case 'priest':
+      return 'holy_bolt';
+    default:
+      return null;
+  }
+}
+
+const NORMAL_ATTACK_PROJECTILE_SPEED = 920;
+
+function createArrowFallback(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  angle: number,
+): Phaser.GameObjects.Graphics {
+  const g = scene.add.graphics({ x, y });
+  g.setDepth(110);
+  g.lineStyle(3, 0xfde68a, 1);
+  g.fillStyle(0xfbbf24, 1);
+  g.beginPath();
+  g.moveTo(0, 0);
+  g.lineTo(18, 0);
+  g.lineTo(12, -4);
+  g.moveTo(18, 0);
+  g.lineTo(12, 4);
+  g.strokePath();
+  g.fillPath();
+  g.setRotation(angle);
+  return g;
+}
+
+function createOrbFallback(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  fill: number,
+  stroke: number,
+): Phaser.GameObjects.Arc {
+  return scene.add
+    .circle(x, y, 8, fill, 0.95)
+    .setStrokeStyle(2, stroke, 0.9)
+    .setDepth(110);
+}
+
+/**
+ * Visual-only normal attack projectile for ranged classes. Does not affect hit
+ * detection or damage — MatchScene keeps the existing melee-arc attack path.
+ */
+export function showNormalAttackProjectile(
+  scene: Phaser.Scene,
+  startX: number,
+  startY: number,
+  angle: number,
+  travelDistance: number,
+  kind: NormalAttackProjectileKind,
+  register: RegisterFn,
+): void {
+  const duration = Math.max(120, (travelDistance / NORMAL_ATTACK_PROJECTILE_SPEED) * 1000);
+  const endX = startX + Math.cos(angle) * travelDistance;
+  const endY = startY + Math.sin(angle) * travelDistance;
+
+  let visual: Phaser.GameObjects.GameObject;
+
+  if (kind === 'arrow') {
+    if (hasCombatVisualTexture(scene, COMBAT_TEXTURES.projectileArrow)) {
+      visual = scene.add
+        .image(startX, startY, COMBAT_TEXTURES.projectileArrow)
+        .setDisplaySize(36, 36)
+        .setOrigin(0.5)
+        .setDepth(110)
+        .setRotation(angle);
+    } else {
+      visual = createArrowFallback(scene, startX, startY, angle);
+    }
+  } else if (kind === 'magic_bolt') {
+    if (hasCombatVisualTexture(scene, COMBAT_TEXTURES.projectileFireball)) {
+      visual = scene.add
+        .image(startX, startY, COMBAT_TEXTURES.projectileFireball)
+        .setDisplaySize(30, 30)
+        .setOrigin(0.5)
+        .setDepth(110)
+        .setTint(0x818cf8);
+    } else {
+      visual = createOrbFallback(scene, startX, startY, 0x6366f1, 0xc4b5fd);
+    }
+  } else {
+    visual = createOrbFallback(scene, startX, startY, 0xfbbf24, 0xfef3c7);
+  }
+
+  visual.setData('normalAttackProjectile', kind);
+  register(visual);
+
+  scene.tweens.add({
+    targets: visual,
+    x: endX,
+    y: endY,
+    alpha: 0,
+    duration,
+    ease: 'Linear',
+    onComplete: () => visual.destroy(),
   });
 }
 
