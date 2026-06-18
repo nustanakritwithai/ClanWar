@@ -12,6 +12,26 @@ const results = [];
 const log = (t, p, d = '') => { results.push({ t, p }); console.log(`${p ? 'PASS' : 'FAIL'}: ${t}${d ? ` — ${d}` : ''}`); };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Phase 4E Theme 1 swaps these 5 combat-feel VFX sprites to namespaced themed
+ * keys when the theme is enabled. This table MIRRORS `VFX_THEME_MAP` in
+ * `src/game/theme/Phase4ETheme.ts` (kept in sync by hand — this regression
+ * script runs in Node and cannot import the TS resolver, which also needs a
+ * live Phaser scene). Each VFX assertion below accepts EITHER the legacy key
+ * (Phase 4E theme disabled) OR the themed key (theme enabled). The assertion
+ * still fails if NEITHER key is present, so VFX presence is never weakened —
+ * only the exact key identity is allowed to drift.
+ */
+const VFX_KEYS = {
+  hitSpark: { legacy: 'vfx_hit_spark', themed: 'phase4e_theme1_vfx_normal_hit_spark' },
+  gateHit: { legacy: 'vfx_gate_hit_spark', themed: 'phase4e_theme1_vfx_gate_hit_spark' },
+  corePulse: { legacy: 'vfx_core_hit_pulse', themed: 'phase4e_theme1_vfx_core_hit_pulse' },
+  castFlash: { legacy: 'vfx_skill_cast_flash', themed: 'phase4e_theme1_vfx_skill_cast_flash' },
+  impactRing: { legacy: 'vfx_impact_ring', themed: 'phase4e_theme1_vfx_impact_ring' },
+};
+// Flat list of every legacy + themed combat-feel VFX key, for depth coverage.
+const ALL_VFX_KEYS = Object.values(VFX_KEYS).flatMap((m) => [m.legacy, m.themed]);
+
 let booted = false;
 async function startMatch(page, viewport = { width: 1280, height: 720 }) {
   if (!booted) {
@@ -33,21 +53,61 @@ async function startMatch(page, viewport = { width: 1280, height: 720 }) {
 }
 
 // Count live world objects by texture key / by being a damage number text.
+// VFX counts are theme-aware: `count` = legacy + themed sprites, and `via`
+// records which key carried the count (for debugging). Behaviour assertions
+// read `.count` so they hold whether Theme 1 is on or off, and still fail when
+// neither key is present.
 const COUNT = `(() => {
   const s = window.__CLANWAR_GAME__.scene.getScene('MatchScene');
   const list = s.children.list;
+  const VFX = ${JSON.stringify(VFX_KEYS)};
   const tex = (k) => list.filter((o) => o.active && o.texture && o.texture.key === k).length;
+  const vfx = (name) => {
+    const m = VFX[name];
+    const legacy = tex(m.legacy);
+    const themed = tex(m.themed);
+    return { count: legacy + themed, legacy, themed, via: themed > 0 ? 'themed' : (legacy > 0 ? 'legacy' : 'none') };
+  };
   const dmgNums = list.filter((o) => o.active && typeof o.text === 'string' && /^-\\d+$/.test(o.text));
   return {
-    hitSpark: tex('vfx_hit_spark'),
-    gateHit: tex('vfx_gate_hit_spark'),
-    corePulse: tex('vfx_core_hit_pulse'),
-    castFlash: tex('vfx_skill_cast_flash'),
-    impactRing: tex('vfx_impact_ring'),
+    hitSpark: vfx('hitSpark'),
+    gateHit: vfx('gateHit'),
+    corePulse: vfx('corePulse'),
+    castFlash: vfx('castFlash'),
+    impactRing: vfx('impactRing'),
     dmgCount: dmgNums.length,
     dmgSample: dmgNums.map((o) => ({ t: o.text, depth: o.depth, stroke: o.style && o.style.strokeThickness, color: o.style && o.style.color })),
   };
 })()`;
+
+// Poll up to timeoutMs for a COUNT snapshot satisfying pred (robust against
+// single-frame VFX spawn / fixed-sample-boundary flake). Returns the last
+// snapshot seen, whether or not pred was ultimately satisfied.
+async function pollCount(page, pred, timeoutMs = 250, stepMs = 25) {
+  let snap = await page.evaluate(COUNT);
+  const deadline = Date.now() + timeoutMs;
+  while (!pred(snap) && Date.now() < deadline) {
+    await sleep(stepMs);
+    snap = await page.evaluate(COUNT);
+  }
+  return snap;
+}
+
+// Cast skill1 ('q') and return the snapshot once its cast flash is visible.
+// The very first keypress after a scene start can be dropped before Phaser's
+// keyboard plugin is ready; a dropped press leaves the skill off cooldown, so
+// re-pressing is legitimate and only happens when nothing actually cast. This
+// does NOT weaken the assertion: if a real cast genuinely produced no flash,
+// the first silent cast consumes the cooldown and every retry is then blocked,
+// so the flash count stays 0 and the caller's assertion still fails.
+async function castSkill1WithFlash(page, attempts = 4) {
+  let snap = await page.evaluate(COUNT);
+  for (let i = 0; i < attempts && snap.castFlash.count < 1; i++) {
+    await page.keyboard.press('q');
+    snap = await pollCount(page, (c) => c.castFlash.count >= 1, 200);
+  }
+  return snap;
+}
 
 async function main() {
   const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
@@ -66,7 +126,7 @@ async function main() {
   await sleep(60); // sample during the short spark lifetime (~150ms)
   const hit = await page.evaluate(COUNT);
   await page.keyboard.up('j');
-  log('R1 normal hit spark appears (vfx_hit_spark)', hit.hitSpark >= 1, JSON.stringify({ hitSpark: hit.hitSpark }));
+  log('R1 normal hit spark appears (legacy or themed key)', hit.hitSpark.count >= 1, JSON.stringify({ hitSpark: hit.hitSpark }));
   log('R2 normal hit damage number appears', hit.dmgCount >= 1, JSON.stringify({ dmgCount: hit.dmgCount }));
   const dn = hit.dmgSample[0];
   log('R3 damage number readable (stroked, depth 150, red tone)',
@@ -80,7 +140,7 @@ async function main() {
     return eval(countSrc);
   }, COUNT);
   const r4dmg = r4.dmgSample.find((d) => /cfa14a/i.test(d.color || ''));
-  log('R4 Gate hit uses Gate feedback (vfx_gate_hit_spark + amber number)', r4.gateHit >= 1 && !!r4dmg, JSON.stringify({ gateHit: r4.gateHit, amber: !!r4dmg }));
+  log('R4 Gate hit uses Gate feedback (gate hit spark legacy/themed + amber number)', r4.gateHit.count >= 1 && !!r4dmg, JSON.stringify({ gateHit: r4.gateHit, amber: !!r4dmg }));
 
   // ---------- R5: Core hit pulse ----------
   await startMatch(page);
@@ -91,19 +151,22 @@ async function main() {
     return eval(countSrc);
   }, COUNT);
   const r5dmg = r5.dmgSample.find((d) => /f4d35e/i.test(d.color || ''));
-  log('R5 Core hit uses Core pulse (vfx_core_hit_pulse + gold number)', r5.corePulse >= 1 && !!r5dmg, JSON.stringify({ corePulse: r5.corePulse, gold: !!r5dmg }));
+  log('R5 Core hit uses Core pulse (core pulse legacy/themed + gold number)', r5.corePulse.count >= 1 && !!r5dmg, JSON.stringify({ corePulse: r5.corePulse, gold: !!r5dmg }));
 
   // ---------- R6: Skill cast flash only on success ----------
   // First Q = successful cast (flash). Second Q (immediately) = cooldown fail (no new flash).
+  // Poll for the success flash (legacy or themed) rather than sampling at a
+  // fixed 50ms boundary — the flash is a single-frame spawn with ~220ms life,
+  // and a fixed sample (or a dropped first keypress) could miss it entirely
+  // (Agent F flake finding). castSkill1WithFlash only retries genuinely
+  // dropped presses, so a real missing-flash regression still fails.
   await startMatch(page);
-  await page.keyboard.press('q');
-  await sleep(50);
-  const castOk = await page.evaluate(COUNT); // first flash alive (~220ms life)
+  const castOk = await castSkill1WithFlash(page); // success flash must appear
   await page.keyboard.press('q'); // on cooldown now -> must NOT add a flash
   await sleep(50);
   const castCd = await page.evaluate(COUNT); // first flash still alive; should NOT increase
   log('R6 skill cast flash on success only (cooldown press adds none)',
-    castOk.castFlash >= 1 && castCd.castFlash <= castOk.castFlash,
+    castOk.castFlash.count >= 1 && castCd.castFlash.count <= castOk.castFlash.count,
     JSON.stringify({ success: castOk.castFlash, afterCooldownPress: castCd.castFlash }));
 
   // ---------- R7: Gate destroyed uses impact ring ----------
@@ -114,7 +177,7 @@ async function main() {
     const breach = s.objectiveSystem.getLastWorldFeedback();
     return { ...eval(countSrc), breach };
   }, COUNT);
-  log('R7 Gate destroyed uses impact ring + "Gate Breached" primary', r7.impactRing >= 1 && r7.breach === 'Gate Breached', JSON.stringify({ impactRing: r7.impactRing, breach: r7.breach }));
+  log('R7 Gate destroyed uses impact ring (legacy/themed) + "Gate Breached" primary', r7.impactRing.count >= 1 && r7.breach === 'Gate Breached', JSON.stringify({ impactRing: r7.impactRing, breach: r7.breach }));
 
   // ---------- R8 / R9: Core destroyed result works + not delayed ----------
   await startMatch(page);
@@ -130,7 +193,7 @@ async function main() {
 
   // ---------- R10–R13: effects never cover HUD (depth ordering) ----------
   await startMatch(page);
-  const layering = await page.evaluate((countSrc) => {
+  const layering = await page.evaluate((vfxKeys) => {
     const s = window.__CLANWAR_GAME__.scene.getScene('MatchScene');
     s.captureSystem.debugSetSiegeRuinsState('blue', 'idle');
     s.siegeBuffSystem.update(100);
@@ -139,16 +202,17 @@ async function main() {
     const d = s.captureSystem.getSnapshots().find((o) => o.id === 'resourceCampL');
     s.captureSystem.update(16, d.x, d.y, 'blue');
     s.objectiveSystem.debugDealDamage('redGate', 100, 'blue'); // spawn gate VFX + number
-    eval(countSrc);
     const list = s.children.list;
-    const vfxKeys = ['vfx_hit_spark', 'vfx_gate_hit_spark', 'vfx_core_hit_pulse', 'vfx_skill_cast_flash', 'vfx_impact_ring'];
+    // Cover BOTH legacy and themed VFX keys so a themed sprite cannot pass this
+    // check by being invisible to a legacy-only key list.
     const vfxDepths = list.filter((o) => o.texture && vfxKeys.includes(o.texture.key)).map((o) => o.depth);
     const dmgDepths = list.filter((o) => typeof o.text === 'string' && /^-\\d+$/.test(o.text)).map((o) => o.depth);
+    const fxCount = vfxDepths.length;
     const maxFx = Math.max(0, ...vfxDepths, ...dmgDepths);
     // HUD/world-fixed elements live at depth >= 1090 on the main camera.
     const hudMin = 1090;
-    return { maxFx, hudMin, ok: maxFx < hudMin };
-  }, COUNT);
+    return { fxCount, maxFx, hudMin, ok: maxFx < hudMin };
+  }, ALL_VFX_KEYS);
   log('R10–R13 VFX depth below HUD (cannot cover prompt/capture/siege/timer)', layering.ok, JSON.stringify(layering));
 
   // ---------- R14 / R15: controls on UI camera, VFX on world camera ----------

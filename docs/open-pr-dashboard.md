@@ -22,9 +22,9 @@
 https://github.com/nustanakritwithai/ClanWar/pull/52
 Branch: `cursor/phase-4e-runtime-reskin-theme1` — Base SHA: `be02369e76678f204db8a5a1aac54ccecbf963ae`
 
-Files touched: `src/game/theme/Phase4ETheme.ts` (new), `src/game/entities/Objective.ts`, `src/game/scenes/{ClassSelectScene,MatchScene,ResultScene}.ts`, `src/game/systems/{ObjectiveSystem,CaptureSystem,SiegeBuffSystem}.ts`, `src/game/ui/{CombatVfx,SkillButtons,VirtualJoystick}.ts`, `scripts/phase-4e-visual-reskin-regression.mjs` (new). Read-only asset source: `public/assets/phase-4e/theme1/**` (PR #51). No `package.json`/lockfile/README/deploy-config/existing-asset changes. No gameplay rule, formula, timer, or scoring changes.
+Files touched: `src/game/theme/Phase4ETheme.ts` (new), `src/game/entities/Objective.ts`, `src/game/scenes/{ClassSelectScene,MatchScene,ResultScene}.ts`, `src/game/systems/{ObjectiveSystem,CaptureSystem,SiegeBuffSystem}.ts`, `src/game/ui/{CombatVfx,SkillButtons,VirtualJoystick}.ts`, `scripts/phase-4e-visual-reskin-regression.mjs` (new), `scripts/phase-4d-combat-feel-regression.mjs` (test migration patch — test-only). Read-only asset source: `public/assets/phase-4e/theme1/**` (PR #51). No `package.json`/lockfile/README/deploy-config/existing-asset changes. No gameplay rule, formula, timer, or scoring changes.
 
-Regression: new `phase-4e-visual-reskin-regression.mjs` 18/18 PASS; prior suites re-run — 4B/4B-B/4C-A/4C-B/4C-C 75/75 PASS unaffected; 4D combat-feel 12/17 PASS (5 failures are expected legacy-texture-key identity checks superseded by the Theme 1 key swap, not behavior regressions — see `docs/phase-4e-runtime-reskin-report.md`).
+Regression: new `phase-4e-visual-reskin-regression.mjs` 18/18 PASS; prior suites re-run — 4B/4B-B/4C-A/4C-B/4C-C 75/75 PASS unaffected; 4D combat-feel **17/17 PASS** after the theme-aware test migration patch (the 5 prior deltas were expected legacy-texture-key identity drift, now resolved by accepting either the legacy or themed key without weakening behaviour assertions; R6 sample flake also fixed — see `docs/phase-4e-runtime-reskin-report.md` §19).
 
 Full detail: `docs/phase-4e-runtime-reskin-report.md`.
 

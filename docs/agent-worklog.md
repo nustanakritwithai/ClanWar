@@ -5,6 +5,54 @@
 
 ---
 
+## 2026-06-18 — Phase 4E PR #52 test migration patch — theme-aware 4D regression (Agent A)
+
+**Agent:** A (Runtime/Test Fix Owner)
+**Branch:** `cursor/phase-4e-runtime-reskin-theme1` (patches existing Draft PR #52 — no new PR)
+**Base:** `claude/game-file-analysis-a20xup` @ `be02369e76678f204db8a5a1aac54ccecbf963ae`
+**Task:** After Agent F's independent QA returned *QA PASS WITH TEST MIGRATION REQUIRED*, make `scripts/phase-4d-combat-feel-regression.mjs` theme-aware so the main regression stack is green with Theme 1 enabled, without weakening any behaviour assertion. Fix the R6 sample flake.
+
+### Actions taken
+
+1. Added a `VFX_KEYS` legacy→themed mapping table to `scripts/phase-4d-combat-feel-regression.mjs`, mirroring `VFX_THEME_MAP` in `src/game/theme/Phase4ETheme.ts` (with a sync note — the Node regression script cannot import the TS resolver, which also needs a live scene).
+2. Made the in-page `COUNT` helper theme-aware: each of the 5 combat-feel VFX now returns `{ count: legacy + themed, legacy, themed, via }`; assertions read `.count >= 1`, so they still fail when neither key is present (missing VFX never hidden).
+3. Updated R1/R4/R5/R7 to read `.count`; R4 amber and R5 gold damage-number checks left untouched.
+4. R6 flake fix: added `pollCount()` (polls up to ~250 ms for the success flash) and `castSkill1WithFlash()` (retries only a genuinely dropped first keypress — a dropped press leaves the skill off cooldown, so re-pressing is legitimate; a real missing-flash regression still fails because the first silent cast consumes the cooldown and retries are then blocked). Negative trigger preserved: an immediate on-cooldown second `q` must not raise the flash count.
+5. R10–R13 depth check now scans both legacy and themed keys (`ALL_VFX_KEYS`) and reports `fxCount` to prove a VFX node was actually found (`fxCount:1, maxFx:146 < hudMin:1090`), so a themed sprite cannot pass by being invisible to a legacy-only key list.
+6. Ran `npm run build` (PASS) and re-ran the full regression stack against a fresh preview.
+7. Updated `docs/phase-4e-runtime-reskin-report.md` (new §19 test migration patch, §14 table → 17/17, §4 file list, §17 risk bullet), this worklog, and the open-PR dashboard.
+
+### Files changed
+
+- `scripts/phase-4d-combat-feel-regression.mjs` (test-only)
+- `docs/phase-4e-runtime-reskin-report.md`, `docs/agent-worklog.md`, `docs/open-pr-dashboard.md`, `docs/project-status.md`
+
+**No `src/game/**`, `public/assets/**`, `package.json`, `package-lock.json`, README, or deploy/render config change.**
+
+### Verification recorded
+
+- `npm run build` — PASS
+- `scripts/phase-4d-combat-feel-regression.mjs` — **17/17 PASS** (was 12/17 before the migration); R6 verified stable 8/8 across repeated runs
+- `scripts/phase-4e-visual-reskin-regression.mjs` — 18/18 PASS
+- `scripts/phase-4b-objective-regression.mjs` — 15/15 PASS
+- `scripts/phase-4b-b-clarity-regression.mjs` — 13/13 PASS
+- `scripts/phase-4c-a-capture-regression.mjs` — 11/11 PASS
+- `scripts/phase-4c-b-siege-buff-regression.mjs` — 18/18 PASS
+- `scripts/phase-4c-c-timer-score-regression.mjs` — 18/18 PASS
+
+### Did not do
+
+- Did not edit any runtime/gameplay code, asset, `package.json`, lockfile, README, or deploy config
+- Did not weaken/remove any behaviour, depth, mobile, damage-number, or cooldown/negative-trigger assertion
+- Did not open a new PR, mark PR #52 Ready, or merge it
+- Did not start Phase 5A
+
+### Verdict
+
+**TEST MIGRATION READY FOR RE-QA** (Draft PR #52, regression stack now fully green, test-only change — pending Agent F re-QA / Agent E final gate)
+
+---
+
 ## 2026-06-17 — Phase 4E Theme 1 runtime reskin integration (Agent A)
 
 **Agent:** A

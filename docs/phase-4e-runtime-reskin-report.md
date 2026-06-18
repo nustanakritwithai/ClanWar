@@ -34,6 +34,7 @@ https://github.com/nustanakritwithai/ClanWar/pull/52 — **Draft**, titled "Agen
 - `src/game/ui/CombatVfx.ts`
 - `src/game/ui/SkillButtons.ts`
 - `src/game/ui/VirtualJoystick.ts`
+- `scripts/phase-4d-combat-feel-regression.mjs` — test migration patch (theme-aware VFX key checks + R6 flake fix; see §19)
 - `docs/project-status.md`
 - `docs/open-pr-dashboard.md`
 - `docs/agent-worklog.md`
@@ -135,14 +136,14 @@ PASS. Verified by `phase-4e-visual-reskin-regression.mjs` T14, and by the corres
 |---|---|
 | `npm run build` | PASS |
 | `scripts/phase-4e-visual-reskin-regression.mjs` (new) | **18/18 PASS** |
-| `scripts/phase-4d-combat-feel-regression.mjs` | 12/17 PASS — see explanation below |
+| `scripts/phase-4d-combat-feel-regression.mjs` | **17/17 PASS** (after the §19 test migration patch) |
 | `scripts/phase-4b-objective-regression.mjs` | 15/15 PASS |
 | `scripts/phase-4b-b-clarity-regression.mjs` | 13/13 PASS |
 | `scripts/phase-4c-a-capture-regression.mjs` | 11/11 PASS |
 | `scripts/phase-4c-b-siege-buff-regression.mjs` | 18/18 PASS |
 | `scripts/phase-4c-c-timer-score-regression.mjs` | 18/18 PASS |
 
-**4D failure explanation (R1, R4, R5, R6, R7):** these 5 assertions count live scene children whose `texture.key` exactly equals a literal legacy string (`vfx_hit_spark`, `vfx_gate_hit_spark`, `vfx_core_hit_pulse`, `vfx_skill_cast_flash`, `vfx_impact_ring`). Theme 1 intentionally swaps these exact VFX nodes to the namespaced `phase4e_theme1_vfx_*` equivalents when loaded (§9), so the literal-key match returns 0 — this is the expected, required effect of the VFX pixel-swap task item, not a missing or broken VFX. The same VFX presence, count, and depth bound are independently re-verified under their new key names by `phase-4e-visual-reskin-regression.mjs` T9–T11 (themed VFX present) and T12 (depth still < 1090). All other 4D checks not keyed on the literal legacy texture string — R2/R3 (damage numbers), R8/R9 (Core-destroyed result flow timing), R10–R15 (depth-below-HUD across both mobile viewports), R16–R19 (Siege Buff %, capture scoring, timer length, Gate/Core HUD), R20/R21 (copy, console errors) — all PASS unchanged. No script outside the new one was modified.
+**4D history (R1, R4, R5, R6, R7):** these 5 assertions originally counted live scene children whose `texture.key` exactly equalled a literal legacy string (`vfx_hit_spark`, `vfx_gate_hit_spark`, `vfx_core_hit_pulse`, `vfx_skill_cast_flash`, `vfx_impact_ring`). Theme 1 intentionally swaps these exact VFX nodes to the namespaced `phase4e_theme1_vfx_*` equivalents when loaded (§9), so the literal-key match returned 0 in the first draft of this PR (12/17) — an expected texture-key-identity drift, not a missing or broken VFX, independently confirmed by Agent F's QA audit (verdict: *QA PASS WITH TEST MIGRATION REQUIRED*). The §19 test migration patch makes those VFX assertions accept either the legacy key or the themed key, restoring the suite to **17/17** without weakening any behaviour assertion. All other 4D checks — R2/R3 (damage numbers), R8/R9 (Core-destroyed result flow timing), R10–R15 (depth-below-HUD across both mobile viewports), R16–R19 (Siege Buff %, capture scoring, timer length, Gate/Core HUD), R20/R21 (copy, console errors) — were always PASS and remain so.
 
 No script stalled on `networkidle0`; both the new script and all prior scripts use the established `domcontentloaded` + in-page `scene.start()` pattern.
 
@@ -162,7 +163,7 @@ Verified unchanged by the regression results above: damage formula (4D R2/R3, 4C
 ## 17. Known risks
 
 - The 4 HUD-panel backdrop textures and 2 environment parallax/tile groups remain unwired; a future pass should re-attempt them with a dedicated readability/contrast check rather than skip entirely
-- `phase-4d-combat-feel-regression.mjs`'s literal-texture-key assertions (R1, R4–R7) will continue to read as failures for as long as Theme 1 is enabled; if a future agent wants 100% green on that exact script without editing it, the only options are disabling `PHASE4E_THEME1_ENABLED` or updating that script's key list (the latter is out of this PR's allowed-files scope)
+- `phase-4d-combat-feel-regression.mjs`'s VFX assertions are now theme-aware (§19): they pass with Theme 1 enabled (themed keys) **and** with it disabled (legacy keys), so the suite stays green in both modes. The legacy→themed key table in that script mirrors `VFX_THEME_MAP` in `Phase4ETheme.ts` by hand and must be kept in sync if the themed key names ever change (the live `phase-4e-visual-reskin-regression.mjs` T9–T11 would catch a drift by failing on the themed keys)
 - Capture Point "contested" state and Gate "damaged"/"breached" intermediate states have no themed visual; players relying on those specific intermediate cues will see only the legacy/idle texture under Theme 1
 - The single environment parallax layer is low-alpha (0.32) and may read as very subtle on some displays — this was a deliberate readability-over-immersion tradeoff, not an oversight
 - No live/deployed verification was performed for this draft (only local build + local Puppeteer regression) — deploy verification should happen after review, before any Ready/merge step
@@ -172,3 +173,48 @@ Verified unchanged by the regression results above: damage formula (4D R2/R3, 4C
 **RUNTIME RESKIN READY FOR REVIEW**
 
 Draft PR only. Gameplay rules, formulas, timers, and scoring are unchanged and regression-verified. The minimum-acceptable bar for structure, UI/HUD, character, and VFX reskin requirements is met via the smallest safe subset of states, with all deferred states documented above rather than hidden. Not marked Ready. Not merged. Phase 5A not started.
+
+## 19. Test migration patch (theme-aware 4D combat-feel regression)
+
+Follow-up patch applied to this same Draft PR after Agent F's independent QA returned **QA PASS WITH TEST MIGRATION REQUIRED**. Agent F confirmed the 5 prior 4D deltas (R1, R4, R5, R6, R7) were legacy-vs-themed texture-key identity drift — not behaviour regressions (event triggers fire, depth stays safe, damage values/text unchanged, player-facing behaviour preserved) — and flagged a borderline 50 ms sample flake on R6.
+
+**Why the 4D suite needed updating.** A merged PR should not leave the main regression stack red. The 5 failing assertions matched the *exact literal legacy texture key*; Theme 1 deliberately swaps those VFX sprites to namespaced themed keys, so the literal match read 0 even though the VFX node was present and behaving correctly under its new key.
+
+**Scope of the patch.** Only `scripts/phase-4d-combat-feel-regression.mjs` was changed. No runtime, asset, config, or behaviour-assertion change.
+
+**Legacy → themed key mapping** (mirrors `VFX_THEME_MAP` in `src/game/theme/Phase4ETheme.ts`; the regression script runs in Node and cannot import the TS resolver, so the table is duplicated with a sync note):
+
+| Legacy key | Themed key (Theme 1) |
+|---|---|
+| `vfx_hit_spark` | `phase4e_theme1_vfx_normal_hit_spark` |
+| `vfx_gate_hit_spark` | `phase4e_theme1_vfx_gate_hit_spark` |
+| `vfx_core_hit_pulse` | `phase4e_theme1_vfx_core_hit_pulse` |
+| `vfx_skill_cast_flash` | `phase4e_theme1_vfx_skill_cast_flash` |
+| `vfx_impact_ring` | `phase4e_theme1_vfx_impact_ring` |
+
+**How behaviour assertions stay strong (not weakened).**
+- The theme-aware count helper returns `count = legacyCount + themedCount` (plus a `via` field recording which key carried the count, for debugging). Every VFX assertion still requires `count >= 1`, so it **fails if neither** the legacy nor the themed sprite is present — missing VFX is never hidden.
+- Legacy-mode validity is preserved: with `PHASE4E_THEME1_ENABLED = false` the legacy key satisfies the assertion; with it enabled the themed key does. The check is mode-agnostic, not a weakened "optional" check.
+- The R10–R13 depth check now scans **both** legacy and themed keys (`ALL_VFX_KEYS`), so a themed sprite cannot pass the "below HUD" check by being invisible to a legacy-only key list. It reports `fxCount` to prove a VFX node was actually found (currently `fxCount:1, maxFx:146 < hudMin:1090`).
+- Damage-number checks (R2/R3 red, R4 amber `cfa14a`, R5 gold `f4d35e`, depth 150, stroke), the Core-destroyed result-flow checks (R8/R9), Siege/capture/timer/HUD checks (R16–R19), and copy/console checks (R20/R21) are untouched.
+
+**R6 flake fix.** The success flash is a single-frame spawn with ~220 ms life; the old fixed 50 ms sample (and an occasionally dropped first keypress before Phaser's keyboard plugin is ready) could miss it. The patch:
+- polls up to ~250 ms for the success flash instead of sampling once at a fixed offset; and
+- retries **only a genuinely dropped keypress** via `castSkill1WithFlash()` — a dropped press leaves the skill off cooldown, so re-pressing is legitimate. This does not mask a real regression: if a successful cast genuinely produced no flash, the first silent cast consumes the cooldown and every retry is then blocked, so the count stays 0 and the assertion still fails.
+- The negative trigger is preserved: after the success flash, an immediate second `q` (now on cooldown) must not raise the flash count (`castCd.castFlash.count <= castOk.castFlash.count`).
+- Verified stable across 8 consecutive runs (8/8 PASS) plus the regression batch below; no runtime cooldown logic was changed.
+
+**Final regression stack (after patch, against a fresh `npm run build` preview):**
+
+| Script | Result |
+|---|---|
+| `npm run build` | PASS |
+| `scripts/phase-4d-combat-feel-regression.mjs` | **17/17 PASS** |
+| `scripts/phase-4e-visual-reskin-regression.mjs` | 18/18 PASS |
+| `scripts/phase-4b-objective-regression.mjs` | 15/15 PASS |
+| `scripts/phase-4b-b-clarity-regression.mjs` | 13/13 PASS |
+| `scripts/phase-4c-a-capture-regression.mjs` | 11/11 PASS |
+| `scripts/phase-4c-b-siege-buff-regression.mjs` | 18/18 PASS |
+| `scripts/phase-4c-c-timer-score-regression.mjs` | 18/18 PASS |
+
+Still a Draft. Not marked Ready, not merged, no runtime/asset change, Phase 5A not started — awaiting Agent F re-QA / Agent E final gate.
