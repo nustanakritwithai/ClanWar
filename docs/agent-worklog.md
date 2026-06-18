@@ -5,6 +5,42 @@
 
 ---
 
+## 2026-06-18 — Phase 5A-1 Basic Enemy Bot MVP runtime (Agent A)
+
+**Agent:** A (Runtime Implementation)
+**Branch:** `cursor/phase-5a-basic-enemy-bot-mvp`
+**Base:** `claude/game-file-analysis-a20xup` @ `022973c7c9cfbd6ab8de8cb537bdc2577d9ca6dd`
+**Task:** Implement the first enemy bot — a single Basic Red Warrior Bot (melee). Visual + AI runtime only; no gameplay balance changes to player/objective systems.
+
+### Actions taken
+
+1. Added `src/game/data/bot-warrior.ts` — config-driven tuning (HP 600, attack 44, armor 12, moveSpeed 160, detection 360, attackRange 66, cooldown 1600ms, wind-up 550ms, recovery 450ms), all within the planning ranges.
+2. Added `src/game/entities/EnemyBot.ts` — red enemy body (physics hitbox), overhead enemy chevron + name tag, world-space HP bar, melee wind-up warning arc. Fallback-first Phaser Graphics; no new assets.
+3. Added `src/game/systems/BotSystem.ts` — idle → chase → wind-up → attack → recovery → dead state machine, direct-seek chase (speed clamped ≤ player), arc-gated hit at wind-up end, player melee hit hook, debug/snapshot hooks for regression.
+4. Wired `src/game/scenes/MatchScene.ts` — spawn one bot, wall collider, `update()` tick, player attack hits bot, bot hit shows player damage feedback, shutdown cleanup. AI self-freezes when match resolved / not in progress.
+5. Added `scripts/phase-5a-bot-regression.mjs` — R1–R17 + console-error check.
+
+### Regression
+
+- `npm run build` — PASS
+- `phase-5a-bot-regression.mjs` — 18/18
+- `phase-4e-visual-reskin-regression.mjs` — 38/38
+- `phase-4d-combat-feel-regression.mjs` — 17/17
+- `phase-4c-c-timer-score-regression.mjs` — 18/18
+- Prior stack (4B 15/15, 4B-B 13/13, 4C-A 11/11, 4C-B 18/18) — 57/57
+
+### Scope / freeze
+
+- One melee bot only. No respawn in MVP (per combat-feel-plan §5 — death terminal, fresh on Menu↔Match). No objective/Gate/Core AI, no skills, no projectiles, no multi-bot.
+- No change to player damage formula, player stats, attack speed/range, skills, Gate/Core, Capture, Siege Buff, Timer/Score, ResultScene, economy, minimap, multiplayer, or package/deploy config.
+
+### Did not do
+
+- Phase 5B/5C, ranged/objective/multi bots, final bot assets.
+- Mark Ready / merge — Draft PR only.
+
+---
+
 ## 2026-06-18 — Phase 5A bot combat feel plan (planning)
 
 **Agent:** C  

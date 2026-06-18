@@ -1,8 +1,8 @@
 # Project Status
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-18 (Phase 5A planning)  
-> **Base branch:** `claude/game-file-analysis-a20xup` @ `76f75f9`
+> **Last updated:** 2026-06-18 (Phase 5A-1 bot MVP runtime — Agent A draft)  
+> **Base branch:** `claude/game-file-analysis-a20xup` @ `022973c`
 
 ## Current phase
 
@@ -18,9 +18,9 @@
 
 Theme 1 runtime reskin merged (PR #52), in-match character sprite hotfix merged (PR #53), closure docs merged (PR #54), ranged normal attack visual projectiles merged (PR #55 @ `2188e7d`). Visual-only — no gameplay balance changes. Prior 4B–4D systems preserved on live.
 
-**Phase 5A — Basic Enemy Bot MVP** — **DESIGN PLANNING ONLY — IMPLEMENTATION NOT STARTED**
+**Phase 5A-1 — Basic Enemy Bot MVP** — **RUNTIME IN DRAFT (Agent A)**
 
-Agent D bot design plan merged (PR #56). Agent B bot asset plan merged (PR #57). Agent C bot combat feel plan in draft (PR #58). **5A runtime and final assets not started** — requires all planning merges + explicit work order.
+Agent D bot design plan, Agent B bot asset plan, and Agent C bot combat feel plan merged. **Agent A runtime now implemented in draft** — branch `cursor/phase-5a-basic-enemy-bot-mvp`, base `022973c`: one Basic Red Warrior Bot (melee) with detection/chase/wind-up/attack/death, fallback-first Phaser graphics, no final assets. Visual + AI only; all 4B–4E systems frozen. **Not Ready, not merged.** Phase 5B/5C not started.
 
 ## Base snapshot
 
@@ -68,11 +68,11 @@ cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
 
 ## Open PRs
 
-- **Phase 5A bot combat feel plan** — Draft (Agent C) — PR #58 — planning only
+- **Phase 5A-1 Basic Enemy Bot MVP** — Draft (Agent A) — branch `cursor/phase-5a-basic-enemy-bot-mvp`, base `022973c` — first enemy bot runtime. Not Ready, not merged.
 
 ## Agent lane status
 
-**Agent A** — 4E runtime complete (#52–#55 merged); lane clear
+**Agent A** — 4E runtime complete (#52–#55 merged); **5A-1 bot MVP runtime in draft** (this work)
 
 **Agent B** — 4E assets complete (#51 merged); 5A bot asset plan merged (#57)
 
@@ -86,17 +86,18 @@ cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
 
 ## Test / deploy evidence
 
-- `npm run build` — PASS (4E runtime + hotfix)
-- `phase-4e-visual-reskin-regression.mjs` — **38/38 PASS** (includes T30–T38 ranged projectile checks)
+- `npm run build` — PASS (5A-1 bot MVP)
+- `phase-5a-bot-regression.mjs` — **18/18 PASS** (spawn/detect/chase/wind-up/damage/death/reset/mobile/freeze)
+- `phase-4e-visual-reskin-regression.mjs` — **38/38 PASS**
 - `phase-4d-combat-feel-regression.mjs` — 17/17 PASS
 - `phase-4c-c-timer-score-regression.mjs` — 18/18 PASS
-- Prior suites — 57/57 PASS (4B, 4B-B, 4C-A, 4C-B)
+- Prior suites — 57/57 PASS (4B 15/15, 4B-B 13/13, 4C-A 11/11, 4C-B 18/18)
 - Scope guard — PASS
 - GitHub CI — no registered checks
 
 ## Next safe action
 
-**Review Phase 5A bot combat feel plan (Agent C, PR #58).** After all planning PRs merge, issue Agent A implementation work order. Phase 5A runtime and final assets remain **NOT STARTED** and **NOT AUTHORIZED** without explicit work order.
+**One-pass QA of Phase 5A-1 Basic Enemy Bot MVP draft (Agent F).** Do not Ready/merge without explicit authorization. Phase 5B/5C and final bot assets remain **NOT STARTED** and **NOT AUTHORIZED**.
 
 ## Must not do
 

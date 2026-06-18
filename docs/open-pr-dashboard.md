@@ -1,23 +1,29 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-18 (Phase 5A planning)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `76f75f9`
+> **Last updated:** 2026-06-18 (Phase 5A-1 bot MVP runtime draft)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `022973c`
 
 ## Summary
 
 **Phase 4E complete** — PR #52–#55 merged; live verified PASS.
 
-**Phase 5A planning:** Bot design (#56) and asset plan (#57) merged. **Active draft:** bot combat feel plan (Agent C) — PR #58.
+**Phase 5A planning complete:** Bot design (#56), asset plan (#57), combat feel plan (#58) merged.
 
-**Phase 5A:** DESIGN PLANNING ONLY — IMPLEMENTATION NOT STARTED.
+**Active draft:** Phase 5A-1 Basic Enemy Bot MVP runtime (Agent A) — first enemy bot. **Not Ready, not merged.**
 
 ---
 
-## Open PR — Phase 5A Bot Combat Feel Plan (Draft)
+## Open PR — Phase 5A-1 Basic Enemy Bot MVP (Draft)
 
-**Agent C: Phase 5A Bot Combat Feel Plan**  
-Docs-only — Red Warrior melee bot feel, timing, BF-AC, regression plan. No runtime.
+**Agent A: Phase 5A-1 — Basic Enemy Bot MVP**  
+Branch `cursor/phase-5a-basic-enemy-bot-mvp` — Base `022973c7c9cfbd6ab8de8cb537bdc2577d9ca6dd`
+
+New files: `src/game/data/bot-warrior.ts`, `src/game/entities/EnemyBot.ts`, `src/game/systems/BotSystem.ts`, `scripts/phase-5a-bot-regression.mjs`. Touched: `src/game/scenes/MatchScene.ts` (integration), docs. No asset/package/deploy changes. No gameplay balance changes.
+
+One Basic Red Warrior Bot (melee): detection → chase → wind-up telegraph → attack → recovery → death. Fallback-first Phaser graphics; no final assets. No respawn, no objective/Gate/Core AI, no skills, no multi-bot.
+
+Regression: `phase-5a-bot-regression.mjs` **18/18**; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18; prior stack 57/57.
 
 ---
 
