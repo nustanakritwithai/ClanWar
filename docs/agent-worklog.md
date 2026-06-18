@@ -5,6 +5,44 @@
 
 ---
 
+## 2026-06-18 — Phase 5A-3 Bot Brain runtime (Agent A)
+
+**Agent:** A (Runtime Implementation)
+**Branch:** `cursor/phase-5a-3-bot-brain-runtime`
+**Base:** `claude/game-file-analysis-a20xup` @ `8db7847007c02f9d2dcc4173d79f8273e8ad0e32`
+**Task:** Implement the Bot Brain layer (perception / memory / goal / plan / decision) from `docs/phase-5a-bot-brain-design.md`. Single bot; rule-based; no LLM/ML.
+
+### Actions taken
+
+1. `src/game/data/bot-brain-config.ts` — `BOT_BRAIN_CONFIG`: decision weights, memory lifetimes (last-seen 5000ms), investigate/scan/plan-timeout, return-to-spawn distance.
+2. `src/game/ai/BotPerception.ts` — `BotPerception` type + pure `buildPerception()` (distances, range gates, closing/fleeing, hp, cooldown, stuck, state).
+3. `src/game/ai/BotMemory.ts` — short-term, scene-clock-driven memory (last-seen pos/time/dir, prev distance, damage/attack/miss/stuck timestamps, goal history); `clear()` on respawn.
+4. `src/game/ai/BotBrain.ts` — orchestrator: additive `scoreGoals()` + fixed tie-break `pickGoal()` + canonical `planFor()` + `advancePlan()`; `tick()`, `onRespawn()`, snapshot.
+5. `src/game/systems/BotSystem.ts` — builds perception + ticks brain each frame; **executes** the chosen goal with existing 5A-1/5A-2 verbs (combat sub-sequence wind-up→attack→recovery runs to completion unchanged); adds `seekTo()`, brain-facing stuck detection, `getBrainSnapshot()` + debug hooks (`debugSetStuck`, `debugTeleportBot`).
+6. `scripts/phase-5a-bot-brain-regression.mjs` — B1–B18.
+
+`MatchScene.ts`, `EnemyBot.ts`, `bot-warrior.ts`, and `Player.ts` were **not** edited — the brain integrates entirely through `BotSystem`.
+
+### Regression
+
+- `npm run build` — PASS
+- `phase-5a-bot-brain-regression.mjs` — 18/18
+- `phase-5a-bot-regression.mjs` — 20/20 (5A-2 preserved)
+- `phase-4e-visual-reskin-regression.mjs` — 38/38
+- `phase-4d-combat-feel-regression.mjs` — 17/17
+- `phase-4c-c-timer-score-regression.mjs` — 18/18
+
+### Scope / freeze
+
+- Brain is a pure advisor: returns intent; `BotSystem` owns all movement/damage. One bot, melee only. No LLM/ML/API, no behavior tree, no GOAP, no persistent memory, no multi-bot, no objective/Gate/Core/capture AI, no ranged bot, no skills.
+- No change to player stats, player damage formula, 5A-2 bot tuning, Gate/Core, Capture, Siege Buff, Timer/Score, ResultScene, economy, minimap, multiplayer, or package/deploy config.
+
+### Did not do
+
+- Phase 5B/5C. Mark Ready / merge — Draft PR only.
+
+---
+
 ## 2026-06-18 — Phase 5A-3 Bot Brain design plan (Agent D)
 
 **Agent:** D (System Designer / AI Architecture Planner)

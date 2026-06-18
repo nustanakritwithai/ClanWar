@@ -12,6 +12,9 @@ import {
   type BotDifficulty,
   type BotDifficultyProfile,
 } from '../data/bot-warrior';
+import { BotBrain, type BotGoal, type BotBrainSnapshot } from '../ai/BotBrain';
+import { buildPerception } from '../ai/BotPerception';
+import { BOT_BRAIN_CONFIG } from '../data/bot-brain-config';
 
 export interface BotSystemHooks {
   /** Keep bot world objects off the fixed UI camera layer. */
@@ -32,6 +35,7 @@ export interface BotSnapshot {
   armor: number;
   attack: number;
   state: BotState;
+  goal: BotGoal;
   dead: boolean;
   detectionRange: number;
   attackRange: number;
@@ -60,24 +64,30 @@ export interface PlayerMeleeHitResult {
 }
 
 /**
- * Phase 5A-1 / 5A-2 enemy bot AI — single Basic Red Warrior Bot.
+ * Phase 5A-1 / 5A-2 / 5A-3 enemy bot AI — single Basic Red Warrior Bot.
  *
- * Drives the {@link EnemyBot} through a minimal state machine
- * (idle/patrol → chase → wind-up → attack → recovery → dead → respawn) using
- * direct-seek movement (no pathfinding). Damage to the player flows through the
- * existing `Player.takeDamage` / `CombatSystem` path — no player formula change.
- * Bot death does not end the match; only Gate/Core/timer rules do that.
+ * Lifecycle, spawn, update loop, respawn, patrol movement, difficulty,
+ * collisions, and integration with MatchScene. Damage to the player flows
+ * through the existing `Player.takeDamage` / `CombatSystem` path — no player
+ * formula change. Bot death does not end the match.
  *
- * Phase 5A-2 adds: config-driven respawn, a short idle patrol around the spawn
- * anchor, and an `easy | normal | hard` difficulty knob (default `normal`) that
- * scales ONLY bot stats. Scope guard (docs/phase-5a-bot-design.md §3): one bot,
- * melee only, no objective/Gate/Core AI, no skills, no projectiles, no multi-bot.
+ * Phase 5A-3 adds a {@link BotBrain} advisor: each tick BotSystem builds a
+ * perception snapshot, ticks the brain (perception → memory → goal → plan →
+ * decision), and **executes** the chosen goal using the existing 5A-1/5A-2
+ * movement/attack verbs. The brain never moves the body or touches other
+ * systems. The combat sub-sequence (wind-up → attack → recovery) runs to
+ * completion exactly as before — the brain governs the free states only.
+ *
+ * Scope guard: one bot, melee only, rule-based brain (no LLM/ML/API, no big
+ * behavior tree, no GOAP), no objective/Gate/Core AI, no skills, no multi-bot.
  */
 export class BotSystem {
   public readonly bot: EnemyBot;
 
+  private readonly scene: Phaser.Scene;
   private readonly hooks: BotSystemHooks;
   private readonly cfg: BotWarriorConfig;
+  private readonly brain: BotBrain;
 
   private difficulty: BotDifficulty;
   private profile: BotDifficultyProfile;
@@ -98,18 +108,27 @@ export class BotSystem {
   private lastPatrolX = 0;
   private lastPatrolY = 0;
 
+  // Brain-driven stuck detection (separate from patrol's local guard)
+  private stuckAccumMs = 0;
+  private lastStuckX = 0;
+  private lastStuckY = 0;
+  private stuck = false;
+  private debugStuckOverride: boolean | null = null;
+
   constructor(
     scene: Phaser.Scene,
     hooks: BotSystemHooks,
     cfg: BotWarriorConfig = BOT_WARRIOR,
     difficulty: BotDifficulty = DEFAULT_BOT_DIFFICULTY,
   ) {
+    this.scene = scene;
     this.hooks = hooks;
     this.cfg = cfg;
     this.difficulty = difficulty;
     this.profile = BOT_DIFFICULTY_PROFILES[difficulty];
 
     this.bot = new EnemyBot(scene, cfg, (o) => this.hooks.registerWorldObject(o));
+    this.brain = new BotBrain(BOT_BRAIN_CONFIG);
     this.patrolTarget = { x: cfg.spawn.x, y: cfg.spawn.y };
     this.resetPatrol();
   }
@@ -130,17 +149,17 @@ export class BotSystem {
 
   public update(deltaMs: number): void {
     this.bot.update(deltaMs);
+    const now = this.scene.time.now;
 
     if (this.bot.isDead()) {
       this.bot.body.setVelocity(0, 0);
-      // Arm the respawn countdown once, then tick it only while the match runs.
       if (!this.respawnArmed) {
         this.respawnTimer = this.cfg.respawnDelayMs;
         this.respawnArmed = true;
       }
       if (this.hooks.isMatchActive()) {
         this.respawnTimer -= deltaMs;
-        if (this.respawnTimer <= 0) this.respawnBot();
+        if (this.respawnTimer <= 0) this.respawnBot(now);
       }
       return;
     }
@@ -153,79 +172,145 @@ export class BotSystem {
     this.cooldownTimer = Math.max(0, this.cooldownTimer - deltaMs);
 
     const player = this.hooks.getPlayer();
-    const dx = player.x - this.bot.x;
-    const dy = player.y - this.bot.y;
-    const dist = Math.hypot(dx, dy);
-    const angleToPlayer = Math.atan2(dy, dx);
 
-    switch (this.bot.state) {
-      case 'idle':
-        if (dist <= this.cfg.detectionRange) {
-          this.bot.state = 'chase';
-          break;
-        }
-        this.patrol(deltaMs);
-        break;
+    // 1) Perceive → think (brain is a pure advisor).
+    const perception = buildPerception({
+      botX: this.bot.x,
+      botY: this.bot.y,
+      playerX: player.x,
+      playerY: player.y,
+      spawnX: this.cfg.spawn.x,
+      spawnY: this.cfg.spawn.y,
+      detectionRange: this.cfg.detectionRange,
+      attackRange: this.cfg.attackRange,
+      leashRange: this.cfg.leashRange,
+      hpRatio: this.bot.currentHp / this.bot.maxHp,
+      cooldownReady: this.cooldownTimer <= 0,
+      isStuck: this.debugStuckOverride ?? this.stuck,
+      state: this.bot.state,
+      matchActive: true,
+      prevDistanceToPlayer: this.brain.memory.prevDistanceToPlayer,
+      motionDeadband: BOT_BRAIN_CONFIG.motionDeadband,
+    });
+    this.brain.tick(perception, now, deltaMs);
 
-      case 'chase': {
-        if (dist > this.cfg.leashRange) {
-          // Lost aggro — saunter back toward the spawn anchor and idle.
-          this.bot.state = 'idle';
-          this.patrolTarget = { x: this.cfg.spawn.x, y: this.cfg.spawn.y };
-          this.patrolPauseTimer = 0;
+    // 2) The combat sub-sequence runs to completion regardless of the goal —
+    //    the brain never interrupts an in-progress swing.
+    if (this.bot.state === 'windup') {
+      this.bot.body.setVelocity(0, 0);
+      this.windupTimer -= deltaMs;
+      if (this.windupTimer <= 0) {
+        this.bot.hideWindupCue();
+        const hit = this.resolveAttack(player);
+        this.brain.memory.recordAttack(now);
+        if (!hit) this.brain.memory.recordMissedAttack(now);
+        this.bot.state = 'recovery';
+        this.recoveryTimer = this.cfg.recoveryMs;
+        this.cooldownTimer = this.effCooldownMs;
+      }
+      this.updateStuck(deltaMs, false);
+      return;
+    }
+
+    if (this.bot.state === 'recovery') {
+      this.bot.body.setVelocity(0, 0);
+      this.recoveryTimer -= deltaMs;
+      if (this.recoveryTimer <= 0) this.bot.state = 'idle';
+      this.updateStuck(deltaMs, false);
+      return;
+    }
+
+    // 3) Execute the brain's chosen goal with existing movement/attack verbs.
+    this.executeGoal(this.brain.currentGoal(), perception, player, deltaMs);
+  }
+
+  private executeGoal(goal: BotGoal, p: ReturnType<typeof buildPerception>, player: Player, deltaMs: number): void {
+    switch (goal) {
+      case 'attack_player':
+      case 'chase_player': {
+        this.bot.state = 'chase';
+        if (p.playerInAttackRange) {
           this.bot.body.setVelocity(0, 0);
-          break;
-        }
-        if (dist <= this.cfg.attackRange) {
-          // In range: stop and hold. Swing only when the cooldown is ready,
-          // which gives the player a counter-attack window between swings.
-          this.bot.body.setVelocity(0, 0);
-          this.facingAngle = angleToPlayer;
+          this.facingAngle = p.angleToPlayer;
           if (this.cooldownTimer <= 0) {
             this.bot.state = 'windup';
             this.windupTimer = this.effWindupMs;
             this.bot.showWindupCue(this.facingAngle, this.effWindupMs);
           }
+          this.updateStuck(deltaMs, false);
         } else {
-          // Direct seek. Clamp so the bot is never unfairly faster than the
-          // player (per-difficulty cap; even "hard" stays close to fair).
-          const cap = player.moveSpeed * this.profile.maxPlayerSpeedRatio;
-          const speed = Math.min(this.effMoveSpeed, cap);
-          this.bot.body.setVelocity(Math.cos(angleToPlayer) * speed, Math.sin(angleToPlayer) * speed);
-          this.facingAngle = angleToPlayer;
+          this.seekTo(player.x, player.y, this.effMoveSpeed, player.moveSpeed);
+          this.updateStuck(deltaMs, true);
         }
         break;
       }
 
-      case 'windup':
-        this.bot.body.setVelocity(0, 0);
-        this.windupTimer -= deltaMs;
-        if (this.windupTimer <= 0) {
-          this.bot.hideWindupCue();
-          this.resolveAttack(player);
-          this.bot.state = 'recovery';
-          this.recoveryTimer = this.cfg.recoveryMs;
-          this.cooldownTimer = this.effCooldownMs;
+      case 'investigate_last_seen': {
+        this.bot.state = 'idle';
+        const target = this.brain.investigateTarget();
+        if (target && Math.hypot(this.bot.x - target.x, this.bot.y - target.y) > BOT_BRAIN_CONFIG.investigateArriveRadius) {
+          this.seekTo(target.x, target.y, this.effMoveSpeed, player.moveSpeed);
+          this.updateStuck(deltaMs, true);
+        } else {
+          this.bot.body.setVelocity(0, 0); // scanning at the last-seen point
+          this.updateStuck(deltaMs, false);
         }
         break;
+      }
 
-      case 'recovery':
-        this.bot.body.setVelocity(0, 0);
-        this.recoveryTimer -= deltaMs;
-        if (this.recoveryTimer <= 0) {
-          this.bot.state = dist <= this.cfg.detectionRange ? 'chase' : 'idle';
+      case 'return_to_spawn': {
+        this.bot.state = 'idle';
+        if (p.distanceFromSpawn > BOT_BRAIN_CONFIG.investigateArriveRadius) {
+          this.seekTo(this.cfg.spawn.x, this.cfg.spawn.y, this.effMoveSpeed, player.moveSpeed);
+          this.updateStuck(deltaMs, true);
+        } else {
+          this.bot.body.setVelocity(0, 0);
+          this.updateStuck(deltaMs, false);
         }
         break;
+      }
 
-      case 'attack':
-        // Transient — resolution happens inline at wind-up end.
-        this.bot.state = 'recovery';
-        break;
-
-      case 'dead':
+      case 'recover_after_attack': {
+        // The recovery sub-state owns real recovery; here just hold.
+        this.bot.state = 'idle';
         this.bot.body.setVelocity(0, 0);
+        this.updateStuck(deltaMs, false);
         break;
+      }
+
+      case 'patrol_area':
+      default: {
+        this.bot.state = 'idle';
+        this.patrol(deltaMs);
+        this.updateStuck(deltaMs, false); // patrol has its own local stuck guard
+        break;
+      }
     }
+  }
+
+  /** Seek a world point, clamped so the bot is never unfairly faster than the player. */
+  private seekTo(tx: number, ty: number, speed: number, playerMoveSpeed: number): void {
+    const angle = Math.atan2(ty - this.bot.y, tx - this.bot.x);
+    const cap = playerMoveSpeed * this.profile.maxPlayerSpeedRatio;
+    const v = Math.min(speed, cap);
+    this.bot.body.setVelocity(Math.cos(angle) * v, Math.sin(angle) * v);
+    this.facingAngle = angle;
+  }
+
+  /** Brain-facing stuck detection: trying to move but barely displacing. */
+  private updateStuck(deltaMs: number, moving: boolean): void {
+    if (!moving) {
+      this.stuck = false;
+      this.stuckAccumMs = 0;
+      this.lastStuckX = this.bot.x;
+      this.lastStuckY = this.bot.y;
+      return;
+    }
+    const moved = Math.hypot(this.bot.x - this.lastStuckX, this.bot.y - this.lastStuckY);
+    this.stuckAccumMs = moved < 4 ? this.stuckAccumMs + deltaMs : 0;
+    this.stuck = this.stuckAccumMs > 600;
+    this.lastStuckX = this.bot.x;
+    this.lastStuckY = this.bot.y;
   }
 
   /** Short idle saunter around the spawn anchor so the bot never stands frozen. */
@@ -252,13 +337,11 @@ export class BotSystem {
     this.bot.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
     this.facingAngle = angle;
 
-    // Stray guard — if pushed far from spawn (e.g. nudged a wall), head home.
     const spawnDist = Math.hypot(this.bot.x - this.cfg.spawn.x, this.bot.y - this.cfg.spawn.y);
     if (spawnDist > this.cfg.patrolRadius * 1.6) {
       this.patrolTarget = { x: this.cfg.spawn.x, y: this.cfg.spawn.y };
     }
 
-    // Stuck guard — barely moved while trying to walk → repath to spawn + pause.
     const moved = Math.hypot(this.bot.x - this.lastPatrolX, this.bot.y - this.lastPatrolY);
     this.stuckTimer = moved < 4 ? this.stuckTimer + deltaMs : 0;
     if (this.stuckTimer > 500) {
@@ -285,9 +368,13 @@ export class BotSystem {
     this.stuckTimer = 0;
     this.lastPatrolX = this.bot.x;
     this.lastPatrolY = this.bot.y;
+    this.stuckAccumMs = 0;
+    this.stuck = false;
+    this.lastStuckX = this.bot.x;
+    this.lastStuckY = this.bot.y;
   }
 
-  private respawnBot(): void {
+  private respawnBot(now: number): void {
     this.bot.reset();
     this.bot.showSpawnFeedback();
     this.respawnArmed = false;
@@ -295,10 +382,11 @@ export class BotSystem {
     this.recoveryTimer = 0;
     this.cooldownTimer = 0;
     this.resetPatrol();
+    this.brain.onRespawn(now); // clear memory + plan so a fresh bot has no stale chase
   }
 
-  /** Damage resolves only if the player is still in the melee arc at the hit frame. */
-  private resolveAttack(player: Player): void {
+  /** Resolve a swing. Returns true if it connected. Damage only when in arc. */
+  private resolveAttack(player: Player): boolean {
     this.bot.state = 'attack';
     const arc = testMeleeArc(
       this.bot.x,
@@ -310,11 +398,12 @@ export class BotSystem {
       this.cfg.attackRange,
       this.cfg.attackArcDegrees,
     );
-    if (!arc.hit) return; // player dodged out during wind-up
+    if (!arc.hit) return false; // player dodged out during wind-up
 
     this.bot.showAttackFlash();
     const result = player.takeDamage(this.effAttack);
     this.hooks.onBotHitPlayer(result, player.x, player.y);
+    return true;
   }
 
   /** Player basic/melee attack against the bot. Returns null when it misses. */
@@ -329,6 +418,7 @@ export class BotSystem {
     const arc = testMeleeArc(casterX, casterY, facingAngle, this.bot.x, this.bot.y, this.bot.radius, range);
     if (!arc.hit) return null;
     const result = this.bot.takeDamage(rawDamage);
+    this.brain.memory.recordDamageTaken(this.scene.time.now);
     return { result, x: this.bot.x, y: this.bot.y };
   }
 
@@ -349,6 +439,7 @@ export class BotSystem {
       armor: this.bot.armor,
       attack: this.effAttack,
       state: this.bot.state,
+      goal: this.brain.currentGoal(),
       dead: this.bot.isDead(),
       detectionRange: this.cfg.detectionRange,
       attackRange: this.cfg.attackRange,
@@ -359,6 +450,11 @@ export class BotSystem {
       spawnX: this.cfg.spawn.x,
       spawnY: this.cfg.spawn.y,
     };
+  }
+
+  /** Full brain snapshot for headless regression (perception + memory + goal + plan). */
+  public getBrainSnapshot(): BotBrainSnapshot {
+    return this.brain.snapshot();
   }
 
   public getDifficultyInfo(): BotDifficultyInfo {
@@ -383,6 +479,17 @@ export class BotSystem {
   /** Debug-only damage hook for headless regression (not player-facing). */
   public debugDamageBot(amount: number): DamageResult {
     return this.bot.takeDamage(amount);
+  }
+
+  /** Debug-only: force/clear the stuck flag for headless regression. */
+  public debugSetStuck(value: boolean | null): void {
+    this.debugStuckOverride = value;
+  }
+
+  /** Debug-only: teleport the bot body for headless regression. */
+  public debugTeleportBot(x: number, y: number): void {
+    this.bot.sprite.setPosition(x, y);
+    this.bot.body.reset(x, y);
   }
 
   public destroy(): void {
