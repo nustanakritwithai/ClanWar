@@ -5,6 +5,38 @@
 
 ---
 
+## 2026-06-18 — Phase 5A bot asset plan (Agent B)
+
+**Agent:** B  
+**Branch:** `cursor/phase-5a-bot-asset-plan-ebff`  
+**Base:** `claude/game-file-analysis-a20xup` @ `5c6f5d8649e656e97de67c183bb6df6550557a27`  
+**Task:** Phase 5A-1 Basic Enemy Bot MVP — docs-only asset plan
+
+### Actions taken
+
+1. Created `docs/phase-5a-bot-asset-plan.md` — enemy bot visual direction, MVP asset list, naming keys, manifest structure, animation/HP/marker/attack-cue plans, Agent A handoff, mobile constraints
+2. Updated `docs/project-status.md` — Phase 5A design planning only
+3. Updated `docs/open-pr-dashboard.md` — Phase 5A plan draft entry
+4. Opened Draft PR (docs-only)
+
+### Assets reviewed
+
+- `public/assets/phase-4e/theme1/phase4e_char_*_idle.svg` — player scale/style reference
+- `public/assets/combat/training_dummy.svg`, `attack_cone.svg` — contrast / attack geometry reference
+- `public/assets/ui/hp_bar_frame.svg` — HP chrome reference
+- `public/assets/vfx/`, `phase-4e/theme1/phase4e_vfx_*` — hit/death reuse candidates
+
+### Actions NOT taken
+
+- Did not create final game assets
+- Did not edit `src/`, `scripts/`, or `package.json`
+- Did not start Phase 5A runtime or Phase 5B/5C
+- Did not mark PR Ready or merge
+
+### Verdict
+
+**BOT ASSET PLAN READY FOR AGENT A** (planning layer — implementation not started)
+
 ---
 
 ## 2026-06-18 — Phase 5A bot design plan (planning)
