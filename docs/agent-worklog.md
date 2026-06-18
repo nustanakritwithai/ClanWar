@@ -5,6 +5,36 @@
 
 ---
 
+## 2026-06-18 — Phase 5A-4 BotPlayer Class Parity design plan (Agent D)
+
+**Agent:** D (System Designer / AI Architecture Planner)
+**Branch:** `cursor/phase-5a-4-botplayer-parity-design`
+**Base:** `claude/game-file-analysis-a20xup` @ `7435cdc64633ed55bd8b862b6a7e30aa0dcf95b8`
+**Task:** Design the refactor of the enemy from a monster-like `EnemyBot` into a `BotPlayer` — an AI-controlled player using real player-class data. **Docs-only — no runtime, no `src/` changes.**
+
+### Actions taken
+
+1. Created `docs/phase-5a-bot-player-class-parity-design.md` — naming recommendation (`BotPlayer` / `BotPlayerController` / `BotPlayerSystem`), architecture, stat/class-parity (baseline from `HEROES` in `heroes.ts` + bot-only difficulty multipliers), visual parity (warrior sprite via `resolvePhase4eCharacterTexture` + red enemy treatment), controller seam (`BotIntent`), combat parity (shared `testMeleeArc`/`CombatSystem`), staged hybrid migration, acceptance criteria, parity regression plan (T1–T15), Agent A handoff, scope guard, risks.
+2. Updated `docs/project-status.md`, `docs/open-pr-dashboard.md`, `docs/agent-worklog.md`.
+
+### Key design decisions
+
+- **BotPlayer** = same class identity as the human player; only the controller differs (BotBrain vs input). Warrior bot first; architecture supports future classes.
+- Stat baseline from `getHero('warrior')` **by value**; difficulty scales HP/attack/(clamped)moveSpeed only; armor/attackRange identical to class; never mutate `HEROES` or `Player`.
+- Flagged the balance risk: Warrior baseline (atk 70 / spd 190 > Guardian 170) is stronger/faster than the tuned 5A-2 bot → `normal` multipliers tuned to ≈ 5A-2 feel + existing fairness speed clamp.
+- Recommended staged hybrid migration; keep `enemyBot`/`bot*` data-tag strings so 5A-1/5A-2/5A-3 regression hooks survive.
+
+### Scope / freeze
+
+- One bot, Warrior melee only. No multi-bot, ranged, skills, objective/Gate/Core/capture AI, economy, minimap, multiplayer, persistent memory, LLM/API/ML, or Phase 5B/5C.
+- Plan changes no player stats, no player damage formula, no 4B–4C systems.
+
+### Did not do
+
+- No runtime / `src/` edits. No implementation PR. Mark Ready / merge left to Agent E.
+
+---
+
 ## 2026-06-18 — Phase 5A-3 Bot Brain runtime (Agent A)
 
 **Agent:** A (Runtime Implementation)
