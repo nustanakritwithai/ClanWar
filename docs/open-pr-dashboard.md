@@ -1,16 +1,26 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-18 (Phase 4E closure)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `9405d1f`
+> **Last updated:** 2026-06-18 (Agent A ranged normal attack projectile hotfix)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `8767580`
 
 ## Summary
 
 **Phase 4E runtime complete** — PR #52 merged @ `aec453d`, PR #53 hotfix merged @ `9405d1f`, live verified PASS.
 
-**Active draft:** Phase 4E closure docs (Agent E) — pending review/merge.
+**Active draft:** Agent A: Phase 4E Follow-up — Ranged Normal Attack Projectiles — branch `cursor/phase-4e-ranged-normal-attack-projectile`, base `8767580`. Visual-only normal attack projectiles for Ranger/Mage/Priest. **Not Ready, not merged.**
 
 **Phase 5A:** NOT STARTED — NOT AUTHORIZED.
+
+---
+
+## Open PR — Agent A Ranged Normal Attack Projectile Hotfix (Draft)
+
+**Branch:** `cursor/phase-4e-ranged-normal-attack-projectile` — Base SHA: `87675806df9dcd1762bd3afc07a77ac861f504ef`
+
+Files: `src/game/ui/CombatVfx.ts`, `src/game/scenes/MatchScene.ts`, `scripts/phase-4e-visual-reskin-regression.mjs`, docs updates. No asset/package/deploy changes. No gameplay balance changes.
+
+Regression: `phase-4e-visual-reskin-regression.mjs` **38/38**; `phase-4d-combat-feel-regression.mjs` 17/17; `phase-4c-c-timer-score-regression.mjs` 18/18; prior stack 57/57.
 
 ---
 

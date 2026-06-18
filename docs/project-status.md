@@ -1,8 +1,8 @@
 # Project Status
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-18 (Phase 4E closure)  
-> **Base branch:** `claude/game-file-analysis-a20xup` @ `9405d1f`
+> **Last updated:** 2026-06-18 (Agent A ranged normal attack projectile hotfix)  
+> **Base branch:** `claude/game-file-analysis-a20xup` @ `8767580`
 
 ## Current phase
 
@@ -16,7 +16,7 @@
 
 **Phase 4E — Visual Direction / MMORPG 2D Pixel Art Upgrade** — **CLOSED — live verified** (2026-06-18)
 
-Theme 1 runtime reskin merged (PR #52) and in-match character sprite hotfix merged (PR #53). Live verified on https://clan-siege-arena.onrender.com with bundle `index-BrWMfI8H.js`. User-reported in-match character visibility issue resolved — all 5 classes show themed sprites in MatchScene. Visual-only — no gameplay rule changes. Prior 4B–4D systems preserved on live.
+Theme 1 runtime reskin merged (PR #52), in-match character sprite hotfix merged (PR #53). **Current follow-up hotfix active:** ranged normal attack visual projectiles (Ranger/Mage/Priest) — branch `cursor/phase-4e-ranged-normal-attack-projectile`. Visual-only; no gameplay balance changes. **Not merged. Not marked Ready.**
 
 **Phase 5A — NOT STARTED — NOT AUTHORIZED**
 
@@ -54,13 +54,13 @@ a9f5645  Merge pull request #47 (Phase 4D combat feel runtime integration)
 
 ## Open PRs
 
-- **Phase 4E closure docs** — Draft (Agent E) — pending review/merge
+- **Agent A: Phase 4E Follow-up — Ranged Normal Attack Projectiles** — branch `cursor/phase-4e-ranged-normal-attack-projectile`, base `8767580` — visual-only normal attack projectiles for Ranger/Mage/Priest. Draft. Not Ready, not merged.
 
-No active runtime PRs.
+- **Phase 4E closure docs** — Draft (Agent E) — pending review/merge
 
 ## Agent lane status
 
-**Agent A** — 4E runtime + hotfix complete (#52, #53 merged); lane clear
+**Agent A** — 4E runtime + character hotfix merged (#52, #53); **ranged normal attack projectile follow-up active** (this work)
 
 **Agent B** — 4E assets complete (#51 merged); lane clear
 
@@ -75,21 +75,16 @@ No active runtime PRs.
 ## Test / deploy evidence
 
 - `npm run build` — PASS (4E runtime + hotfix)
-- `phase-4e-visual-reskin-regression.mjs` — 29/29 PASS (live verified)
-- `phase-4d-combat-feel-regression.mjs` — 17/17 PASS (live verified)
-- Prior suites — PASS on live (4C-C 18/18, 4B-B 13/13, 4B objective assertions PASS)
-- External live deploy — PASS @ https://clan-siege-arena.onrender.com (2026-06-18)
-- Mobile 915×412 — PASS (live)
-- Mobile 800×360 — PASS (live)
-- Menu ↔ Match ×3 — PASS (live)
+- `phase-4e-visual-reskin-regression.mjs` — **38/38 PASS** (includes T30–T38 ranged projectile checks)
+- `phase-4d-combat-feel-regression.mjs` — 17/17 PASS
+- `phase-4c-c-timer-score-regression.mjs` — 18/18 PASS
+- Prior suites — 57/57 PASS (4B, 4B-B, 4C-A, 4C-B)
 - Scope guard — PASS
 - GitHub CI — no registered checks
 
 ## Next safe action
 
-**Review/merge Phase 4E closure docs PR.**
-
-Phase 5A is **NOT STARTED** and **NOT AUTHORIZED**.
+**Review Agent A Phase 4E ranged normal attack projectile follow-up Draft PR.** Phase 4E core runtime is closed/live verified; this is a visual-only combat-feel follow-up. Do not mark Ready or merge without explicit authorization. Phase 5A is **NOT STARTED** and **NOT AUTHORIZED**.
 
 ## Must not do
 

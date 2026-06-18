@@ -30,7 +30,7 @@ import { MatchTimerSystem, loadMatchTimerAssets } from '../systems/MatchTimerSys
 import { resolveTimeUp, type MatchResolution } from '../data/match-rules';
 import { SkillRuntimeSystem } from '../systems/SkillRuntimeSystem';
 import { showCombatText, showDamageNumber } from '../ui/CombatText';
-import { showAoeMarker, showHealBurst, showHealSpark, showNormalHit, showSkillCastFlash, showImpactBurst, showSlashArc, loadCombatVisualAssets } from '../ui/CombatVfx';
+import { showAoeMarker, showHealBurst, showHealSpark, showNormalHit, showNormalAttackProjectile, showSkillCastFlash, normalAttackProjectileKind, showImpactBurst, showSlashArc, loadCombatVisualAssets } from '../ui/CombatVfx';
 import { isFullscreenActive, requestGameFullscreen } from '../utils/fullscreen';
 import { hasPhase4eTexture, loadPhase4eTheme1Assets, PHASE4E_THEME1_TEXTURES } from '../theme/Phase4ETheme';
 
@@ -226,10 +226,24 @@ export class MatchScene extends Phaser.Scene {
     this.player.playActionFeedback('attack');
     this.movement.showButtonCooldown('attack');
 
+    const facingAngle = this.player.getFacingAngle();
+    const projectileKind = normalAttackProjectileKind(this.player.heroClass);
+    if (projectileKind) {
+      showNormalAttackProjectile(
+        this,
+        this.player.x,
+        this.player.y,
+        facingAngle,
+        this.player.attackRange,
+        projectileKind,
+        (o) => this.registerWorldObject(o),
+      );
+    }
+
     const arc = testMeleeArc(
       this.player.x,
       this.player.y,
-      this.player.getFacingAngle(),
+      facingAngle,
       this.dummy.x,
       this.dummy.y,
       this.dummy.radius,
@@ -256,7 +270,7 @@ export class MatchScene extends Phaser.Scene {
       ownerTeam: PLAYER_TEAM,
       casterX: this.player.x,
       casterY: this.player.y,
-      facingAngle: this.player.getFacingAngle(),
+      facingAngle,
       range: this.player.attackRange,
       rawDamage: this.player.attack,
       playerGateDamageBonus: this.player.gateDamageBonus,
