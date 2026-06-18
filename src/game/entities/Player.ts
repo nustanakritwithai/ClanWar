@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { COLORS, MANA_REGEN_PER_SECOND, PLAYER_RADIUS } from '../constants';
 import { CombatSystem } from '../systems/CombatSystem';
+import { resolvePhase4eCharacterTexture } from '../theme/Phase4ETheme';
 import type { ActionKey, DamageResult, HeroClassId, HeroDefinition } from '../types';
 
 const ACTION_FLASH: Record<ActionKey, { color: number; duration: number; scale?: number }> = {
@@ -14,10 +15,15 @@ const ACTION_FLASH: Record<ActionKey, { color: number; duration: number; scale?:
   item2: { color: 0x38bdf8, duration: 100 },
 };
 
+const CHARACTER_DISPLAY_SIZE = PLAYER_RADIUS * 2.2;
+
 // Phase 3A+: hero stats at runtime; Phase 3B-A adds heal/takeDamage foundation.
+// Phase 4E: circle remains the Arcade physics hitbox; optional themed visualSprite
+// follows the body each frame when Theme 1 character art is loaded.
 export class Player {
   public readonly sprite: Phaser.GameObjects.Arc;
   public readonly body: Phaser.Physics.Arcade.Body;
+  public visualSprite?: Phaser.GameObjects.Image;
 
   public readonly heroClass: HeroClassId;
   public readonly heroName: string;
@@ -36,6 +42,7 @@ export class Player {
   private facing: Phaser.GameObjects.Line;
   private facingAngle = 0;
   private baseFillColor = COLORS.blue;
+  private usingCharacterVisual = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, hero: HeroDefinition) {
     this.scene = scene;
@@ -58,6 +65,18 @@ export class Player {
     this.sprite.setStrokeStyle(3, 0xffffff, 0.9);
     this.sprite.setDepth(100);
 
+    const characterTexture = resolvePhase4eCharacterTexture(scene, hero.id);
+    if (characterTexture) {
+      this.visualSprite = scene.add
+        .image(x, y, characterTexture)
+        .setDisplaySize(CHARACTER_DISPLAY_SIZE, CHARACTER_DISPLAY_SIZE)
+        .setDepth(100)
+        .setTint(COLORS.blue);
+      this.usingCharacterVisual = true;
+      this.sprite.setAlpha(0);
+      this.sprite.setStrokeStyle(0, 0xffffff, 0);
+    }
+
     this.facing = scene.add.line(0, 0, 0, 0, PLAYER_RADIUS + 14, 0, 0xffffff, 0.9);
     this.facing.setOrigin(0, 0);
     this.facing.setDepth(101);
@@ -66,6 +85,18 @@ export class Player {
     this.body = this.sprite.body as Phaser.Physics.Arcade.Body;
     this.body.setCircle(PLAYER_RADIUS);
     this.body.setCollideWorldBounds(true);
+  }
+
+  public hasCharacterVisual(): boolean {
+    return this.usingCharacterVisual && !!this.visualSprite?.visible;
+  }
+
+  public getCharacterVisualTextureKey(): string | undefined {
+    return this.visualSprite?.texture?.key;
+  }
+
+  public hasPhysicsHitbox(): boolean {
+    return this.sprite.active && this.body.enable;
   }
 
   public move(direction: Phaser.Math.Vector2): void {
@@ -79,6 +110,10 @@ export class Player {
 
   public update(): void {
     this.facing.setPosition(this.sprite.x, this.sprite.y);
+    if (this.visualSprite) {
+      this.visualSprite.setPosition(this.sprite.x, this.sprite.y);
+      this.visualSprite.setFlipX(Math.cos(this.facingAngle) < 0);
+    }
   }
 
   public getFacingAngle(): number {
@@ -123,8 +158,7 @@ export class Player {
       .setOrigin(0.5)
       .setDepth(103);
 
-    this.sprite.setFillStyle(0xef4444, 0.9);
-    this.scene.time.delayedCall(120, () => this.sprite.setFillStyle(this.baseFillColor, 1));
+    this.pulseBodyColor(0xef4444, 120);
 
     this.scene.tweens.add({
       targets: flash,
@@ -152,7 +186,40 @@ export class Player {
     this.showDirectionIndicator(action, spec.color);
   }
 
+  private pulseBodyColor(color: number, durationMs: number): void {
+    if (this.usingCharacterVisual && this.visualSprite) {
+      this.visualSprite.setTint(color);
+      this.scene.time.delayedCall(durationMs, () => this.visualSprite?.setTint(this.baseFillColor));
+      return;
+    }
+
+    this.sprite.setFillStyle(color, 0.9);
+    this.scene.time.delayedCall(durationMs, () => this.sprite.setFillStyle(this.baseFillColor, 1));
+  }
+
   private flashBody(color: number, duration: number, peakScale: number): void {
+    if (this.usingCharacterVisual && this.visualSprite) {
+      this.scene.tweens.killTweensOf(this.visualSprite);
+      const baseW = CHARACTER_DISPLAY_SIZE;
+      const baseH = CHARACTER_DISPLAY_SIZE;
+      this.visualSprite.setTint(color);
+      this.visualSprite.setDisplaySize(baseW, baseH);
+
+      this.scene.tweens.add({
+        targets: this.visualSprite,
+        displayWidth: baseW * peakScale,
+        displayHeight: baseH * peakScale,
+        duration: duration * 0.45,
+        yoyo: true,
+        ease: 'Sine.easeOut',
+        onComplete: () => {
+          this.visualSprite?.setTint(this.baseFillColor);
+          this.visualSprite?.setDisplaySize(baseW, baseH);
+        },
+      });
+      return;
+    }
+
     this.scene.tweens.killTweensOf(this.sprite);
 
     this.sprite.setFillStyle(color, 1);
@@ -199,8 +266,7 @@ export class Player {
       .setOrigin(0.5)
       .setDepth(103);
 
-    this.sprite.setFillStyle(color, 0.85);
-    this.scene.time.delayedCall(90, () => this.sprite.setFillStyle(this.baseFillColor, 1));
+    this.pulseBodyColor(color, 90);
 
     this.scene.tweens.add({
       targets: icon,

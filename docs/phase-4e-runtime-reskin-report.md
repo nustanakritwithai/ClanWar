@@ -210,7 +210,7 @@ Follow-up patch applied to this same Draft PR after Agent F's independent QA ret
 |---|---|
 | `npm run build` | PASS |
 | `scripts/phase-4d-combat-feel-regression.mjs` | **17/17 PASS** |
-| `scripts/phase-4e-visual-reskin-regression.mjs` | 18/18 PASS |
+| `scripts/phase-4e-visual-reskin-regression.mjs` | **29/29 PASS** (includes T19–T29 in-match character hotfix checks) |
 | `scripts/phase-4b-objective-regression.mjs` | 15/15 PASS |
 | `scripts/phase-4b-b-clarity-regression.mjs` | 13/13 PASS |
 | `scripts/phase-4c-a-capture-regression.mjs` | 11/11 PASS |
@@ -218,3 +218,30 @@ Follow-up patch applied to this same Draft PR after Agent F's independent QA ret
 | `scripts/phase-4c-c-timer-score-regression.mjs` | 18/18 PASS |
 
 Still a Draft. Not marked Ready, not merged, no runtime/asset change, Phase 5A not started — awaiting Agent F re-QA / Agent E final gate.
+
+## 20. In-match character sprite hotfix
+
+Follow-up hotfix branch: `cursor/phase-4e-inmatch-character-sprite-fix` (separate Draft PR).
+
+**Issue:** Phase 4E character art appeared in Class Select / menu previews, but the in-match player still rendered as the legacy blue circle. PR #52 wired `resolvePhase4eCharacterTexture()` for class-select cards only; `Player.ts` still used `scene.add.circle()` as the sole visible body.
+
+**Fix:** Keep the existing circle + Arcade body as the physics hitbox. Add a separate `visualSprite` image that follows the body each frame. When the themed texture loads successfully, hide the circle (`alpha = 0`, stroke removed) and show the character sprite. If the texture is missing, the circle remains visible — no crash.
+
+**Class texture mapping (existing 5-class roster only):**
+
+| Hero class | Texture key |
+|---|---|
+| guardian | `phase4e_theme1_char_guardian_idle` |
+| warrior | `phase4e_theme1_char_warrior_idle` |
+| ranger | `phase4e_theme1_char_ranger_idle` |
+| mage | `phase4e_theme1_char_mage_idle` |
+| priest | `phase4e_theme1_char_priest_idle` |
+
+Rogue and summoner are not playable; `HERO_CLASS_ORDER` unchanged.
+
+**Fallback behavior:** `resolvePhase4eCharacterTexture()` returns `undefined` when Theme 1 is disabled or the texture is not loaded → player keeps the legacy visible circle.
+
+**Regression:** `scripts/phase-4e-visual-reskin-regression.mjs` extended with T19–T29 — in-match character visual present, texture matches selected class (all 5), physics hitbox preserved, movement/camera/attack/skill/damage numbers intact, Menu ↔ Match ×3 does not duplicate `visualSprite`, mobile 915×412 and 800×360 visibility.
+
+**Hotfix verdict:** **HOTFIX READY FOR RE-QA** — Draft PR only; gameplay rules unchanged.
+

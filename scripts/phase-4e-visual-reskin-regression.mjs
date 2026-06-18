@@ -37,8 +37,16 @@ const THEME1_TEXTURES = [
   'phase4e_theme1_prop_crystal_small', 'phase4e_theme1_prop_ruin_stone',
 ];
 
+const CHARACTER_TEXTURE_BY_CLASS = {
+  guardian: 'phase4e_theme1_char_guardian_idle',
+  warrior: 'phase4e_theme1_char_warrior_idle',
+  ranger: 'phase4e_theme1_char_ranger_idle',
+  mage: 'phase4e_theme1_char_mage_idle',
+  priest: 'phase4e_theme1_char_priest_idle',
+};
+
 let booted = false;
-async function startMatch(page, viewport = { width: 1280, height: 720 }) {
+async function startMatch(page, viewport = { width: 1280, height: 720 }, heroClass = 'warrior') {
   if (!booted) {
     await page.goto(BASE_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForFunction(() => !!window.__CLANWAR_GAME__);
@@ -52,8 +60,15 @@ async function startMatch(page, viewport = { width: 1280, height: 720 }) {
     g.scene.start('MenuScene');
   });
   await sleep(150);
-  await page.evaluate(() => { const g = window.__CLANWAR_GAME__; try { g.scene.stop('MenuScene'); } catch (e) {} g.scene.start('MatchScene', { heroClass: 'warrior' }); });
-  await page.waitForFunction(() => { const s = window.__CLANWAR_GAME__?.scene?.getScene('MatchScene'); return s?.objectiveSystem && s?.matchTimerSystem; });
+  await page.evaluate((hc) => {
+    const g = window.__CLANWAR_GAME__;
+    try { g.scene.stop('MenuScene'); } catch (e) {}
+    g.scene.start('MatchScene', { heroClass: hc });
+  }, heroClass);
+  await page.waitForFunction(() => {
+    const s = window.__CLANWAR_GAME__?.scene?.getScene('MatchScene');
+    return s?.objectiveSystem && s?.matchTimerSystem && s?.player;
+  });
   await sleep(350);
 }
 
@@ -239,6 +254,137 @@ async function main() {
     return { present };
   });
   log('T17 Class select shows themed previews for all 5 existing classes', classSelect.present === 5, JSON.stringify(classSelect));
+
+  // ---------- T19–T29: in-match character sprite hotfix ----------
+  await startMatch(page, { width: 1280, height: 720 }, 'warrior');
+  const inMatchVisual = await page.evaluate(() => {
+    const s = window.__CLANWAR_GAME__.scene.getScene('MatchScene');
+    const p = s.player;
+    return {
+      hasVisual: p.hasCharacterVisual?.() ?? false,
+      texture: p.getCharacterVisualTextureKey?.(),
+      heroClass: p.heroClass,
+      hitbox: p.hasPhysicsHitbox?.() ?? false,
+      circleAlpha: p.sprite?.alpha ?? 1,
+    };
+  });
+  log(
+    'T19 in-match player uses Phase 4E character visual',
+    inMatchVisual.hasVisual && !!inMatchVisual.texture?.startsWith('phase4e_theme1_char_'),
+    JSON.stringify(inMatchVisual),
+  );
+  log(
+    'T20 in-match visual texture matches selected warrior class',
+    inMatchVisual.texture === CHARACTER_TEXTURE_BY_CLASS.warrior && inMatchVisual.heroClass === 'warrior',
+    `${inMatchVisual.heroClass} -> ${inMatchVisual.texture}`,
+  );
+  log(
+    'T21 physics hitbox still exists with character visual',
+    inMatchVisual.hitbox && inMatchVisual.circleAlpha === 0,
+    JSON.stringify({ hitbox: inMatchVisual.hitbox, circleAlpha: inMatchVisual.circleAlpha }),
+  );
+
+  const moveCam = await (async () => {
+    const before = await page.evaluate(() => ({
+      y: window.__CLANWAR_GAME__.scene.getScene('MatchScene').player.y,
+    }));
+    await page.keyboard.down('w');
+    await sleep(400);
+    await page.keyboard.up('w');
+    await sleep(100);
+    return page.evaluate((startY) => {
+      const s = window.__CLANWAR_GAME__.scene.getScene('MatchScene');
+      const cam = s.cameras.main;
+      const followTarget = cam.followTarget ?? cam._follow ?? null;
+      return {
+        moved: startY - s.player.y > 8,
+        camFollowsBody: followTarget === s.player.sprite,
+        visualFollows: Math.abs((s.player.visualSprite?.x ?? 0) - s.player.x) < 1,
+      };
+    }, before.y);
+  })();
+  log('T22 player can still move in-match', moveCam.moved, JSON.stringify(moveCam));
+  log('T23 camera still follows physics body', moveCam.camFollowsBody && moveCam.visualFollows, JSON.stringify(moveCam));
+
+  await startMatch(page, { width: 1280, height: 720 }, 'warrior');
+  await page.evaluate(() => {
+    const s = window.__CLANWAR_GAME__.scene.getScene('MatchScene');
+    s.dummy.sprite.setPosition(s.player.x + 40, s.player.y);
+  });
+  await page.keyboard.down('j');
+  await sleep(60);
+  await page.keyboard.up('j');
+  await sleep(180);
+  const combat = await page.evaluate(() => {
+    const s = window.__CLANWAR_GAME__.scene.getScene('MatchScene');
+    const dmg = s.children.list.some((o) => typeof o.text === 'string' && /^-\d+$/.test(o.text));
+    return { dmg, hasVisual: s.player.hasCharacterVisual?.() ?? false };
+  });
+  log('T24 attack still works with damage numbers', combat.dmg, JSON.stringify(combat));
+
+  await page.keyboard.press('q');
+  await sleep(120);
+  const skill = await page.evaluate(() => {
+    const s = window.__CLANWAR_GAME__.scene.getScene('MatchScene');
+    const cast = s.children.list.some((o) => o.texture && o.texture.key === 'phase4e_theme1_vfx_skill_cast_flash');
+    return { cast, hasVisual: s.player.hasCharacterVisual?.() ?? false };
+  });
+  log('T25 skill cast still works in-match', skill.cast, JSON.stringify(skill));
+
+  const classChecks = [];
+  for (const heroClass of Object.keys(CHARACTER_TEXTURE_BY_CLASS)) {
+    await startMatch(page, { width: 1280, height: 720 }, heroClass);
+    const row = await page.evaluate((expected) => {
+      const s = window.__CLANWAR_GAME__.scene.getScene('MatchScene');
+      return {
+        heroClass: s.player.heroClass,
+        texture: s.player.getCharacterVisualTextureKey?.(),
+        expected,
+      };
+    }, CHARACTER_TEXTURE_BY_CLASS[heroClass]);
+    classChecks.push(row.texture === row.expected && row.heroClass === heroClass);
+  }
+  log(
+    'T26 in-match visual texture matches each playable hero class',
+    classChecks.every(Boolean),
+    `${classChecks.filter(Boolean).length}/${classChecks.length}`,
+  );
+
+  let maxNearPlayerVisuals = 0;
+  for (let i = 0; i < 3; i++) {
+    await startMatch(page, { width: 1280, height: 720 }, 'priest');
+    const row = await page.evaluate(() => {
+      const s = window.__CLANWAR_GAME__.scene.getScene('MatchScene');
+      const key = s.player.getCharacterVisualTextureKey?.();
+      const nearPlayer = s.children.list.filter(
+        (o) => o.texture?.key === key && Math.hypot(o.x - s.player.x, o.y - s.player.y) < 4,
+      ).length;
+      return { nearPlayer, hasVisual: s.player.hasCharacterVisual?.() ?? false };
+    });
+    maxNearPlayerVisuals = Math.max(maxNearPlayerVisuals, row.nearPlayer);
+  }
+  log(
+    'T27 Menu<->Match x3 does not duplicate in-match character visual',
+    maxNearPlayerVisuals === 1,
+    `maxNearPlayerVisuals=${maxNearPlayerVisuals}`,
+  );
+
+  for (const [w, h, id] of [[915, 412, 'T28'], [800, 360, 'T29']]) {
+    await startMatch(page, { width: w, height: h }, 'ranger');
+    const mobilePlayer = await page.evaluate(() => {
+      const s = window.__CLANWAR_GAME__.scene.getScene('MatchScene');
+      return {
+        hasVisual: s.player.hasCharacterVisual?.() ?? false,
+        texture: s.player.getCharacterVisualTextureKey?.(),
+        heroClass: s.player.heroClass,
+      };
+    });
+    log(
+      `${id} mobile ${w}x${h} in-match player character visible`,
+      mobilePlayer.hasVisual && mobilePlayer.texture === CHARACTER_TEXTURE_BY_CLASS.ranger,
+      JSON.stringify(mobilePlayer),
+    );
+  }
 
   // ---------- T18: no fatal console errors ----------
   log('T18 no fatal console errors', errs.length === 0, errs.join('; ') || 'none');
