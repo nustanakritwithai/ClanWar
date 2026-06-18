@@ -1,33 +1,34 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-18 (Phase 5A-2 bot polish runtime draft)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `629756a`
+> **Last updated:** 2026-06-18 (Phase 5A-3 bot brain design plan draft)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `9a3f99c`
 
 ## Summary
 
 **Phase 4E complete** — PR #52–#55 merged; live verified PASS.
 
-**Phase 5A-1 Basic Enemy Bot MVP** — PR #59 merged @ `629756a`.
+**Phase 5A-1 + 5A-2 bot runtime** — PR #59 + #60 merged @ `9a3f99c`.
 
-**Active draft:** Phase 5A-2 Bot Polish runtime (Agent A) — respawn / patrol / difficulty / feedback. **Not Ready, not merged.**
+**Active draft:** Phase 5A-3 Bot Brain **design plan** (Agent D) — docs-only AI architecture (perception/memory/goal/plan/decision). **Planning only, not merged.**
 
 ---
 
-## Open PR — Phase 5A-2 Bot Polish (Draft)
+## Open PR — Phase 5A-3 Bot Brain Design Plan (Draft, docs-only)
 
-**Agent A: Phase 5A-2 — Bot Polish**  
-Branch `cursor/phase-5a-2-bot-polish` — Base `629756ab93fab993b511daaaa8597dad8cdc2bdb`
+**Agent D: Phase 5A-3 — Bot Brain Design Plan**  
+Branch `cursor/phase-5a-3-bot-brain-design` — Base `9a3f99c9bac63bb420dcf49baf91803ca8c3cfc7`
 
-Touched: `src/game/data/bot-warrior.ts`, `src/game/entities/EnemyBot.ts`, `src/game/systems/BotSystem.ts`, `scripts/phase-5a-bot-regression.mjs`, docs. No `MatchScene` change needed. No asset/package/deploy changes. No gameplay balance changes to player/core systems.
+New: `docs/phase-5a-bot-brain-design.md`. Touched: status docs only. **No `src/` changes, no runtime, no scripts.**
 
-Polish for the single Red Warrior Bot: config-driven respawn (delay → reset HP/state/position/visuals, no duplicate), short idle patrol around spawn, `easy|normal|hard` difficulty config (default `normal`, bot-only scaling), and clearer feedback (spawn ring + fade-in, death burst, pulsing wind-up, smooth HP bar, marker bob). Still one melee bot.
-
-Regression: `phase-5a-bot-regression.mjs` **20/20**; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18.
+Lightweight rule-based brain layer so the single bot perceives, remembers the player briefly, holds a goal, queues a 1–3 step plan, and decides by score — investigating last-seen position, returning to patrol when memory expires, and returning to spawn when stuck/off-leash. No LLM/ML/API, no big behavior tree/GOAP, no multi-bot, no objective AI. Includes Agent A implementation handoff + regression plan (`phase-5a-bot-brain-regression.mjs`, B1–B18).
 
 ---
 
 ## Recently merged — Phase 5A
+
+**PR #60 (Agent A)** — Phase 5A-2 Bot Polish  
+MERGED @ `9a3f99c9bac63bb420dcf49baf91803ca8c3cfc7`
 
 **PR #59 (Agent A)** — Phase 5A-1 Basic Enemy Bot MVP  
 MERGED @ `629756ab93fab993b511daaaa8597dad8cdc2bdb`

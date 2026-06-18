@@ -5,6 +5,36 @@
 
 ---
 
+## 2026-06-18 — Phase 5A-3 Bot Brain design plan (Agent D)
+
+**Agent:** D (System Designer / AI Architecture Planner)
+**Branch:** `cursor/phase-5a-3-bot-brain-design`
+**Base:** `claude/game-file-analysis-a20xup` @ `9a3f99c9bac63bb420dcf49baf91803ca8c3cfc7`
+**Task:** Design a lightweight rule-based Bot Brain (perception / memory / goal / plan / decision) for the single enemy bot. **Docs-only — no runtime, no `src/` changes.**
+
+### Actions taken
+
+1. Created `docs/phase-5a-bot-brain-design.md` — brain architecture (4-file default + 6-file variant), the five layers (BotPerception, BotMemory, BotGoal, BotPlan, BotDecision scoring), integration rule (brain advises, BotSystem executes), acceptance criteria, regression plan (`phase-5a-bot-brain-regression.mjs` B1–B18), Agent A implementation handoff, scope guard, and risks.
+2. Updated `docs/project-status.md`, `docs/open-pr-dashboard.md`, `docs/agent-worklog.md`.
+
+### Design summary
+
+- Brain is a **pure advisor**: reads a perception snapshot, returns intent; `BotSystem` keeps owning all movement/damage. New execution primitive: `moveTo(point)` (shared by investigate + return-to-spawn).
+- Short-term memory only (last-seen lifetime ~5s), cleared on respawn.
+- Additive decision scoring with fixed tie-break priority; 1–3 step plan queue with per-step timeout (anti-wedge).
+- Rule-based only — **no LLM/ML/API, no big behavior tree, no full GOAP, no persistent memory.**
+
+### Scope / freeze
+
+- One bot. No multi-bot, objective/Gate/Core/capture AI, ranged bot, bot skills, learning, economy, minimap, multiplayer, or Phase 5B/5C.
+- Plan does not change player stats, player damage formula, 5A-2 bot tuning, or any 4B–4C system.
+
+### Did not do
+
+- No runtime / `src/` edits. No implementation PR. Mark Ready / merge left to Agent E.
+
+---
+
 ## 2026-06-18 — Phase 5A-2 Bot Polish runtime (Agent A)
 
 **Agent:** A (Runtime Implementation)
