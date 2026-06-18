@@ -1,33 +1,36 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-18 (Phase 5A-1 bot MVP runtime draft)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `022973c`
+> **Last updated:** 2026-06-18 (Phase 5A-2 bot polish runtime draft)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `629756a`
 
 ## Summary
 
 **Phase 4E complete** — PR #52–#55 merged; live verified PASS.
 
-**Phase 5A planning complete:** Bot design (#56), asset plan (#57), combat feel plan (#58) merged.
+**Phase 5A-1 Basic Enemy Bot MVP** — PR #59 merged @ `629756a`.
 
-**Active draft:** Phase 5A-1 Basic Enemy Bot MVP runtime (Agent A) — first enemy bot. **Not Ready, not merged.**
-
----
-
-## Open PR — Phase 5A-1 Basic Enemy Bot MVP (Draft)
-
-**Agent A: Phase 5A-1 — Basic Enemy Bot MVP**  
-Branch `cursor/phase-5a-basic-enemy-bot-mvp` — Base `022973c7c9cfbd6ab8de8cb537bdc2577d9ca6dd`
-
-New files: `src/game/data/bot-warrior.ts`, `src/game/entities/EnemyBot.ts`, `src/game/systems/BotSystem.ts`, `scripts/phase-5a-bot-regression.mjs`. Touched: `src/game/scenes/MatchScene.ts` (integration), docs. No asset/package/deploy changes. No gameplay balance changes.
-
-One Basic Red Warrior Bot (melee): detection → chase → wind-up telegraph → attack → recovery → death. Fallback-first Phaser graphics; no final assets. No respawn, no objective/Gate/Core AI, no skills, no multi-bot.
-
-Regression: `phase-5a-bot-regression.mjs` **18/18**; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18; prior stack 57/57.
+**Active draft:** Phase 5A-2 Bot Polish runtime (Agent A) — respawn / patrol / difficulty / feedback. **Not Ready, not merged.**
 
 ---
 
-## Recently merged — Phase 5A planning
+## Open PR — Phase 5A-2 Bot Polish (Draft)
+
+**Agent A: Phase 5A-2 — Bot Polish**  
+Branch `cursor/phase-5a-2-bot-polish` — Base `629756ab93fab993b511daaaa8597dad8cdc2bdb`
+
+Touched: `src/game/data/bot-warrior.ts`, `src/game/entities/EnemyBot.ts`, `src/game/systems/BotSystem.ts`, `scripts/phase-5a-bot-regression.mjs`, docs. No `MatchScene` change needed. No asset/package/deploy changes. No gameplay balance changes to player/core systems.
+
+Polish for the single Red Warrior Bot: config-driven respawn (delay → reset HP/state/position/visuals, no duplicate), short idle patrol around spawn, `easy|normal|hard` difficulty config (default `normal`, bot-only scaling), and clearer feedback (spawn ring + fade-in, death burst, pulsing wind-up, smooth HP bar, marker bob). Still one melee bot.
+
+Regression: `phase-5a-bot-regression.mjs` **20/20**; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18.
+
+---
+
+## Recently merged — Phase 5A
+
+**PR #59 (Agent A)** — Phase 5A-1 Basic Enemy Bot MVP  
+MERGED @ `629756ab93fab993b511daaaa8597dad8cdc2bdb`
 
 **PR #57 (Agent B)** — Phase 5A Bot Asset Plan  
 MERGED @ `76f75f9ae052d6779b13c8ec5387364516806758`

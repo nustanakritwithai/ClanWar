@@ -1,8 +1,8 @@
 # Project Status
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-18 (Phase 5A-1 bot MVP runtime — Agent A draft)  
-> **Base branch:** `claude/game-file-analysis-a20xup` @ `022973c`
+> **Last updated:** 2026-06-18 (Phase 5A-2 Bot Polish runtime — Agent A draft)  
+> **Base branch:** `claude/game-file-analysis-a20xup` @ `629756a`
 
 ## Current phase
 
@@ -18,9 +18,13 @@
 
 Theme 1 runtime reskin merged (PR #52), in-match character sprite hotfix merged (PR #53), closure docs merged (PR #54), ranged normal attack visual projectiles merged (PR #55 @ `2188e7d`). Visual-only — no gameplay balance changes. Prior 4B–4D systems preserved on live.
 
-**Phase 5A-1 — Basic Enemy Bot MVP** — **RUNTIME IN DRAFT (Agent A)**
+**Phase 5A-1 — Basic Enemy Bot MVP** — **MERGED** (PR #59 @ `629756a`)
 
-Agent D bot design plan, Agent B bot asset plan, and Agent C bot combat feel plan merged. **Agent A runtime now implemented in draft** — branch `cursor/phase-5a-basic-enemy-bot-mvp`, base `022973c`: one Basic Red Warrior Bot (melee) with detection/chase/wind-up/attack/death, fallback-first Phaser graphics, no final assets. Visual + AI only; all 4B–4E systems frozen. **Not Ready, not merged.** Phase 5B/5C not started.
+One Basic Red Warrior Bot (melee) with detection/chase/wind-up/attack/death, fallback-first Phaser graphics, no final assets. Visual + AI only; all 4B–4E systems frozen.
+
+**Phase 5A-2 — Bot Polish** — **RUNTIME IN DRAFT (Agent A)**
+
+Respawn, idle patrol, config-driven `easy|normal|hard` difficulty (default `normal`), and combat-feedback clarity (spawn ring, death burst, pulsing wind-up, smooth HP bar). Branch `cursor/phase-5a-2-bot-polish`, base `629756a`. Still one melee bot — no new AI scope. No change to player stats / damage formula / core combat rules. **Not Ready, not merged.** Phase 5B/5C not started.
 
 ## Base snapshot
 
@@ -68,11 +72,11 @@ cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
 
 ## Open PRs
 
-- **Phase 5A-1 Basic Enemy Bot MVP** — Draft (Agent A) — branch `cursor/phase-5a-basic-enemy-bot-mvp`, base `022973c` — first enemy bot runtime. Not Ready, not merged.
+- **Phase 5A-2 Bot Polish** — Draft (Agent A) — branch `cursor/phase-5a-2-bot-polish`, base `629756a` — respawn / patrol / difficulty / feedback polish. Not Ready, not merged.
 
 ## Agent lane status
 
-**Agent A** — 4E runtime complete (#52–#55 merged); **5A-1 bot MVP runtime in draft** (this work)
+**Agent A** — 4E runtime + 5A-1 bot MVP merged (#52–#55, #59); **5A-2 bot polish runtime in draft** (this work)
 
 **Agent B** — 4E assets complete (#51 merged); 5A bot asset plan merged (#57)
 
@@ -86,18 +90,17 @@ cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
 
 ## Test / deploy evidence
 
-- `npm run build` — PASS (5A-1 bot MVP)
-- `phase-5a-bot-regression.mjs` — **18/18 PASS** (spawn/detect/chase/wind-up/damage/death/reset/mobile/freeze)
+- `npm run build` — PASS (5A-2 bot polish)
+- `phase-5a-bot-regression.mjs` — **20/20 PASS** (spawn/patrol/detect/chase/wind-up/damage/death/respawn/difficulty/mobile/freeze)
 - `phase-4e-visual-reskin-regression.mjs` — **38/38 PASS**
 - `phase-4d-combat-feel-regression.mjs` — 17/17 PASS
 - `phase-4c-c-timer-score-regression.mjs` — 18/18 PASS
-- Prior suites — 57/57 PASS (4B 15/15, 4B-B 13/13, 4C-A 11/11, 4C-B 18/18)
 - Scope guard — PASS
 - GitHub CI — no registered checks
 
 ## Next safe action
 
-**One-pass QA of Phase 5A-1 Basic Enemy Bot MVP draft (Agent F).** Do not Ready/merge without explicit authorization. Phase 5B/5C and final bot assets remain **NOT STARTED** and **NOT AUTHORIZED**.
+**One-pass QA of Phase 5A-2 Bot Polish draft (Agent F).** Do not Ready/merge without explicit authorization. Phase 5B/5C and final bot assets remain **NOT STARTED** and **NOT AUTHORIZED**.
 
 ## Must not do
 
