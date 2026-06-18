@@ -1,31 +1,36 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-18 (Phase 5A-3 bot brain design plan draft)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `9a3f99c`
+> **Last updated:** 2026-06-18 (Phase 5A-3 bot brain runtime draft)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `8db7847`
 
 ## Summary
 
 **Phase 4E complete** — PR #52–#55 merged; live verified PASS.
 
-**Phase 5A-1 + 5A-2 bot runtime** — PR #59 + #60 merged @ `9a3f99c`.
+**Phase 5A-1 + 5A-2 bot runtime + 5A-3 brain design** — PR #59, #60, #61 merged @ `8db7847`.
 
-**Active draft:** Phase 5A-3 Bot Brain **design plan** (Agent D) — docs-only AI architecture (perception/memory/goal/plan/decision). **Planning only, not merged.**
+**Active draft:** Phase 5A-3 Bot Brain **runtime** (Agent A) — perception/memory/goal/plan/decision implementation. **Not Ready, not merged.**
 
 ---
 
-## Open PR — Phase 5A-3 Bot Brain Design Plan (Draft, docs-only)
+## Open PR — Phase 5A-3 Bot Brain Runtime (Draft)
 
-**Agent D: Phase 5A-3 — Bot Brain Design Plan**  
-Branch `cursor/phase-5a-3-bot-brain-design` — Base `9a3f99c9bac63bb420dcf49baf91803ca8c3cfc7`
+**Agent A: Phase 5A-3 — Bot Brain Runtime**  
+Branch `cursor/phase-5a-3-bot-brain-runtime` — Base `8db7847007c02f9d2dcc4173d79f8273e8ad0e32`
 
-New: `docs/phase-5a-bot-brain-design.md`. Touched: status docs only. **No `src/` changes, no runtime, no scripts.**
+New: `src/game/ai/BotBrain.ts`, `src/game/ai/BotPerception.ts`, `src/game/ai/BotMemory.ts`, `src/game/data/bot-brain-config.ts`, `scripts/phase-5a-bot-brain-regression.mjs`. Touched: `src/game/systems/BotSystem.ts` (integration), docs. **No `MatchScene`/`Player`/`EnemyBot`/`bot-warrior` edits.** No asset/package/deploy changes.
 
-Lightweight rule-based brain layer so the single bot perceives, remembers the player briefly, holds a goal, queues a 1–3 step plan, and decides by score — investigating last-seen position, returning to patrol when memory expires, and returning to spawn when stuck/off-leash. No LLM/ML/API, no big behavior tree/GOAP, no multi-bot, no objective AI. Includes Agent A implementation handoff + regression plan (`phase-5a-bot-brain-regression.mjs`, B1–B18).
+Rule-based brain advisor: the single bot perceives, remembers the player ~5s, scores goals, queues a 1–3 step plan, and decides before acting — chase, investigate last-seen, return to patrol on memory expiry, return to spawn when stuck/off-leash. Brain returns intent only; `BotSystem` executes. All 5A-2 behavior preserved. No LLM/ML/API, no behavior tree/GOAP, no multi-bot, no objective AI.
+
+Regression: `phase-5a-bot-brain-regression.mjs` **18/18**; `phase-5a-bot-regression` 20/20; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18.
 
 ---
 
 ## Recently merged — Phase 5A
+
+**PR #61 (Agent D)** — Phase 5A-3 Bot Brain Design Plan  
+MERGED @ `8db7847007c02f9d2dcc4173d79f8273e8ad0e32`
 
 **PR #60 (Agent A)** — Phase 5A-2 Bot Polish  
 MERGED @ `9a3f99c9bac63bb420dcf49baf91803ca8c3cfc7`
