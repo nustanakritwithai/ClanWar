@@ -5,6 +5,34 @@
 
 ---
 
+---
+
+## 2026-06-18 — Phase 5A bot design plan (planning)
+
+**Agent:** D  
+**Base:** `claude/game-file-analysis-a20xup` @ `2188e7d`  
+**Task:** Phase 5A-1 Basic Enemy Bot MVP design plan (planning only)
+
+### Actions taken
+
+1. Created `docs/phase-5a-bot-design.md` — Red Warrior Bot, state machine, reuse map, file plan, UX, AC, regression R1–R20
+2. Updated `docs/project-status.md` — 5A DESIGN PLANNING ONLY; implementation not started
+3. Updated `docs/open-pr-dashboard.md` — 5A draft tracking
+4. Opened Draft PR (docs-only) — no runtime/src changes
+
+### Scope
+
+- First autonomous enemy bot (melee, chase, attack, die, respawn)
+- All 4B–4E gameplay frozen; no objectives/economy/multiplayer
+- Phase 5B/5C not started
+
+### Did not do
+
+- Runtime, assets, scripts, src/ edits
+- Phase 5A implementation, Phase 5B/5C
+
+---
+
 ## 2026-06-18 — Phase 4E closure documentation (live verified)
 
 **Agent:** E  
