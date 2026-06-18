@@ -5,6 +5,32 @@
 
 ---
 
+## 2026-06-17 — Phase 4E in-match character sprite hotfix (Agent A)
+
+**Agent:** A (Runtime Engineer)
+**Branch:** `cursor/phase-4e-inmatch-character-sprite-fix`
+**Base:** `claude/game-file-analysis-a20xup` @ `aec453ddef9ce983325bbfc58db5a2ad7bd69332`
+**Task:** Wire Phase 4E character sprites into MatchScene. PR #52 showed themed art in Class Select but left the in-match player as a circle.
+
+### Actions taken
+
+1. Updated `src/game/entities/Player.ts` — circle remains Arcade physics hitbox; added `visualSprite` image via `resolvePhase4eCharacterTexture()`; circle hidden when sprite loads; position synced each frame; fallback to circle when texture missing.
+2. Extended `scripts/phase-4e-visual-reskin-regression.mjs` with T19–T29 in-match character checks (all 5 classes, physics hitbox, movement, camera, attack, skill, damage numbers, reset ×3, mobile viewports).
+3. Updated `docs/phase-4e-runtime-reskin-report.md` §20, `docs/project-status.md`, `docs/open-pr-dashboard.md`, `docs/agent-worklog.md`.
+
+### Scope guard
+
+- No gameplay rule, combat formula, timer, or scoring changes
+- No asset edits; no package/deploy changes
+- Rogue/summoner not added as playable classes
+- Phase 5A not started
+
+### Verdict
+
+**HOTFIX READY FOR RE-QA** — Draft PR only.
+
+---
+
 ## 2026-06-18 — Phase 4E PR #52 test migration patch — theme-aware 4D regression (Agent A)
 
 **Agent:** A (Runtime/Test Fix Owner)

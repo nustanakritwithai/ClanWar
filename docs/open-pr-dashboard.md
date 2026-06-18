@@ -1,18 +1,30 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-17 (Agent A Phase 4E runtime reskin integration draft)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `be02369`
+> **Last updated:** 2026-06-17 (Agent A Phase 4E in-match character sprite hotfix)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `aec453d`
 
 ## Summary
 
 **Phase 4D:** CLOSED — live verified 92/92 (PR #48 closure @ `bf08a0b`).
 
-**Phase 4E:** RUNTIME DRAFT — design spec merged (#49); UX/mobile safe-zones spec merged (#50); Theme 1 asset mock pack merged (#51, read-only source); Agent A runtime reskin integration now open as Draft PR.
+**Phase 4E:** RUNTIME RESKIN LIVE VERIFICATION BLOCKED — in-match character visibility issue found; **hotfix Draft PR active**.
 
-**Active draft:** Agent A: Phase 4E Runtime Reskin Integration — Theme 1 Siege Field — branch `cursor/phase-4e-runtime-reskin-theme1`, base `be02369`. Wires Theme 1 textures into HUD/controls, Gate/Core/Capture Point structures, character-select previews, and the 5 combat-feel VFX call sites behind a single enable toggle. Gameplay rules/scoring/timers/combat formulas unchanged. **Not Ready, not merged.**
+**Active draft (hotfix):** Agent A: Phase 4E In-Match Character Sprite Wiring — branch `cursor/phase-4e-inmatch-character-sprite-fix`, base `aec453d`. Adds `Player.visualSprite` while preserving circle physics hitbox. Gameplay unchanged. **Not Ready, not merged.**
+
+**Prior draft:** Agent A: Phase 4E Runtime Reskin Integration — Theme 1 Siege Field — PR #52, branch `cursor/phase-4e-runtime-reskin-theme1`. Theme 1 textures wired for HUD/structures/class-select/VFX; in-match player sprite was missing (addressed by hotfix above).
 
 **Phase 5A:** NOT STARTED — NOT AUTHORIZED.
+
+---
+
+## Open PR — Agent A Phase 4E In-Match Character Sprite Hotfix (Draft)
+
+**Branch:** `cursor/phase-4e-inmatch-character-sprite-fix` — Base SHA: `aec453ddef9ce983325bbfc58db5a2ad7bd69332`
+
+Files touched: `src/game/entities/Player.ts`, `scripts/phase-4e-visual-reskin-regression.mjs`, docs (`phase-4e-runtime-reskin-report.md`, `project-status.md`, `open-pr-dashboard.md`, `agent-worklog.md`). No asset/package/deploy changes. No gameplay rule changes.
+
+Regression: `phase-4e-visual-reskin-regression.mjs` extended (T19–T29 in-match character checks); prior stack re-run unchanged.
 
 ---
 
