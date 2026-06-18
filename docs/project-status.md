@@ -75,9 +75,9 @@ a9f5645  Merge pull request #47 (Phase 4D combat feel runtime integration)
 
 **Agent D** — 4E UX/mobile safe-zones spec complete (#50 merged); 4D UX complete (#43, #46 merged); lane clear
 
-**Agent E** — 4D closure docs prepared; Agent A 4E runtime draft awaiting gate review
+**Agent E** — Agent A 4E runtime reskin Draft PR #52 awaiting final gate merge
 
-**Agent F** — 4D QA PASS (live corroboration 92/92); 4E runtime reskin not yet QA'd
+**Agent F** — 4D QA PASS (live corroboration 92/92); 4E runtime reskin re-QA PASS — READY WITH PR BODY STALE CAUTION (110/110 local stack)
 
 ## Test / deploy evidence
 
