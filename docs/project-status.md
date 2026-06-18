@@ -1,8 +1,8 @@
 # Project Status
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-18 (Phase 5A design planning)  
-> **Base branch:** `claude/game-file-analysis-a20xup` @ `2188e7d`
+> **Last updated:** 2026-06-18 (Phase 5A bot asset plan)  
+> **Base branch:** `claude/game-file-analysis-a20xup` @ `5c6f5d8`
 
 ## Current phase
 
@@ -20,11 +20,12 @@ Theme 1 runtime reskin merged (PR #52), in-match character sprite hotfix merged 
 
 **Phase 5A — Basic Enemy Bot MVP** — **DESIGN PLANNING ONLY — IMPLEMENTATION NOT STARTED**
 
-Agent D bot design plan in draft (PR #56). **5A runtime not started** — requires design merge + explicit work order. Agent B assets for bot not started.
+Agent D bot design plan merged (PR #56 @ `5c6f5d8`). Agent B bot asset plan in draft (PR #57). **5A runtime and final assets not started** — requires all planning merges + explicit work order.
 
 ## Base snapshot
 
 ```
+5c6f5d8  Merge pull request #56 (Phase 5A bot design plan)
 2188e7d  Merge pull request #55 (Phase 4E ranged normal attack projectiles)
 8767580  Merge pull request #54 (Phase 4E closure docs)
 9405d1f  Merge pull request #53 (Phase 4E in-match character sprite hotfix)
@@ -32,10 +33,9 @@ aec453d  Merge pull request #52 (Phase 4E runtime reskin integration)
 be02369  Merge pull request #51 (Phase 4E Theme 1 asset mock pack)
 8a3ae52  Merge pull request #50 (Phase 4E mobile HUD / UX spec)
 cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
-bf08a0b  Merge pull request #48 (Phase 4D closure docs)
 ```
 
-**Runtime base SHA:** `2188e7d3a5baea82e855a85aa5d3ca1640991db4`
+**Runtime base SHA:** `5c6f5d8649e656e97de67c183bb6df6550557a27`
 
 **Live URL (verified):** https://clan-siege-arena.onrender.com
 
@@ -59,19 +59,24 @@ bf08a0b  Merge pull request #48 (Phase 4D closure docs)
 
 - **PR #54 (E)** — Phase 4E Closure Docs @ `8767580`
 
+## Phase 5A planning (in progress)
+
+- **PR #56 (D)** — Bot Design Plan @ `5c6f5d8` — **MERGED**
+- **PR #57 (B)** — Bot Asset Plan — Draft — planning only
+
 ## Open PRs
 
-- **Phase 5A bot design plan** — Draft (Agent D) — PR #56 — planning only
+- **Phase 5A bot asset plan** — Draft (Agent B) — PR #57 — planning only
 
 ## Agent lane status
 
 **Agent A** — 4E runtime complete (#52–#55 merged); lane clear
 
-**Agent B** — 4E assets complete (#51 merged); lane clear
+**Agent B** — 4E assets complete (#51 merged); Phase 5A bot asset plan in progress (docs-only)
 
 **Agent C** — 4E design complete (#49 merged); lane clear
 
-**Agent D** — 5A bot design plan draft in progress; 4E UX complete (#50 merged)
+**Agent D** — 5A bot design plan merged (#56); 4E UX complete (#50 merged)
 
 **Agent E** — lane clear
 
@@ -89,16 +94,17 @@ bf08a0b  Merge pull request #48 (Phase 4D closure docs)
 
 ## Next safe action
 
-**Review Phase 5A bot design plan (Agent D, PR #56).** Phase 5A implementation is **NOT STARTED** and **NOT AUTHORIZED** without explicit work order.
+**Review Phase 5A bot asset plan (Agent B, PR #57).** Phase 5A implementation and final assets remain **NOT STARTED** and **NOT AUTHORIZED** without explicit work order.
 
 ## Must not do
 
-- Do not start Phase 5A **implementation** without explicit work order (design planning authorized)
+- Do not start Phase 5A **implementation** or create final assets without explicit work order (design planning authorized)
 - Agent E: do not Ready/Merge PRs without explicit authorization
 
 ## Related docs
 
-- [phase-5a-bot-design.md](./phase-5a-bot-design.md) — Phase 5A bot design plan (draft)
+- [phase-5a-bot-design.md](./phase-5a-bot-design.md) — Phase 5A bot design plan (merged)
+- [phase-5a-bot-asset-plan.md](./phase-5a-bot-asset-plan.md) — Phase 5A bot asset plan (draft)
 - [phase-4e-close-report.md](./phase-4e-close-report.md) — Phase 4E closure report
 - [phase-4e-runtime-reskin-report.md](./phase-4e-runtime-reskin-report.md)
 - [phase-close-report.md](./phase-close-report.md)

@@ -1,23 +1,30 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-18 (Phase 5A design planning)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `2188e7d`
+> **Last updated:** 2026-06-18 (Phase 5A bot asset plan)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `5c6f5d8`
 
 ## Summary
 
 **Phase 4E complete** — PR #52–#55 merged; ranged normal attack projectiles merged @ `2188e7d`. Live verified PASS.
 
-**Active draft:** Phase 5A bot design plan (Agent D) — PR #56.
+**Phase 5A planning:** Bot design plan merged (#56 @ `5c6f5d8`). **Active draft:** bot asset plan (Agent B) — PR #57.
 
 **Phase 5A:** DESIGN PLANNING ONLY — IMPLEMENTATION NOT STARTED.
 
 ---
 
-## Open PR — Phase 5A Bot Design (Draft)
+## Open PR — Phase 5A Bot Asset Plan (Draft)
 
-**Agent D: Phase 5A Bot Design Plan — Basic Enemy Bot MVP**  
-Docs-only — Red Warrior Bot, state machine, architecture, regression plan. No runtime.
+**Agent B: Phase 5A Bot Asset Plan — Basic Enemy Bot MVP**  
+Docs-only — `docs/phase-5a-bot-asset-plan.md` + status dashboard refresh.
+
+---
+
+## Recently merged — Phase 5A planning
+
+**PR #56 (Agent D)** — Phase 5A Bot Design Plan  
+MERGED @ `5c6f5d8649e656e97de67c183bb6df6550557a27`
 
 ---
 
@@ -59,9 +66,9 @@ MERGED @ `cc6cbde4e552f49f13e71c320642a44cb2413d53`
 | Agent | Status |
 |-------|--------|
 | A | 4E runtime complete (#52–#55 merged); lane clear |
-| B | 4E assets complete (#51 merged); lane clear |
+| B | 4E assets complete (#51 merged); Phase 5A bot asset plan draft open |
 | C | 4E design complete (#49 merged); lane clear |
-| D | 5A bot design draft open; 4E UX complete (#50 merged) |
+| D | 5A bot design merged (#56); 4E UX complete (#50 merged) |
 | E | lane clear |
 | F | 4E live verification PASS |
 
@@ -69,5 +76,5 @@ MERGED @ `cc6cbde4e552f49f13e71c320642a44cb2413d53`
 
 ## Next safe action
 
-1. Review/merge Phase 5A bot design plan PR (#56)  
-2. Phase 5A implementation remains **NOT STARTED** — requires explicit work order after planning merge
+1. Review/merge Phase 5A bot asset plan PR (#57)  
+2. Phase 5A implementation remains **NOT STARTED** — requires explicit work order after all planning merges
