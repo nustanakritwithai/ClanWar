@@ -5,6 +5,45 @@
 
 ---
 
+## 2026-06-18 — Phase 5A-4 BotPlayer Class Parity runtime (Agent A)
+
+**Agent:** A (Runtime Implementation)
+**Branch:** `cursor/phase-5a-4-botplayer-class-parity-runtime`
+**Base:** `claude/game-file-analysis-a20xup` @ `81e81a59c52d6e89aa1d28406b5bb2a886afd4a3`
+**Task:** Refactor the enemy from a monster-like `EnemyBot` into a `BotPlayer` — an AI-controlled Warrior using real player-class data (per `docs/phase-5a-bot-player-class-parity-design.md`, staged hybrid).
+
+### Actions taken
+
+1. `src/game/data/bot-player-config.ts` — `classId: 'warrior'` config + difficulty multiplier table (`normal` tuned to ≈ 5A-2 feel: hp×0.63, atk×0.63, spd×0.84).
+2. `src/game/entities/BotPlayer.ts` — class-driven entity: Warrior sprite via `resolvePhase4eCharacterTexture` tinted red + enemy ring/marker/HP bar (red-circle fallback retained); shared `CombatSystem` damage; preserved data-tags (`enemyBot`/`botEnemyMarker`/`botHpBar`/`botAttackWarning`).
+3. `src/game/controllers/BotPlayerController.ts` — brain goal → neutral `BotIntent` seam.
+4. `src/game/systems/BotPlayerSystem.ts` — evolved from `BotSystem`: reads Warrior baseline **by value** from `getHero('warrior')`, applies bot-only difficulty multipliers + fairness clamp, ticks the brain, executes intents; `classId` in snapshot + `getClassBaseline()`.
+5. `src/game/systems/BotSystem.ts` + `src/game/entities/EnemyBot.ts` → thin **compatibility aliases** re-exporting the new modules (MatchScene + prior tests unchanged). `src/game/ai/BotPerception.ts` — `BotState` import retargeted to `BotPlayer` (no behavior change).
+6. `scripts/phase-5a-bot-player-parity-regression.mjs` — T1–T17.
+
+`MatchScene.ts`, `Player.ts`, `heroes.ts`, and the brain logic were **not** edited.
+
+### Regression
+
+- `npm run build` — PASS
+- `phase-5a-bot-player-parity-regression.mjs` — 17/17
+- `phase-5a-bot-brain-regression.mjs` — 18/18 (preserved)
+- `phase-5a-bot-regression.mjs` — 20/20 (preserved)
+- `phase-4e-visual-reskin-regression.mjs` — 38/38
+- `phase-4d-combat-feel-regression.mjs` — 17/17
+- `phase-4c-c-timer-score-regression.mjs` — 18/18
+
+### Scope / freeze
+
+- One bot, Warrior melee only. No multi-bot, ranged, skills, objective/Gate/Core/capture AI, LLM/ML, or Phase 5B/5C.
+- Stat baseline read by value; `HEROES` never mutated; human player class stats unchanged (verified all 5). No change to player damage formula or any 4B–4C system.
+
+### Did not do
+
+- Other class bots, ranged/skills. Mark Ready / merge — Draft PR only.
+
+---
+
 ## 2026-06-18 — Phase 5A-4 BotPlayer Class Parity design plan (Agent D)
 
 **Agent:** D (System Designer / AI Architecture Planner)
