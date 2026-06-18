@@ -5,6 +5,41 @@
 
 ---
 
+## 2026-06-18 — Phase 5A-2 Bot Polish runtime (Agent A)
+
+**Agent:** A (Runtime Implementation)
+**Branch:** `cursor/phase-5a-2-bot-polish`
+**Base:** `claude/game-file-analysis-a20xup` @ `629756ab93fab993b511daaaa8597dad8cdc2bdb`
+**Task:** Polish the single Basic Red Warrior Bot — respawn, idle patrol, config-driven difficulty, and combat-feedback clarity. Still one melee bot; no new AI scope.
+
+### Actions taken
+
+1. `src/game/data/bot-warrior.ts` — added `respawnDelayMs` (4000), patrol config (radius 110, speedMul 0.42, pause 700–1500ms), and an `easy | normal | hard` difficulty system (`BOT_DIFFICULTY_PROFILES`, default `normal`) that scales bot-only stats + a per-difficulty fairness speed cap.
+2. `src/game/entities/EnemyBot.ts` — smooth HP-bar lerp, spawn ring + fade-in (`showSpawnFeedback`), clearer death burst, pulsing/brighter wind-up telegraph, gentle marker bob, self-registers world objects for the UI-camera ignore list.
+3. `src/game/systems/BotSystem.ts` — idle patrol around spawn (with stray/stuck guards), config-driven respawn (arms on death, ticks only while match active, restores HP/state/position/visuals, no duplicate), difficulty-scaled effective stats + fairness clamp, `getDifficultyInfo` / `debugSetDifficulty` hooks.
+4. `scripts/phase-5a-bot-regression.mjs` — expanded to R1–R20 (adds patrol, respawn delay/HP/visuals/no-duplicate, difficulty config + no-player-mutation).
+
+`MatchScene.ts` unchanged — difficulty defaults to `normal`; no integration change needed.
+
+### Regression
+
+- `npm run build` — PASS
+- `phase-5a-bot-regression.mjs` — 20/20
+- `phase-4e-visual-reskin-regression.mjs` — 38/38
+- `phase-4d-combat-feel-regression.mjs` — 17/17
+- `phase-4c-c-timer-score-regression.mjs` — 18/18
+
+### Scope / freeze
+
+- Still ONE melee bot. No multi-bot, team/objective/Gate/Core/capture AI, ranged bot, bot skills, economy, minimap, multiplayer, or Phase 5B/5C.
+- No change to player stats, player damage formula, or core combat rules. Bot death does not end the match.
+
+### Did not do
+
+- Mark Ready / merge — Draft PR only.
+
+---
+
 ## 2026-06-18 — Phase 5A-1 Basic Enemy Bot MVP runtime (Agent A)
 
 **Agent:** A (Runtime Implementation)
