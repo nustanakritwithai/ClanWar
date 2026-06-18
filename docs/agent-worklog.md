@@ -5,6 +5,32 @@
 
 ---
 
+## 2026-06-18 — Phase 5A bot combat feel plan (planning)
+
+**Agent:** C  
+**Base:** `claude/game-file-analysis-a20xup` @ `76f75f9`  
+**Task:** Phase 5A Red Warrior bot combat feel and fight design plan (docs-only)
+
+### Actions taken
+
+1. Created `docs/phase-5a-bot-combat-feel-plan.md` — first bot MVP, tuning ranges, state feel, BF-AC, regression R1–R21, scope guard
+2. Updated `docs/project-status.md` — 5A DESIGN PLANNING ONLY; implementation not started
+3. Updated `docs/open-pr-dashboard.md` — 5A draft PR tracking
+4. Opened Draft PR (docs-only) — no runtime/assets/scripts
+
+### Scope
+
+- Combat feel, timing, readability, difficulty — not Agent D architecture
+- Level 1 only: one Red Warrior melee bot
+- All 4B–4E systems frozen
+
+### Did not do
+
+- Runtime, assets, scripts
+- Phase 5B/5C implementation
+
+---
+
 ## 2026-06-18 — Phase 5A bot asset plan (Agent B)
 
 **Agent:** B  
