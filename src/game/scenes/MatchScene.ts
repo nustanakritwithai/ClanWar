@@ -20,6 +20,7 @@ import {
 import type { ActionKey, HeroClassId, MapMarker, MatchSceneData, SkillDefinition, SkillRuntimeType } from '../types';
 import { Player } from '../entities/Player';
 import { TrainingDummy } from '../entities/TrainingDummy';
+import { BotSystem } from '../systems/BotSystem';
 import { InputSystem } from '../systems/InputSystem';
 import { ProjectileSystem } from '../systems/ProjectileSystem';
 import { MapRenderer, loadMapVisualAssets } from '../systems/MapRenderer';
@@ -50,6 +51,7 @@ export class MatchScene extends Phaser.Scene {
   private heroClass: HeroClassId = 'guardian';
   public player!: Player;
   public dummy!: TrainingDummy;
+  public botSystem!: BotSystem;
   private movement!: InputSystem;
   private skillRuntime!: SkillRuntimeSystem;
   private walls!: Phaser.Physics.Arcade.StaticGroup;
@@ -145,8 +147,19 @@ export class MatchScene extends Phaser.Scene {
     this.dummy = new TrainingDummy(this, map.playerSpawn.x, map.playerSpawn.y - 350);
     this.skillRuntime = new SkillRuntimeSystem(this.heroClass);
 
+    // Phase 5A-1: single Basic Red Warrior Bot. AI self-freezes when the match
+    // is resolved / not in progress so bot death never affects Gate/Core/timer.
+    this.botSystem = new BotSystem(this, {
+      registerWorldObject: (obj) => this.registerWorldObject(obj),
+      getPlayer: () => this.player,
+      onBotHitPlayer: (result, x, y) => this.handleBotHitPlayer(result, x, y),
+      isMatchActive: () =>
+        !this.matchResolved && this.objectiveSystem.getMatchPhase() === 'in_progress',
+    });
+
     this.physics.add.collider(this.player.sprite, this.walls);
     this.physics.add.collider(this.dummy.sprite, this.walls);
+    this.physics.add.collider(this.botSystem.bot.sprite, this.walls);
 
     this.cameras.main.startFollow(this.player.sprite, true, 0.12, 0.12);
     this.cameras.main.setZoom(this.computeZoom());
@@ -199,6 +212,7 @@ export class MatchScene extends Phaser.Scene {
     this.player.move(dir);
     this.player.update();
     this.dummy.update();
+    this.botSystem.update(delta);
     this.projectileSystem.update(deltaSeconds, this.dummy);
 
     this.processActions();
@@ -266,6 +280,22 @@ export class MatchScene extends Phaser.Scene {
       }
     }
 
+    const botHit = this.botSystem.tryPlayerMeleeHit(
+      this.player.x,
+      this.player.y,
+      facingAngle,
+      this.player.attackRange,
+      this.player.attack,
+    );
+    if (botHit) {
+      showNormalHit(this, botHit.x, botHit.y, (o) => this.registerWorldObject(o));
+      const text = showDamageNumber(this, botHit.x, botHit.y - 24, botHit.result.finalDamage, 'normal');
+      this.registerWorldObject(text);
+      hitMessage = botHit.result.killed
+        ? `Enemy down (${botHit.result.finalDamage})`
+        : `Attack hit ${botHit.result.finalDamage}`;
+    }
+
     const objResult = this.objectiveSystem.applyMeleeArcDamage({
       ownerTeam: PLAYER_TEAM,
       casterX: this.player.x,
@@ -280,6 +310,29 @@ export class MatchScene extends Phaser.Scene {
     }
 
     this.setCombatResult(hitMessage);
+  }
+
+  /** Bot landed a melee hit on the player — show hit feedback + damage number. */
+  private handleBotHitPlayer(result: { finalDamage: number }, x: number, y: number): void {
+    showNormalHit(this, x, y, (o) => this.registerWorldObject(o));
+    const text = showDamageNumber(this, x, y - 24, result.finalDamage, 'normal');
+    this.registerWorldObject(text);
+    this.flashPlayerHurt();
+    this.setCombatResult(`Enemy hit you ${result.finalDamage}`);
+  }
+
+  /** Brief red tint on the active player visual when struck (no Player.ts change). */
+  private flashPlayerHurt(): void {
+    const target = this.player.visualSprite ?? this.player.sprite;
+    this.tweens.killTweensOf(target);
+    if (this.player.visualSprite) {
+      this.player.visualSprite.setTint(0xef4444);
+      this.time.delayedCall(140, () => this.player.visualSprite?.setTint(COLORS.blue));
+    } else {
+      const arc = this.player.sprite;
+      arc.setFillStyle(0xef4444, 1);
+      this.time.delayedCall(140, () => arc.setFillStyle(COLORS.blue, 1));
+    }
   }
 
   private handleSimpleAction(action: ActionKey, label: string): void {
@@ -773,6 +826,7 @@ export class MatchScene extends Phaser.Scene {
       this.fullscreenChangeHandler = undefined;
     }
 
+    this.botSystem.destroy();
     this.projectileSystem.destroy();
     this.matchTimerSystem.destroy();
     this.siegeBuffSystem.destroy();
