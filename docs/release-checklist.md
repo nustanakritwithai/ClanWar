@@ -1,7 +1,53 @@
 # Release Checklist
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-17
+> **Last updated:** 2026-06-18
+
+---
+
+## Phase 4E — Visual Direction / MMORPG 2D Pixel Art Runtime Reskin (CLOSED)
+
+**Runtime base:** `9405d1fba15a4c4195ec67ffdc50c7772bbf4f05`  
+**Live URL:** https://clan-siege-arena.onrender.com  
+**Live bundle:** `index-BrWMfI8H.js`  
+**Closure date:** 2026-06-18
+
+### Planning gates
+
+- [x] PR #49 visual design spec merged @ `cc6cbde`
+- [x] PR #50 mobile HUD / UX spec merged @ `8a3ae52`
+- [x] PR #51 Theme 1 asset mock pack merged @ `be02369`
+
+### Runtime gates
+
+- [x] PR #52 runtime reskin merged @ `aec453d`
+- [x] PR #53 in-match character hotfix merged @ `9405d1f`
+- [x] Agent F re-QA PASS (PR #52 test migration + PR #53 hotfix)
+- [x] Agent E final gate PASS — PR #52 and #53 merged
+
+### Post-merge live verification
+
+- [x] HTTP 200 on live URL
+- [x] Live deploy fresh after PR #53 merge
+- [x] Live bundle `index-BrWMfI8H.js` (post hotfix)
+- [x] Phase 4E theme markers + PR #53 character sprite markers present
+- [x] All 5 in-match class sprites verified on live
+- [x] `phase-4e-visual-reskin-regression.mjs` — 29/29 PASS on live
+- [x] `phase-4d-combat-feel-regression.mjs` — 17/17 PASS on live
+- [x] Prior suites PASS on live (4C-C 18/18, 4B-B 13/13, 4B objective PASS)
+- [x] Live mobile 915×412 PASS
+- [x] Live mobile 800×360 PASS
+- [x] Menu ↔ Match ×3 PASS
+- [x] Scope guard PASS — no Phase 5A
+- [x] Zero fatal console errors
+- [x] No asset 404
+- [x] User in-match character issue resolved
+
+### Closure
+
+- [x] Phase 4E closure report prepared
+- [x] Project status updated
+- [ ] Phase 4E closure docs PR merged (pending)
 
 ---
 

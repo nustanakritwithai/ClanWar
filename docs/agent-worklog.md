@@ -5,6 +5,41 @@
 
 ---
 
+## 2026-06-18 — Phase 4E closure documentation (live verified)
+
+**Agent:** E  
+**Base:** `claude/game-file-analysis-a20xup` @ `9405d1f`  
+**Task:** Phase 4E closure documentation after live verification PASS (post PR #53)
+
+### Actions taken
+
+1. Created `docs/phase-4e-close-report.md` — formal Phase 4E closure report
+2. Updated `docs/phase-close-report.md` — Phase 4E closure section prepended
+3. Updated `docs/project-status.md` — 4E closed live verified, 5A not authorized
+4. Updated `docs/final-gate-report.md` — Phase 4E final gate verdict
+5. Updated `docs/release-checklist.md` — 4E all gates checked
+6. Updated `docs/open-pr-dashboard.md` — PR #49–#53 merged, closure docs draft
+7. Opened Draft PR for closure docs (docs-only)
+
+### Verification recorded
+
+- PR #49–#53 merged; final base `9405d1f`
+- Live verification: **LIVE VERIFIED — IN-MATCH CHARACTER SPRITE HOTFIX PASS**
+- Live bundle: `index-BrWMfI8H.js`
+- User issue resolved: in-match character visible for all 5 classes
+
+### Actions NOT taken
+
+- Did not start Phase 5A
+- Did not edit runtime, assets, or scripts
+- Did not mark closure PR Ready or merge
+
+### Verdict
+
+**PHASE 4E CLOSED — LIVE VERIFIED** (pending closure docs PR merge)
+
+---
+
 ## 2026-06-17 — Phase 4E in-match character sprite hotfix (Agent A)
 
 **Agent:** A (Runtime Engineer)
