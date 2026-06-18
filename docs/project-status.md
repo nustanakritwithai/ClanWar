@@ -1,8 +1,8 @@
 # Project Status
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-18 (Phase 5A-2 Bot Polish runtime — Agent A draft)  
-> **Base branch:** `claude/game-file-analysis-a20xup` @ `629756a`
+> **Last updated:** 2026-06-18 (Phase 5A-3 Bot Brain design plan — Agent D, docs-only)  
+> **Base branch:** `claude/game-file-analysis-a20xup` @ `9a3f99c`
 
 ## Current phase
 
@@ -22,9 +22,13 @@ Theme 1 runtime reskin merged (PR #52), in-match character sprite hotfix merged 
 
 One Basic Red Warrior Bot (melee) with detection/chase/wind-up/attack/death, fallback-first Phaser graphics, no final assets. Visual + AI only; all 4B–4E systems frozen.
 
-**Phase 5A-2 — Bot Polish** — **RUNTIME IN DRAFT (Agent A)**
+**Phase 5A-2 — Bot Polish** — **MERGED** (PR #60 @ `9a3f99c`)
 
-Respawn, idle patrol, config-driven `easy|normal|hard` difficulty (default `normal`), and combat-feedback clarity (spawn ring, death burst, pulsing wind-up, smooth HP bar). Branch `cursor/phase-5a-2-bot-polish`, base `629756a`. Still one melee bot — no new AI scope. No change to player stats / damage formula / core combat rules. **Not Ready, not merged.** Phase 5B/5C not started.
+Respawn, idle patrol, config-driven `easy|normal|hard` difficulty (default `normal`), and combat-feedback clarity (spawn ring, death burst, pulsing wind-up, smooth HP bar). Still one melee bot; no change to player stats / damage formula / core combat rules.
+
+**Phase 5A-3 — Bot Brain (Memory / Goal / Decision)** — **DESIGN PLANNING ONLY — IMPLEMENTATION NOT STARTED**
+
+Agent D design plan (this work) — a lightweight rule-based perception/memory/goal/plan/decision layer so the single bot remembers the player briefly, investigates last-seen position, and returns to patrol/spawn deliberately. Docs-only; no `src/` changes. Runtime requires a future Agent A work order + Agent E scope gate. No LLM/ML, no big behavior tree/GOAP, no multi-bot, no objective AI. Phase 5B/5C not started.
 
 ## Base snapshot
 
@@ -72,17 +76,17 @@ cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
 
 ## Open PRs
 
-- **Phase 5A-2 Bot Polish** — Draft (Agent A) — branch `cursor/phase-5a-2-bot-polish`, base `629756a` — respawn / patrol / difficulty / feedback polish. Not Ready, not merged.
+- **Phase 5A-3 Bot Brain Design Plan** — Draft (Agent D) — branch `cursor/phase-5a-3-bot-brain-design`, base `9a3f99c` — docs-only AI architecture plan (perception/memory/goal/plan/decision). Planning only, not merged.
 
 ## Agent lane status
 
-**Agent A** — 4E runtime + 5A-1 bot MVP merged (#52–#55, #59); **5A-2 bot polish runtime in draft** (this work)
+**Agent A** — 4E runtime + 5A-1/5A-2 bot runtime merged (#52–#55, #59, #60); lane clear
 
 **Agent B** — 4E assets complete (#51 merged); 5A bot asset plan merged (#57)
 
 **Agent C** — 5A bot combat feel plan draft in progress; 4E design complete (#49 merged)
 
-**Agent D** — 5A bot design plan merged (#56); 4E UX complete (#50 merged)
+**Agent D** — 5A bot design plan merged (#56); **5A-3 bot brain design plan in draft** (this work); 4E UX complete (#50 merged)
 
 **Agent E** — lane clear
 
@@ -90,17 +94,13 @@ cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
 
 ## Test / deploy evidence
 
-- `npm run build` — PASS (5A-2 bot polish)
-- `phase-5a-bot-regression.mjs` — **20/20 PASS** (spawn/patrol/detect/chase/wind-up/damage/death/respawn/difficulty/mobile/freeze)
-- `phase-4e-visual-reskin-regression.mjs` — **38/38 PASS**
-- `phase-4d-combat-feel-regression.mjs` — 17/17 PASS
-- `phase-4c-c-timer-score-regression.mjs` — 18/18 PASS
-- Scope guard — PASS
+- Phase 5A-2 runtime (merged @ `9a3f99c`): build PASS; `phase-5a-bot-regression.mjs` 20/20; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18.
+- Phase 5A-3 is **design planning only** — no build/test deliverable this PR (docs-only).
 - GitHub CI — no registered checks
 
 ## Next safe action
 
-**One-pass QA of Phase 5A-2 Bot Polish draft (Agent F).** Do not Ready/merge without explicit authorization. Phase 5B/5C and final bot assets remain **NOT STARTED** and **NOT AUTHORIZED**.
+**Review Phase 5A-3 Bot Brain design plan (Agent D).** After merge + explicit work order + Agent E scope gate, issue the Agent A 5A-3 runtime work order. Phase 5A-3 runtime, Phase 5B/5C, and final bot assets remain **NOT STARTED** and **NOT AUTHORIZED**.
 
 ## Must not do
 
