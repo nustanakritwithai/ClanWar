@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { COMPACT_LAYOUT_HEIGHT, PLAYER_TEAM } from '../constants';
+import { hasPhase4eTexture, PHASE4E_THEME1_TEXTURES } from '../theme/Phase4ETheme';
 import { siegeBuffActive, SIEGE_RUINS_GATE_BONUS } from '../data/siege-buff';
 import type { CaptureSystem } from './CaptureSystem';
 import type { TeamId } from '../types';
@@ -127,9 +128,12 @@ export class SiegeBuffSystem {
     const x = width - 16;
     const y = compact ? 88 : 104;
     const iconSize = compact ? 28 : 32;
+    const badgeTexture = hasPhase4eTexture(this.scene, PHASE4E_THEME1_TEXTURES.uiSiegeBuffBadge)
+      ? PHASE4E_THEME1_TEXTURES.uiSiegeBuffBadge
+      : SIEGE_BUFF_TEXTURES.uiSiegeBuffActive;
 
     this.badgeIcon = this.scene.add
-      .image(x, y, SIEGE_BUFF_TEXTURES.uiSiegeBuffActive)
+      .image(x, y, badgeTexture)
       .setDisplaySize(iconSize, iconSize)
       .setOrigin(1, 0)
       .setScrollFactor(0)

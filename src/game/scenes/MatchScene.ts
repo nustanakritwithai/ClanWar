@@ -32,6 +32,7 @@ import { SkillRuntimeSystem } from '../systems/SkillRuntimeSystem';
 import { showCombatText, showDamageNumber } from '../ui/CombatText';
 import { showAoeMarker, showHealBurst, showHealSpark, showNormalHit, showSkillCastFlash, showImpactBurst, showSlashArc, loadCombatVisualAssets } from '../ui/CombatVfx';
 import { isFullscreenActive, requestGameFullscreen } from '../utils/fullscreen';
+import { hasPhase4eTexture, loadPhase4eTheme1Assets, PHASE4E_THEME1_TEXTURES } from '../theme/Phase4ETheme';
 
 import { CAPTURE_OBJECTIVE_IDS } from '../data/capture-objectives';
 
@@ -92,6 +93,7 @@ export class MatchScene extends Phaser.Scene {
     loadCaptureAssets(this.load);
     loadSiegeBuffAssets(this.load);
     loadMatchTimerAssets(this.load);
+    loadPhase4eTheme1Assets(this.load);
   }
 
   create(): void {
@@ -102,6 +104,7 @@ export class MatchScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, map.width, map.height);
 
     this.drawGround(map.width, map.height);
+    this.drawPhase4eEnvironmentLayer(map.width, map.height);
     this.mapRenderer = new MapRenderer(this, (obj) => this.registerWorldObject(obj));
     this.mapRenderer.build(map);
     this.buildWalls();
@@ -821,6 +824,21 @@ export class MatchScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setLineWidth(2)
       .setDepth(-90);
+  }
+
+  // Phase 4E Theme 1: conservative single-layer parallax wash, strictly
+  // behind the ground rectangle and every tile/structure/marker (depth -99,
+  // between drawGround's -100 base and MapRenderer's -55..-18 tiles/props).
+  // No geometry, pathing, or collision change — purely a low-opacity tint
+  // over the whole map. Per-tile/per-prop reskin (grass/dirt/path/banners/
+  // ruins/smoke layer) is deferred — see docs/phase-4e-runtime-reskin-report.md.
+  private drawPhase4eEnvironmentLayer(w: number, h: number): void {
+    if (!hasPhase4eTexture(this, PHASE4E_THEME1_TEXTURES.bgCastleParallax)) return;
+    this.add
+      .image(w / 2, h / 2, PHASE4E_THEME1_TEXTURES.bgCastleParallax)
+      .setDisplaySize(w, h)
+      .setAlpha(0.32)
+      .setDepth(-99);
   }
 
   private buildWalls(): void {

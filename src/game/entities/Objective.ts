@@ -1,8 +1,15 @@
 import Phaser from 'phaser';
 import type { ObjectiveCombatState, ObjectiveDefinition } from '../data/objectives';
+import { hasPhase4eTexture, PHASE4E_THEME1_TEXTURES } from '../theme/Phase4ETheme';
 
 const GATE_DISPLAY_SIZE = 112;
 const CORE_DISPLAY_SIZE = 144;
+
+/** Themed under-attack overlay is generic (no team variant), same as the legacy texture it replaces. */
+function overlayTextureFor(scene: Phaser.Scene, type: ObjectiveDefinition['type']): string {
+  const themed = type === 'gate' ? PHASE4E_THEME1_TEXTURES.objGateHit : PHASE4E_THEME1_TEXTURES.objCoreHit;
+  return hasPhase4eTexture(scene, themed) ? themed : 'objective_under_attack';
+}
 
 /** World sprite for a gate/core objective — visuals driven by ObjectiveSystem state. */
 export class Objective {
@@ -26,7 +33,7 @@ export class Objective {
       .setDepth(20);
 
     this.overlaySprite = scene.add
-      .image(definition.x, definition.y, 'objective_under_attack')
+      .image(definition.x, definition.y, overlayTextureFor(scene, definition.type))
       .setDisplaySize(displaySize + 16, displaySize + 16)
       .setDepth(21)
       .setVisible(false);

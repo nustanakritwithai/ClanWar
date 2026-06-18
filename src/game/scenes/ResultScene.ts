@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { COLORS, SCENE_KEYS } from '../constants';
+import { hasPhase4eTexture, loadPhase4eTheme1Assets, PHASE4E_THEME1_TEXTURES } from '../theme/Phase4ETheme';
 
 export interface ResultSceneData {
   outcome?: 'victory' | 'defeat' | 'draw';
@@ -48,11 +49,25 @@ export class ResultScene extends Phaser.Scene {
     super(SCENE_KEYS.Result);
   }
 
+  preload(): void {
+    loadPhase4eTheme1Assets(this.load);
+  }
+
   create(data: ResultSceneData = {}): void {
     const { width, height } = this.scale;
     const cx = width / 2;
     const outcome: 'victory' | 'defeat' | 'draw' =
       data.outcome === 'defeat' ? 'defeat' : data.outcome === 'draw' ? 'draw' : 'victory';
+
+    // Phase 4E Theme 1: optional decorative backdrop behind the result text
+    // block. Additive only — text positions/values are unchanged.
+    if (hasPhase4eTexture(this, PHASE4E_THEME1_TEXTURES.uiResultPanel)) {
+      const panelW = Math.min(280, width - 24);
+      const panelH = panelW * (160 / 280);
+      this.add
+        .image(cx, height * 0.32 + 30, PHASE4E_THEME1_TEXTURES.uiResultPanel)
+        .setDisplaySize(panelW, panelH);
+    }
 
     const titleText = outcome === 'victory' ? 'VICTORY' : outcome === 'defeat' ? 'DEFEAT' : 'DRAW';
     const titleColor =

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { COMPACT_LAYOUT_HEIGHT, SHOW_DEBUG_OVERLAY } from '../constants';
+import { COLORS, COMPACT_LAYOUT_HEIGHT, SHOW_DEBUG_OVERLAY } from '../constants';
+import { hasPhase4eTexture, PHASE4E_THEME1_TEXTURES } from '../theme/Phase4ETheme';
 import {
   OBJECTIVE_DEFINITIONS,
   type ObjectiveDefinition,
@@ -751,12 +752,36 @@ export class ObjectiveSystem {
     if (obj.def.type === 'core' && obj.combatState === 'under_attack') {
       obj.entity.vulnerableOverlay.setVisible(false);
     }
+    this.applyThemeTint(obj);
+  }
+
+  // Phase 4E Theme 1: the mock Gate art is generic (no per-team variant), so a
+  // tint preserves team-color readability the same way the character pack
+  // documents a runtime team-tint slot. Core/Capture keep their existing
+  // team-specific textures untouched, so no tint is applied there.
+  private applyThemeTint(obj: RuntimeObjective): void {
+    if (obj.def.type !== 'gate') return;
+    if (!hasPhase4eTexture(this.scene, PHASE4E_THEME1_TEXTURES.objGateIdle)) {
+      obj.entity.baseSprite.clearTint();
+      return;
+    }
+    if (obj.combatState === 'destroyed') {
+      obj.entity.baseSprite.clearTint();
+      return;
+    }
+    obj.entity.baseSprite.setTint(obj.def.team === 'blue' ? COLORS.blue : COLORS.red);
   }
 
   private textureForState(obj: RuntimeObjective): string {
     if (obj.combatState === 'destroyed') {
       if (obj.def.type === 'gate') {
+        if (hasPhase4eTexture(this.scene, PHASE4E_THEME1_TEXTURES.objGateDestroyed)) {
+          return PHASE4E_THEME1_TEXTURES.objGateDestroyed;
+        }
         return obj.def.team === 'blue' ? OBJECTIVE_TEXTURES.gateBreachedBlue : OBJECTIVE_TEXTURES.gateBreachedRed;
+      }
+      if (hasPhase4eTexture(this.scene, PHASE4E_THEME1_TEXTURES.objCoreDestroyed)) {
+        return PHASE4E_THEME1_TEXTURES.objCoreDestroyed;
       }
       return OBJECTIVE_TEXTURES.destroyed;
     }
@@ -764,6 +789,9 @@ export class ObjectiveSystem {
   }
 
   private baseTextureFor(def: ObjectiveDefinition): string {
+    if (def.type === 'gate' && hasPhase4eTexture(this.scene, PHASE4E_THEME1_TEXTURES.objGateIdle)) {
+      return PHASE4E_THEME1_TEXTURES.objGateIdle;
+    }
     switch (def.id) {
       case 'blueGate':
         return OBJECTIVE_TEXTURES.blueGate;
