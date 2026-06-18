@@ -1,8 +1,8 @@
 # Project Status
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-18 (Phase 5A-3 Bot Brain runtime — Agent A draft)  
-> **Base branch:** `claude/game-file-analysis-a20xup` @ `8db7847`
+> **Last updated:** 2026-06-18 (Phase 5A-4 BotPlayer Class Parity design plan — Agent D, docs-only)  
+> **Base branch:** `claude/game-file-analysis-a20xup` @ `7435cdc`
 
 ## Current phase
 
@@ -26,9 +26,13 @@ One Basic Red Warrior Bot (melee) with detection/chase/wind-up/attack/death, fal
 
 Respawn, idle patrol, config-driven `easy|normal|hard` difficulty (default `normal`), and combat-feedback clarity (spawn ring, death burst, pulsing wind-up, smooth HP bar). Still one melee bot; no change to player stats / damage formula / core combat rules.
 
-**Phase 5A-3 — Bot Brain (Memory / Goal / Decision)** — **RUNTIME IN DRAFT (Agent A)**
+**Phase 5A-3 — Bot Brain (Memory / Goal / Decision)** — **MERGED** (PR #62 @ `7435cdc`)
 
-Agent D design plan merged (PR #61). **Agent A runtime now implemented in draft** — branch `cursor/phase-5a-3-bot-brain-runtime`, base `8db7847`: a lightweight rule-based brain (`src/game/ai/` + `bot-brain-config.ts`) where the single bot builds a perception snapshot, keeps short-term memory (last-seen player ~5s), scores goals, queues a 1–3 step plan, and decides before acting — chasing, investigating last-seen, returning to patrol on memory expiry, and returning to spawn when stuck/off-leash. Brain is a pure advisor; `BotSystem` executes. All 5A-2 behavior preserved. No LLM/ML, no behavior tree/GOAP, no multi-bot, no objective AI. **Not Ready, not merged.** Phase 5B/5C not started.
+Rule-based brain (`src/game/ai/` + `bot-brain-config.ts`): perception snapshot, short-term memory (~5s), goal scoring, 1–3 step plan, decision. Brain is a pure advisor; `BotSystem` executes. All 5A-2 behavior preserved.
+
+**Phase 5A-4 — BotPlayer Class Parity** — **DESIGN PLANNING ONLY — IMPLEMENTATION NOT STARTED**
+
+Agent D design plan (this work) — reframe the enemy from a monster-like `EnemyBot` into a `BotPlayer`: an AI-controlled player that uses the **same class data/stats/sprite/attack rules** as a real player class (Warrior first), differing only in controller (BotBrain vs human input). Stat baseline from `HEROES` (`heroes.ts`) with bot-only difficulty multipliers + fairness clamp; warrior class sprite with red enemy treatment; shared melee combat path. Docs-only; no `src/` changes. Recommends a staged hybrid migration. No multi-bot, ranged, skills, objective AI, or LLM/ML. Phase 5B/5C not started.
 
 ## Base snapshot
 
@@ -76,17 +80,17 @@ cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
 
 ## Open PRs
 
-- **Phase 5A-3 Bot Brain Runtime** — Draft (Agent A) — branch `cursor/phase-5a-3-bot-brain-runtime`, base `8db7847` — perception/memory/goal/plan/decision runtime. Not Ready, not merged.
+- **Phase 5A-4 BotPlayer Class Parity Design Plan** — Draft (Agent D) — branch `cursor/phase-5a-4-botplayer-parity-design`, base `7435cdc` — docs-only class-parity architecture. Planning only, not merged.
 
 ## Agent lane status
 
-**Agent A** — 4E runtime + 5A-1/5A-2 bot runtime merged (#52–#55, #59, #60); **5A-3 bot brain runtime in draft** (this work)
+**Agent A** — 4E runtime + 5A-1/5A-2/5A-3 bot runtime merged (#52–#55, #59, #60, #62); lane clear
 
 **Agent B** — 4E assets complete (#51 merged); 5A bot asset plan merged (#57)
 
 **Agent C** — 5A bot combat feel plan draft in progress; 4E design complete (#49 merged)
 
-**Agent D** — 5A bot design plan merged (#56); 5A-3 bot brain design plan merged (#61); 4E UX complete (#50 merged)
+**Agent D** — 5A bot design (#56) + 5A-3 brain design (#61) merged; **5A-4 BotPlayer class parity design plan in draft** (this work); 4E UX complete (#50 merged)
 
 **Agent E** — lane clear
 
@@ -94,17 +98,13 @@ cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
 
 ## Test / deploy evidence
 
-- `npm run build` — PASS (5A-3 bot brain runtime)
-- `phase-5a-bot-brain-regression.mjs` — **18/18 PASS** (perception/memory/goal/plan/decision + preserved combat)
-- `phase-5a-bot-regression.mjs` — **20/20 PASS** (5A-2 preserved)
-- `phase-4e-visual-reskin-regression.mjs` — **38/38 PASS**
-- `phase-4d-combat-feel-regression.mjs` — 17/17 PASS
-- `phase-4c-c-timer-score-regression.mjs` — 18/18 PASS
+- Phase 5A-3 runtime (merged @ `7435cdc`): build PASS; `phase-5a-bot-brain-regression.mjs` 18/18; `phase-5a-bot-regression.mjs` 20/20; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18.
+- Phase 5A-4 is **design planning only** — no build/test deliverable this PR (docs-only).
 - GitHub CI — no registered checks
 
 ## Next safe action
 
-**One-pass QA of Phase 5A-3 Bot Brain runtime draft (Agent F).** Do not Ready/merge without explicit authorization. Phase 5B/5C and final bot assets remain **NOT STARTED** and **NOT AUTHORIZED**.
+**Review Phase 5A-4 BotPlayer Class Parity design plan (Agent D).** After merge + explicit work order + Agent E scope gate, issue the Agent A 5A-4 runtime work order. Phase 5A-4 runtime, Phase 5B/5C, and final bot assets remain **NOT STARTED** and **NOT AUTHORIZED**.
 
 ## Must not do
 

@@ -1,33 +1,34 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-18 (Phase 5A-3 bot brain runtime draft)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `8db7847`
+> **Last updated:** 2026-06-18 (Phase 5A-4 BotPlayer class parity design draft)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `7435cdc`
 
 ## Summary
 
 **Phase 4E complete** — PR #52–#55 merged; live verified PASS.
 
-**Phase 5A-1 + 5A-2 bot runtime + 5A-3 brain design** — PR #59, #60, #61 merged @ `8db7847`.
+**Phase 5A-1 + 5A-2 + 5A-3 bot runtime** — PR #59, #60, #62 merged @ `7435cdc`.
 
-**Active draft:** Phase 5A-3 Bot Brain **runtime** (Agent A) — perception/memory/goal/plan/decision implementation. **Not Ready, not merged.**
+**Active draft:** Phase 5A-4 BotPlayer Class Parity **design plan** (Agent D) — docs-only class-parity architecture (turn `EnemyBot` into a class-driven `BotPlayer`). **Planning only, not merged.**
 
 ---
 
-## Open PR — Phase 5A-3 Bot Brain Runtime (Draft)
+## Open PR — Phase 5A-4 BotPlayer Class Parity Design Plan (Draft, docs-only)
 
-**Agent A: Phase 5A-3 — Bot Brain Runtime**  
-Branch `cursor/phase-5a-3-bot-brain-runtime` — Base `8db7847007c02f9d2dcc4173d79f8273e8ad0e32`
+**Agent D: Phase 5A-4 — BotPlayer Class Parity Design Plan**  
+Branch `cursor/phase-5a-4-botplayer-parity-design` — Base `7435cdc64633ed55bd8b862b6a7e30aa0dcf95b8`
 
-New: `src/game/ai/BotBrain.ts`, `src/game/ai/BotPerception.ts`, `src/game/ai/BotMemory.ts`, `src/game/data/bot-brain-config.ts`, `scripts/phase-5a-bot-brain-regression.mjs`. Touched: `src/game/systems/BotSystem.ts` (integration), docs. **No `MatchScene`/`Player`/`EnemyBot`/`bot-warrior` edits.** No asset/package/deploy changes.
+New: `docs/phase-5a-bot-player-class-parity-design.md`. Touched: status docs only. **No `src/` changes, no runtime, no scripts.**
 
-Rule-based brain advisor: the single bot perceives, remembers the player ~5s, scores goals, queues a 1–3 step plan, and decides before acting — chase, investigate last-seen, return to patrol on memory expiry, return to spawn when stuck/off-leash. Brain returns intent only; `BotSystem` executes. All 5A-2 behavior preserved. No LLM/ML/API, no behavior tree/GOAP, no multi-bot, no objective AI.
-
-Regression: `phase-5a-bot-brain-regression.mjs` **18/18**; `phase-5a-bot-regression` 20/20; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18.
+Plan to reframe the enemy from a monster-like `EnemyBot` into a `BotPlayer` — an AI-controlled player using the same class data/stats/sprite/attack rules as a real player class (Warrior first), differing only in controller. Stat baseline from `HEROES` (`heroes.ts`) + bot-only difficulty multipliers + fairness clamp; warrior sprite with red enemy treatment; shared melee combat path. Recommends staged hybrid migration (class-source swap → rename to BotPlayer → extract controller). Includes Agent A handoff + parity regression plan (`phase-5a-bot-player-parity-regression.mjs`, T1–T15).
 
 ---
 
 ## Recently merged — Phase 5A
+
+**PR #62 (Agent A)** — Phase 5A-3 Bot Brain Runtime  
+MERGED @ `7435cdc64633ed55bd8b862b6a7e30aa0dcf95b8`
 
 **PR #61 (Agent D)** — Phase 5A-3 Bot Brain Design Plan  
 MERGED @ `8db7847007c02f9d2dcc4173d79f8273e8ad0e32`
