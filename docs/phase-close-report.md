@@ -1,3 +1,77 @@
+# Phase 4E Closure Report — Runtime Reskin Live Verified
+
+> **Agent E closure audit**  
+> **Date:** 2026-06-18  
+> **Phase:** 4E — Visual Direction / MMORPG 2D Pixel Art Runtime Reskin  
+> **Verdict:** **PHASE 4E COMPLETE — LIVE VERIFIED**
+
+See also: [phase-4e-close-report.md](./phase-4e-close-report.md)
+
+---
+
+## 1. Phase summary
+
+Phase 4E delivered a **visual-only MMORPG 2D pixel-art fantasy siege reskin** (Theme 1 Castle Siege Field) with planning specs, asset mock pack, runtime texture wiring (PR #52), and in-match character sprite hotfix (PR #53). No gameplay rule changes.
+
+### Delivered scope
+
+- Visual design spec + mobile HUD safe zones (PR #49, #50)
+- Theme 1 asset mock pack — 49 SVGs (PR #51)
+- Runtime reskin: structures, UI frames, VFX, parallax, class-select previews (PR #52)
+- In-match character sprite hotfix — `visualSprite` + circle physics hitbox (PR #53)
+- Theme-aware 4D regression (17/17) + extended 4E regression (29/29)
+- User-reported in-match character bug resolved on live
+
+---
+
+## 2. Merged PR list
+
+| PR | Agent | Purpose | Status |
+|----|-------|---------|--------|
+| [#49](https://github.com/nustanakritwithai/ClanWar/pull/49) | C | Visual Design Spec | **MERGED** @ `cc6cbde` |
+| [#50](https://github.com/nustanakritwithai/ClanWar/pull/50) | D | Mobile HUD / UX Spec | **MERGED** @ `8a3ae52` |
+| [#51](https://github.com/nustanakritwithai/ClanWar/pull/51) | B | Theme 1 Asset Mock Pack | **MERGED** @ `be02369` |
+| [#52](https://github.com/nustanakritwithai/ClanWar/pull/52) | A | Runtime Reskin Integration | **MERGED** @ `aec453d` |
+| [#53](https://github.com/nustanakritwithai/ClanWar/pull/53) | A | In-Match Character Hotfix | **MERGED** @ `9405d1f` |
+
+---
+
+## 3. Final commit state
+
+| Item | SHA / branch |
+|------|--------------|
+| Runtime merge (PR #52) | `aec453ddef9ce983325bbfc58db5a2ad7bd69332` |
+| Hotfix merge (PR #53) / current base | `9405d1fba15a4c4195ec67ffdc50c7772bbf4f05` |
+| Final base branch | `claude/game-file-analysis-a20xup` @ `9405d1f` |
+
+---
+
+## 4. Verification summary
+
+**Live URL:** https://clan-siege-arena.onrender.com  
+**Live bundle:** `index-BrWMfI8H.js`  
+**Agent F verdict:** LIVE VERIFIED — IN-MATCH CHARACTER SPRITE HOTFIX PASS
+
+**Live regression highlights:**
+
+- `phase-4e-visual-reskin-regression.mjs` — 29/29 PASS (live)
+- `phase-4d-combat-feel-regression.mjs` — 17/17 PASS (live)
+- Prior suites — PASS on live (4C-C 18/18, 4B-B 13/13, 4B objective assertions PASS)
+
+Mobile 915×412 **PASS** · Mobile 800×360 **PASS** · Menu ↔ Match ×3 **PASS** · Scope guard **PASS**
+
+**User issue resolved:** In-match player now shows themed character sprite for all 5 classes (PR #53).
+
+---
+
+## 5. Formal closure verdict
+
+### PHASE 4E COMPLETE — LIVE VERIFIED
+
+**Phase 5A: NOT STARTED — NOT AUTHORIZED**
+
+---
+
 # Phase 4D Closure Report — Combat Feel MVP / Player Combat Polish
 
 > **Agent E closure audit**  
