@@ -1,8 +1,8 @@
 # Project Status
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-18 (Phase 5A bot asset plan)  
-> **Base branch:** `claude/game-file-analysis-a20xup` @ `5c6f5d8`
+> **Last updated:** 2026-06-18 (Phase 5A planning)  
+> **Base branch:** `claude/game-file-analysis-a20xup` @ `76f75f9`
 
 ## Current phase
 
@@ -20,11 +20,12 @@ Theme 1 runtime reskin merged (PR #52), in-match character sprite hotfix merged 
 
 **Phase 5A — Basic Enemy Bot MVP** — **DESIGN PLANNING ONLY — IMPLEMENTATION NOT STARTED**
 
-Agent D bot design plan merged (PR #56 @ `5c6f5d8`). Agent B bot asset plan in draft (PR #57). **5A runtime and final assets not started** — requires all planning merges + explicit work order.
+Agent D bot design plan merged (PR #56). Agent B bot asset plan merged (PR #57). Agent C bot combat feel plan in draft (PR #58). **5A runtime and final assets not started** — requires all planning merges + explicit work order.
 
 ## Base snapshot
 
 ```
+76f75f9  Merge pull request #57 (Phase 5A bot asset plan)
 5c6f5d8  Merge pull request #56 (Phase 5A bot design plan)
 2188e7d  Merge pull request #55 (Phase 4E ranged normal attack projectiles)
 8767580  Merge pull request #54 (Phase 4E closure docs)
@@ -35,7 +36,7 @@ be02369  Merge pull request #51 (Phase 4E Theme 1 asset mock pack)
 cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
 ```
 
-**Runtime base SHA:** `5c6f5d8649e656e97de67c183bb6df6550557a27`
+**Runtime base SHA:** `76f75f9ae052d6779b13c8ec5387364516806758`
 
 **Live URL (verified):** https://clan-siege-arena.onrender.com
 
@@ -62,19 +63,20 @@ cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
 ## Phase 5A planning (in progress)
 
 - **PR #56 (D)** — Bot Design Plan @ `5c6f5d8` — **MERGED**
-- **PR #57 (B)** — Bot Asset Plan — Draft — planning only
+- **PR #57 (B)** — Bot Asset Plan @ `76f75f9` — **MERGED**
+- **PR #58 (C)** — Bot Combat Feel Plan — Draft — planning only
 
 ## Open PRs
 
-- **Phase 5A bot asset plan** — Draft (Agent B) — PR #57 — planning only
+- **Phase 5A bot combat feel plan** — Draft (Agent C) — PR #58 — planning only
 
 ## Agent lane status
 
 **Agent A** — 4E runtime complete (#52–#55 merged); lane clear
 
-**Agent B** — 4E assets complete (#51 merged); Phase 5A bot asset plan in progress (docs-only)
+**Agent B** — 4E assets complete (#51 merged); 5A bot asset plan merged (#57)
 
-**Agent C** — 4E design complete (#49 merged); lane clear
+**Agent C** — 5A bot combat feel plan draft in progress; 4E design complete (#49 merged)
 
 **Agent D** — 5A bot design plan merged (#56); 4E UX complete (#50 merged)
 
@@ -94,17 +96,18 @@ cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
 
 ## Next safe action
 
-**Review Phase 5A bot asset plan (Agent B, PR #57).** Phase 5A implementation and final assets remain **NOT STARTED** and **NOT AUTHORIZED** without explicit work order.
+**Review Phase 5A bot combat feel plan (Agent C, PR #58).** After all planning PRs merge, issue Agent A implementation work order. Phase 5A runtime and final assets remain **NOT STARTED** and **NOT AUTHORIZED** without explicit work order.
 
 ## Must not do
 
-- Do not start Phase 5A **implementation** or create final assets without explicit work order (design planning authorized)
+- Do not start Phase 5A **runtime** or create final assets without explicit work order (5A planning authorized)
 - Agent E: do not Ready/Merge PRs without explicit authorization
 
 ## Related docs
 
 - [phase-5a-bot-design.md](./phase-5a-bot-design.md) — Phase 5A bot design plan (merged)
-- [phase-5a-bot-asset-plan.md](./phase-5a-bot-asset-plan.md) — Phase 5A bot asset plan (draft)
+- [phase-5a-bot-asset-plan.md](./phase-5a-bot-asset-plan.md) — Phase 5A bot asset plan (merged)
+- [phase-5a-bot-combat-feel-plan.md](./phase-5a-bot-combat-feel-plan.md) — Phase 5A bot combat feel plan (draft)
 - [phase-4e-close-report.md](./phase-4e-close-report.md) — Phase 4E closure report
 - [phase-4e-runtime-reskin-report.md](./phase-4e-runtime-reskin-report.md)
 - [phase-close-report.md](./phase-close-report.md)

@@ -1,27 +1,30 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-18 (Phase 5A bot asset plan)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `5c6f5d8`
+> **Last updated:** 2026-06-18 (Phase 5A planning)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `76f75f9`
 
 ## Summary
 
-**Phase 4E complete** — PR #52–#55 merged; ranged normal attack projectiles merged @ `2188e7d`. Live verified PASS.
+**Phase 4E complete** — PR #52–#55 merged; live verified PASS.
 
-**Phase 5A planning:** Bot design plan merged (#56 @ `5c6f5d8`). **Active draft:** bot asset plan (Agent B) — PR #57.
+**Phase 5A planning:** Bot design (#56) and asset plan (#57) merged. **Active draft:** bot combat feel plan (Agent C) — PR #58.
 
 **Phase 5A:** DESIGN PLANNING ONLY — IMPLEMENTATION NOT STARTED.
 
 ---
 
-## Open PR — Phase 5A Bot Asset Plan (Draft)
+## Open PR — Phase 5A Bot Combat Feel Plan (Draft)
 
-**Agent B: Phase 5A Bot Asset Plan — Basic Enemy Bot MVP**  
-Docs-only — `docs/phase-5a-bot-asset-plan.md` + status dashboard refresh.
+**Agent C: Phase 5A Bot Combat Feel Plan**  
+Docs-only — Red Warrior melee bot feel, timing, BF-AC, regression plan. No runtime.
 
 ---
 
 ## Recently merged — Phase 5A planning
+
+**PR #57 (Agent B)** — Phase 5A Bot Asset Plan  
+MERGED @ `76f75f9ae052d6779b13c8ec5387364516806758`
 
 **PR #56 (Agent D)** — Phase 5A Bot Design Plan  
 MERGED @ `5c6f5d8649e656e97de67c183bb6df6550557a27`
@@ -66,8 +69,8 @@ MERGED @ `cc6cbde4e552f49f13e71c320642a44cb2413d53`
 | Agent | Status |
 |-------|--------|
 | A | 4E runtime complete (#52–#55 merged); lane clear |
-| B | 4E assets complete (#51 merged); Phase 5A bot asset plan draft open |
-| C | 4E design complete (#49 merged); lane clear |
+| B | 4E assets complete (#51 merged); 5A bot asset plan merged (#57) |
+| C | 5A bot combat feel plan draft open; 4E design complete (#49 merged) |
 | D | 5A bot design merged (#56); 4E UX complete (#50 merged) |
 | E | lane clear |
 | F | 4E live verification PASS |
@@ -76,5 +79,6 @@ MERGED @ `cc6cbde4e552f49f13e71c320642a44cb2413d53`
 
 ## Next safe action
 
-1. Review/merge Phase 5A bot asset plan PR (#57)  
-2. Phase 5A implementation remains **NOT STARTED** — requires explicit work order after all planning merges
+1. Review/merge Phase 5A bot combat feel plan PR (#58)  
+2. After all planning merges: issue Agent A implementation work order  
+3. Phase 5A **runtime** remains **NOT AUTHORIZED** until explicit work order
