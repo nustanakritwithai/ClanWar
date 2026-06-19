@@ -1,31 +1,36 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-18 (Phase 5A-4 BotPlayer class parity design draft)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `7435cdc`
+> **Last updated:** 2026-06-18 (Phase 5A-4 BotPlayer class parity runtime draft)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `81e81a5`
 
 ## Summary
 
 **Phase 4E complete** — PR #52–#55 merged; live verified PASS.
 
-**Phase 5A-1 + 5A-2 + 5A-3 bot runtime** — PR #59, #60, #62 merged @ `7435cdc`.
+**Phase 5A-1 → 5A-3 bot runtime + 5A-4 parity design** — PR #59, #60, #62, #63 merged @ `81e81a5`.
 
-**Active draft:** Phase 5A-4 BotPlayer Class Parity **design plan** (Agent D) — docs-only class-parity architecture (turn `EnemyBot` into a class-driven `BotPlayer`). **Planning only, not merged.**
+**Active draft:** Phase 5A-4 BotPlayer Class Parity **runtime** (Agent A) — the enemy is now a class-driven AI Warrior (`BotPlayer`). **Not Ready, not merged.**
 
 ---
 
-## Open PR — Phase 5A-4 BotPlayer Class Parity Design Plan (Draft, docs-only)
+## Open PR — Phase 5A-4 BotPlayer Class Parity Runtime (Draft)
 
-**Agent D: Phase 5A-4 — BotPlayer Class Parity Design Plan**  
-Branch `cursor/phase-5a-4-botplayer-parity-design` — Base `7435cdc64633ed55bd8b862b6a7e30aa0dcf95b8`
+**Agent A: Phase 5A-4 — BotPlayer Class Parity Runtime**  
+Branch `cursor/phase-5a-4-botplayer-class-parity-runtime` — Base `81e81a59c52d6e89aa1d28406b5bb2a886afd4a3`
 
-New: `docs/phase-5a-bot-player-class-parity-design.md`. Touched: status docs only. **No `src/` changes, no runtime, no scripts.**
+New: `src/game/entities/BotPlayer.ts`, `src/game/systems/BotPlayerSystem.ts`, `src/game/controllers/BotPlayerController.ts`, `src/game/data/bot-player-config.ts`, `scripts/phase-5a-bot-player-parity-regression.mjs`. Touched: `src/game/entities/EnemyBot.ts` + `src/game/systems/BotSystem.ts` (now compatibility aliases), `src/game/ai/BotPerception.ts` (type import), docs. **No `MatchScene`/`Player`/`heroes.ts` edits.** No asset/package/deploy changes.
 
-Plan to reframe the enemy from a monster-like `EnemyBot` into a `BotPlayer` — an AI-controlled player using the same class data/stats/sprite/attack rules as a real player class (Warrior first), differing only in controller. Stat baseline from `HEROES` (`heroes.ts`) + bot-only difficulty multipliers + fairness clamp; warrior sprite with red enemy treatment; shared melee combat path. Recommends staged hybrid migration (class-source swap → rename to BotPlayer → extract controller). Includes Agent A handoff + parity regression plan (`phase-5a-bot-player-parity-regression.mjs`, T1–T15).
+The enemy is an AI-controlled **Warrior** (`BotPlayer`), not a monster: stat baseline read **by value** from `getHero('warrior')`; bot-only difficulty multipliers (`normal` ≈ 5A-2 feel) + fairness clamp; the same Warrior class sprite the human uses, tinted red with enemy ring/marker/HP bar; shared `testMeleeArc`/`CombatSystem` melee path. `BotPlayerController` is the brain→intent seam. All 5A-1/5A-2/5A-3 behavior preserved; human stats unchanged.
+
+Regression: `phase-5a-bot-player-parity-regression.mjs` **17/17**; `phase-5a-bot-brain-regression` 18/18; `phase-5a-bot-regression` 20/20; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18.
 
 ---
 
 ## Recently merged — Phase 5A
+
+**PR #63 (Agent D)** — Phase 5A-4 BotPlayer Class Parity Design Plan  
+MERGED @ `81e81a59c52d6e89aa1d28406b5bb2a886afd4a3`
 
 **PR #62 (Agent A)** — Phase 5A-3 Bot Brain Runtime  
 MERGED @ `7435cdc64633ed55bd8b862b6a7e30aa0dcf95b8`
