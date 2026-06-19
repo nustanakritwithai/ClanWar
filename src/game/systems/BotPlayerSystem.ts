@@ -16,7 +16,22 @@ import {
 import { BotBrain, type BotGoal, type BotBrainSnapshot } from '../ai/BotBrain';
 import { buildPerception } from '../ai/BotPerception';
 import { BOT_BRAIN_CONFIG } from '../data/bot-brain-config';
-import { BotPlayerController, type BotIntent } from '../controllers/BotPlayerController';
+import { BotPlayerController, type BotIntent, type BotAttackKind } from '../controllers/BotPlayerController';
+import {
+  isRangedNormalAttackClass,
+  normalAttackProjectileKind,
+  showNormalAttackProjectile,
+  type NormalAttackProjectileKind,
+} from '../ui/CombatVfx';
+
+/** Player-facing enemy label per class (no snake_case / debug strings). */
+const CLASS_DISPLAY_NAME: Record<HeroClassId, string> = {
+  guardian: 'Enemy Guardian',
+  warrior: 'Enemy Warrior',
+  ranger: 'Enemy Ranger',
+  mage: 'Enemy Mage',
+  priest: 'Enemy Priest',
+};
 
 export interface BotSystemHooks {
   /** Keep bot world objects off the fixed UI camera layer. */
@@ -37,6 +52,8 @@ export interface BotSnapshot {
   armor: number;
   attack: number;
   classId: HeroClassId;
+  attackKind: BotAttackKind;
+  projectileKind: NormalAttackProjectileKind | null;
   state: BotState;
   goal: BotGoal;
   dead: boolean;
@@ -85,13 +102,15 @@ export interface PlayerMeleeHitResult {
  * objective/Gate/Core AI, no skills, no ranged, no multi-bot.
  */
 export class BotPlayerSystem {
-  public readonly bot: BotPlayer;
+  /** Mutable so a debug class-swap can rebuild the entity (test hook). */
+  public bot!: BotPlayer;
 
   private readonly scene: Phaser.Scene;
   private readonly hooks: BotSystemHooks;
   private readonly cfg: BotPlayerConfig;
-  private readonly classStats: HeroStats;
-  private readonly attackRange: number;
+  private classId: HeroClassId;
+  private classStats!: HeroStats;
+  private attackRange!: number;
   private readonly brain: BotBrain;
   private readonly controller: BotPlayerController;
 
@@ -130,31 +149,41 @@ export class BotPlayerSystem {
     this.scene = scene;
     this.hooks = hooks;
     this.cfg = cfg;
+    this.classId = cfg.classId;
     this.difficulty = difficulty;
     this.profile = BOT_PLAYER_DIFFICULTY_PROFILES[difficulty];
 
-    // Stat baseline read BY VALUE from the shared player class table.
-    this.classStats = { ...getHero(cfg.classId).stats };
+    this.brain = new BotBrain(BOT_BRAIN_CONFIG);
+    this.controller = new BotPlayerController();
+    this.buildBot(cfg.classId);
+    this.patrolTarget = { x: cfg.spawn.x, y: cfg.spawn.y };
+    this.resetPatrol();
+  }
+
+  /**
+   * (Re)build the bot entity for a playable class. Stat baseline is read BY
+   * VALUE from the shared player class table; the same sprite resolver the human
+   * uses gives the class visual identity (BotPlayer applies the red treatment).
+   */
+  private buildBot(classId: HeroClassId): void {
+    this.classId = classId;
+    this.classStats = { ...getHero(classId).stats };
     this.attackRange = this.classStats.attackRange;
 
     this.bot = new BotPlayer(
-      scene,
+      this.scene,
       {
-        classId: cfg.classId,
-        name: cfg.name,
+        classId,
+        name: CLASS_DISPLAY_NAME[classId] ?? this.cfg.name,
         maxHp: Math.max(1, Math.round(this.classStats.hp * this.profile.hpMul)),
         armor: this.classStats.armor,
-        radius: cfg.radius,
+        radius: this.cfg.radius,
         attackRange: this.attackRange,
-        attackArcDegrees: cfg.attackArcDegrees,
-        spawn: { x: cfg.spawn.x, y: cfg.spawn.y },
+        attackArcDegrees: this.cfg.attackArcDegrees,
+        spawn: { x: this.cfg.spawn.x, y: this.cfg.spawn.y },
       },
       (o) => this.hooks.registerWorldObject(o),
     );
-    this.brain = new BotBrain(BOT_BRAIN_CONFIG);
-    this.controller = new BotPlayerController();
-    this.patrolTarget = { x: cfg.spawn.x, y: cfg.spawn.y };
-    this.resetPatrol();
   }
 
   // --- effective (class baseline × difficulty) stats — bot-only ---
@@ -169,6 +198,21 @@ export class BotPlayerSystem {
   }
   private get effCooldownMs(): number {
     return this.cfg.attackCooldownMs * this.profile.cooldownMul;
+  }
+
+  // --- ranged class awareness (Phase 5A-5) ---
+  private get attackKind(): BotAttackKind {
+    return isRangedNormalAttackClass(this.classId) ? 'ranged' : 'melee';
+  }
+  private get projectileKind(): NormalAttackProjectileKind | null {
+    return normalAttackProjectileKind(this.classId);
+  }
+  /** Detection scales up for ranged so the bot can engage from its class range. */
+  private get effDetectionRange(): number {
+    return Math.max(this.cfg.detectionRange, this.attackRange + 80);
+  }
+  private get effLeashRange(): number {
+    return Math.max(this.cfg.leashRange, this.attackRange + 180);
   }
 
   public update(deltaMs: number): void {
@@ -205,9 +249,9 @@ export class BotPlayerSystem {
       playerY: player.y,
       spawnX: this.cfg.spawn.x,
       spawnY: this.cfg.spawn.y,
-      detectionRange: this.cfg.detectionRange,
+      detectionRange: this.effDetectionRange,
       attackRange: this.attackRange,
-      leashRange: this.cfg.leashRange,
+      leashRange: this.effLeashRange,
       hpRatio: this.bot.currentHp / this.bot.maxHp,
       cooldownReady: this.cooldownTimer <= 0,
       isStuck: this.debugStuckOverride ?? this.stuck,
@@ -224,6 +268,9 @@ export class BotPlayerSystem {
       this.windupTimer -= deltaMs;
       if (this.windupTimer <= 0) {
         this.bot.hideWindupCue();
+        // Ranged classes fire a visual-only normal-attack projectile when the
+        // shot resolves. Damage stays on the shared melee-arc/CombatSystem path.
+        this.fireRangedProjectile(player);
         const hit = this.resolveAttack(player);
         this.brain.memory.recordAttack(now);
         if (!hit) this.brain.memory.recordMissedAttack(now);
@@ -250,6 +297,8 @@ export class BotPlayerSystem {
       spawnX: this.cfg.spawn.x,
       spawnY: this.cfg.spawn.y,
       investigateTarget: this.brain.investigateTarget(),
+      attackKind: this.attackKind,
+      projectileKind: this.projectileKind,
     });
     this.executeIntent(intent, perception, player, deltaMs);
   }
@@ -423,6 +472,28 @@ export class BotPlayerSystem {
     return true;
   }
 
+  /**
+   * Fire the class normal-attack projectile for ranged BotPlayers (ranger →
+   * arrow, mage → magic bolt, priest → holy bolt). Visual-only and auto-destroyed
+   * by its tween — it never introduces a bot-only damage formula. Melee classes
+   * spawn nothing.
+   */
+  private fireRangedProjectile(player: Player): void {
+    const kind = this.projectileKind;
+    if (!kind) return;
+    const dist = Math.hypot(player.x - this.bot.x, player.y - this.bot.y);
+    const travel = Math.min(Math.max(dist, 1), this.attackRange);
+    showNormalAttackProjectile(
+      this.scene,
+      this.bot.x,
+      this.bot.y,
+      this.facingAngle,
+      travel,
+      kind,
+      (o) => this.hooks.registerWorldObject(o),
+    );
+  }
+
   /** Player basic/melee attack against the bot. Returns null when it misses. */
   public tryPlayerMeleeHit(
     casterX: number,
@@ -456,10 +527,12 @@ export class BotPlayerSystem {
       armor: this.bot.armor,
       attack: this.effAttack,
       classId: this.bot.classId,
+      attackKind: this.attackKind,
+      projectileKind: this.projectileKind,
       state: this.bot.state,
       goal: this.brain.currentGoal(),
       dead: this.bot.isDead(),
-      detectionRange: this.cfg.detectionRange,
+      detectionRange: this.effDetectionRange,
       attackRange: this.attackRange,
       moveSpeed: this.effMoveSpeed,
       speed: Math.hypot(this.bot.body.velocity.x, this.bot.body.velocity.y),
@@ -478,7 +551,7 @@ export class BotPlayerSystem {
     return {
       difficulty: this.difficulty,
       available: Object.keys(BOT_PLAYER_DIFFICULTY_PROFILES) as BotDifficulty[],
-      classId: this.cfg.classId,
+      classId: this.classId,
       baseAttack: this.classStats.attack,
       effectiveAttack: this.effAttack,
       effectiveMoveSpeed: this.effMoveSpeed,
@@ -490,6 +563,27 @@ export class BotPlayerSystem {
   /** Bot class baseline stats (read by value from the player class table). */
   public getClassBaseline(): HeroStats {
     return { ...this.classStats };
+  }
+
+  /**
+   * Debug/test-only: rebuild the single bot as a different playable class
+   * (warrior/ranger/mage/priest). Phase 5A-5 has no class-select UI yet — this
+   * is the runtime hook the regression uses to exercise each class. The bot
+   * stays one instance; the brain memory/plan and timers are reset.
+   *
+   * Note: the fortress-wall collider added by MatchScene is not re-attached to
+   * the rebuilt body (the bot only patrols/fights in the open lane, away from
+   * walls), so this is intended for tests / future class-select that constructs
+   * fresh — not a mid-fight production swap.
+   */
+  public debugSetClass(classId: HeroClassId): void {
+    this.bot.destroy();
+    this.buildBot(classId);
+    this.windupTimer = 0;
+    this.recoveryTimer = 0;
+    this.cooldownTimer = 0;
+    this.resetPatrol();
+    this.brain.onRespawn(this.scene.time.now);
   }
 
   /** Debug-only difficulty swap for headless regression (not player-facing). */

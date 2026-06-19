@@ -5,6 +5,44 @@
 
 ---
 
+## 2026-06-18 — Phase 5A-5 BotPlayer Ranged Class Parity runtime (Agent A)
+
+**Agent:** A (Runtime Implementation)
+**Branch:** `cursor/phase-5a-5-botplayer-ranged-parity-runtime`
+**Base:** `claude/game-file-analysis-a20xup` @ `25514e37a623e27893883895a1224c8e2057c27f`
+**Task:** Extend BotPlayer from Warrior-only to support ranged classes (ranger/mage/priest) using real player class data + class normal-attack projectiles.
+
+### Actions taken
+
+1. `src/game/systems/BotPlayerSystem.ts` — class-switchable bot (`buildBot(classId)` + `debugSetClass` test hook); per-class enemy name; ranged awareness (`attackKind`/`projectileKind` from the shared CombatVfx helpers); class-scaled detection/leash so ranged bots engage from their range; `fireRangedProjectile()` reuses `showNormalAttackProjectile` (visual-only) at shot resolution; snapshot adds `attackKind`/`projectileKind`.
+2. `src/game/controllers/BotPlayerController.ts` — intent now carries `attackKind` + `projectileKind` (class-derived).
+3. `src/game/entities/BotPlayer.ts` — capped the wind-up telegraph radius so a ranged class's large attackRange doesn't draw a map-filling cone (warrior unchanged). Class sprite already resolved by `classId` (no change needed for visuals).
+4. `scripts/phase-5a-bot-player-ranged-parity-regression.mjs` — T1–T25.
+
+**No edits** to `MatchScene.ts`, `Player.ts`, `heroes.ts`, `CombatVfx.ts` (reused existing 4E helpers), or the brain (`BotBrain`/`BotPerception` already read the system-provided class attackRange).
+
+### Regression
+
+- `npm run build` — PASS
+- `phase-5a-bot-player-ranged-parity-regression.mjs` — 26/26
+- `phase-5a-bot-player-parity-regression.mjs` — 17/17 (preserved)
+- `phase-5a-bot-brain-regression.mjs` — 18/18 (preserved)
+- `phase-5a-bot-regression.mjs` — 20/20 (preserved)
+- `phase-4e-visual-reskin-regression.mjs` — 38/38
+- `phase-4d-combat-feel-regression.mjs` — 17/17
+- `phase-4c-c-timer-score-regression.mjs` — 18/18
+
+### Scope / freeze
+
+- One bot; ranger/mage/priest ranged + warrior/guardian melee. No multi-bot, team/objective AI, skills, kiting, LLM/ML, or Phase 5B/5C.
+- Projectiles are visual-only (no new damage formula); damage stays on the shared `testMeleeArc`/`CombatSystem` path. Stat baseline read by value; `HEROES` never mutated; human stats unchanged (all 5 verified). Difficulty bot-only.
+
+### Did not do
+
+- Class-select UI, advanced ranged kiting/retreat. Mark Ready / merge — Draft PR only.
+
+---
+
 ## 2026-06-18 — Phase 5A-4 BotPlayer Class Parity runtime (Agent A)
 
 **Agent:** A (Runtime Implementation)

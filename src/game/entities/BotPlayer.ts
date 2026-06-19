@@ -204,7 +204,10 @@ export class BotPlayer implements CombatTarget {
     this.warning.clear();
 
     const half = Phaser.Math.DegToRad(this.attackArcDegrees) / 2;
-    const r = this.attackRange + this.radius;
+    // Cap the telegraph radius so a ranged class's large attackRange does not
+    // draw a map-filling cone. Damage still uses the full class attackRange in
+    // BotPlayerSystem; this caps the visual cue only (warrior 65 is unaffected).
+    const r = Math.min(this.attackRange, 130) + this.radius;
     const start = angle - half;
     const end = angle + half;
 
