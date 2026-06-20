@@ -1,33 +1,36 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-18 (Phase 5A-5 BotPlayer ranged class parity runtime draft)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `25514e3`
+> **Last updated:** 2026-06-20 (Phase 5A-6 ranged combat feel tuning runtime draft)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `d975274`
 
 ## Summary
 
 **Phase 4E complete** — PR #52–#55 merged; live verified PASS.
 
-**Phase 5A-1 → 5A-4 bot runtime** — PR #59, #60, #62, #64 merged @ `25514e3`.
+**Phase 5A-1 → 5A-5 bot runtime** — PR #59, #60, #62, #64, #65 merged @ `d975274`.
 
-**Active draft:** Phase 5A-5 BotPlayer Ranged Class Parity **runtime** (Agent A) — BotPlayer now supports ranger/mage/priest with class projectiles. **Not Ready, not merged.**
+**Active draft:** Phase 5A-6 Ranged Combat Feel Tuning **runtime** (Agent A) — ranged bots now space/kite/hold-range like a real player. **Not Ready, not merged.**
 
 ---
 
-## Open PR — Phase 5A-5 BotPlayer Ranged Class Parity Runtime (Draft)
+## Open PR — Phase 5A-6 Ranged Combat Feel Tuning Runtime (Draft)
 
-**Agent A: Phase 5A-5 — BotPlayer Ranged Class Parity Runtime**  
-Branch `cursor/phase-5a-5-botplayer-ranged-parity-runtime` — Base `25514e37a623e27893883895a1224c8e2057c27f`
+**Agent A: Phase 5A-6 — Ranged Bot Combat Feel Tuning**  
+Branch `cursor/phase-5a-6-ranged-combat-feel-tuning` — Base `d975274362d54db6bda12ec9015598e811bdaa96`
 
-Touched: `src/game/systems/BotPlayerSystem.ts`, `src/game/controllers/BotPlayerController.ts`, `src/game/entities/BotPlayer.ts` (telegraph cap), new `scripts/phase-5a-bot-player-ranged-parity-regression.mjs`, docs. **No `MatchScene`/`Player`/`heroes.ts`/`CombatVfx.ts`/brain edits** (reuses the existing Phase 4E projectile helpers). No asset/package/deploy changes.
+Touched: `src/game/ai/BotBrain.ts`, `src/game/ai/BotPerception.ts`, `src/game/data/bot-brain-config.ts`, `src/game/data/bot-player-config.ts`, `src/game/controllers/BotPlayerController.ts`, `src/game/systems/BotPlayerSystem.ts`, new `scripts/phase-5a-ranged-combat-feel-regression.mjs`, docs. **No `MatchScene`/`Player`/`heroes.ts`/`CombatVfx.ts`/`BotPlayer.ts`/objective/capture/timer edits.** No asset/package/deploy changes.
 
-BotPlayer now supports ranged classes (ranger/mage/priest) alongside warrior: each reads its baseline **by value** from `HEROES`, wears its own class sprite (red enemy treatment), and ranged classes fire the matching normal-attack projectile (arrow / magic bolt / holy bolt) by reusing `showNormalAttackProjectile` — **visual-only, no new damage formula**. The brain uses the class `attackRange` (ranged bots stop + shoot from range, no needless melee rush). `debugSetClass` is the test/runtime hook (one bot). Warrior/Guardian stay melee. Human stats unchanged; difficulty bot-only.
+Ranged BotPlayers (ranger/mage/priest) now keep a comfortable gap and kite instead of rushing into melee. A class-aware spacing config (`BOT_RANGED_SPACING`: `dangerCloseRange`/`preferredMinRange`/`preferredMaxRange`/`kiteSpeedMul`) feeds two new brain goals — `hold_range` (stop and fire from the band, never chase closer) and `kite_back` (backpedal when the player gets too close). Both score between chase and the safety returns, with hysteresis (engage at dangerClose, disengage at preferredMin) + the motion deadband to avoid thrashing; `attack_player`/`recover_after_attack` still outrank them and stuck/off-leash still wins. Ranger kites most, mage holds mid, priest holds safest (no healing AI). Kite speed is fairness-clamped to the player. Projectiles, dodge window, investigate, human stats, difficulty scope and frozen systems unchanged.
 
-Regression: `phase-5a-bot-player-ranged-parity-regression.mjs` **26/26**; `phase-5a-bot-player-parity-regression` 17/17; `phase-5a-bot-brain-regression` 18/18; `phase-5a-bot-regression` 20/20; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18.
+Regression: `phase-5a-ranged-combat-feel-regression.mjs` **24/24**; `phase-5a-bot-player-ranged-parity` 26/26; `phase-5a-bot-player-parity` 17/17; `phase-5a-bot-brain` 17/18 (B10 pre-existing sampling-window flake, reproduces on base); `phase-5a-bot-regression` 20/20; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18.
 
 ---
 
 ## Recently merged — Phase 5A
+
+**PR #65 (Agent A)** — Phase 5A-5 BotPlayer Ranged Class Parity Runtime  
+MERGED @ `d975274362d54db6bda12ec9015598e811bdaa96`
 
 **PR #64 (Agent A)** — Phase 5A-4 BotPlayer Class Parity Runtime  
 MERGED @ `25514e37a623e27893883895a1224c8e2057c27f`

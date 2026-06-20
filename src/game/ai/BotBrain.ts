@@ -7,6 +7,8 @@ export type BotGoal =
   | 'patrol_area'
   | 'chase_player'
   | 'attack_player'
+  | 'hold_range'
+  | 'kite_back'
   | 'investigate_last_seen'
   | 'recover_after_attack'
   | 'return_to_spawn';
@@ -16,6 +18,8 @@ export type BotPlanStep =
   | 'face_player'
   | 'move_toward_player'
   | 'windup_attack'
+  | 'hold_position'
+  | 'kite_from_player'
   | 'hold_recover'
   | 'move_to_last_seen'
   | 'scan_area'
@@ -47,6 +51,10 @@ function planFor(goal: BotGoal): BotPlanStep[] {
       return ['face_player', 'windup_attack'];
     case 'chase_player':
       return ['face_player', 'move_toward_player', 'windup_attack'];
+    case 'hold_range':
+      return ['face_player', 'hold_position'];
+    case 'kite_back':
+      return ['face_player', 'kite_from_player'];
     case 'recover_after_attack':
       return ['hold_recover'];
     case 'investigate_last_seen':
@@ -59,13 +67,16 @@ function planFor(goal: BotGoal): BotPlanStep[] {
   }
 }
 
-// Tie-break order for equal scores (highest priority first).
+// Tie-break order for equal scores (highest priority first). Also the set of
+// goals pickGoal considers — every goal must appear here.
 const GOAL_PRIORITY: BotGoal[] = [
   'attack_player',
   'recover_after_attack',
+  'return_to_spawn',
+  'kite_back',
+  'hold_range',
   'chase_player',
   'investigate_last_seen',
-  'return_to_spawn',
   'patrol_area',
 ];
 
@@ -135,6 +146,19 @@ export class BotBrain {
       s.investigate_last_seen += w.investigateValidMemory;
     }
 
+    // Ranged spacing (Phase 5A-6). Only meaningful for ranged classes and only
+    // while the player is detected and still leashed. Hysteresis: kite engages
+    // inside dangerCloseRange and only disengages once the gap re-opens past
+    // preferredMinRange, so the bot does not flip kite⇄hold every frame.
+    if (p.isRanged && p.playerInDetectionRange && p.playerWithinLeash) {
+      const stayKiting = this.goal === 'kite_back' && p.distanceToPlayer < p.preferredMinRange;
+      if (p.playerTooClose || stayKiting) {
+        s.kite_back += w.kiteTooClose;
+      } else if (p.playerInComfortBand) {
+        s.hold_range += w.holdInBand;
+      }
+    }
+
     return s;
   }
 
@@ -166,6 +190,13 @@ export class BotBrain {
         break;
       case 'windup_attack':
         advance = false; // terminal; plan rebuilds when the goal changes
+        break;
+      case 'hold_position':
+        advance = false; // terminal; re-evaluated when scoring changes the goal
+        break;
+      case 'kite_from_player':
+        // Keep backpedalling until the gap re-opens past the comfortable min.
+        advance = !p.isRanged || p.distanceToPlayer >= p.preferredMinRange;
         break;
       case 'hold_recover':
         advance = p.state !== 'recovery';
@@ -237,6 +268,8 @@ export class BotBrain {
       patrol_area: 0,
       chase_player: 0,
       attack_player: 0,
+      hold_range: 0,
+      kite_back: 0,
       investigate_last_seen: 0,
       recover_after_attack: 0,
       return_to_spawn: 0,

@@ -5,6 +5,48 @@
 
 ---
 
+## 2026-06-20 — Phase 5A-6 Ranged Combat Feel Tuning runtime (Agent A)
+
+**Agent:** A (Runtime Implementation)
+**Branch:** `cursor/phase-5a-6-ranged-combat-feel-tuning`
+**Base:** `claude/game-file-analysis-a20xup` @ `d975274362d54db6bda12ec9015598e811bdaa96`
+**Task:** Make ranged BotPlayers (ranger/mage/priest) fight more like a real player — keep spacing, move into range when far, hold + fire when in band, kite briefly when the player gets too close, stay readable, no thrashing. No player stat / damage formula changes.
+
+### Actions taken
+
+1. `src/game/data/bot-player-config.ts` — added `RangedSpacingProfile` + `BOT_RANGED_SPACING` (class-aware bands `dangerCloseRange` / `preferredMinRange` / `preferredMaxRange` + `kiteSpeedMul`). Ranger kites most, mage mid, priest safest; warrior/guardian absent (melee). Config-driven — no magic numbers in behaviour logic.
+2. `src/game/data/bot-brain-config.ts` — added weights `kiteTooClose` (74) and `holdInBand` (72), both between chase (70) and the safety returns (75/80).
+3. `src/game/ai/BotPerception.ts` — added `isRanged` + class band inputs and derived `playerTooClose` / `playerInComfortBand` flags (neutral for melee).
+4. `src/game/ai/BotBrain.ts` — added goals `hold_range` + `kite_back` (with plan steps `hold_position` / `kite_from_player`), scoring with kite hysteresis (engage at dangerClose, disengage at preferredMin), priority/zeroScores updated. Existing goals untouched.
+5. `src/game/controllers/BotPlayerController.ts` — new `kite` intent kind; `hold_range` → hold + fire (never chase), `kite_back` → backpedal. Pure translation, no state.
+6. `src/game/systems/BotPlayerSystem.ts` — feeds class bands into perception; executes the `kite` intent (`kiteAwayFrom`, fairness-clamped) and the ranged hold-and-fire `hold`; added `debugSetCooldown` + `getRangedSpacingInfo` test hooks.
+7. `scripts/phase-5a-ranged-combat-feel-regression.mjs` — C1–C24.
+
+**No edits** to `MatchScene.ts`, `Player.ts`, `heroes.ts`, `CombatVfx.ts`, `BotPlayer.ts`, or any objective/capture/timer/result system. Melee (warrior/guardian) behaviour is byte-identical (ranged scoring is gated on `isRanged`).
+
+### Regression
+
+- `npm run build` — PASS
+- `phase-5a-ranged-combat-feel-regression.mjs` — 24/24
+- `phase-5a-bot-player-ranged-parity-regression.mjs` — 26/26 (preserved)
+- `phase-5a-bot-player-parity-regression.mjs` — 17/17 (preserved)
+- `phase-5a-bot-brain-regression.mjs` — 17/18 — B10 ("plan queue executes 1–3 steps") is a pre-existing environment-sensitive sampling-window flake in the test; it reproduces **byte-identically on the unmodified base `d975274`** (verified via a side-by-side base worktree), and the warrior-only path it exercises is untouched by 5A-6. Non-blocking.
+- `phase-5a-bot-regression.mjs` — 20/20 (preserved)
+- `phase-4e-visual-reskin-regression.mjs` — 38/38
+- `phase-4d-combat-feel-regression.mjs` — 17/17
+- `phase-4c-c-timer-score-regression.mjs` — 18/18
+
+### Scope / freeze
+
+- One bot; ranged spacing + basic kite + hold-range + readability only. No multi-bot, team/objective AI, skills, healing AI, advanced ranged pathfinding/perfect dodge, LLM/ML, or Phase 5B/5C.
+- Kite speed fairness-clamped to the player; off-leash/stuck still returns to spawn; shared `testMeleeArc`/`CombatSystem` damage path; `HEROES` never mutated; human stats unchanged (all 5 verified); difficulty bot-only.
+
+### Did not do
+
+- Class-select UI, retreat-to-cover/advanced kiting, healing behaviour. Mark Ready / merge — Draft PR only.
+
+---
+
 ## 2026-06-18 — Phase 5A-5 BotPlayer Ranged Class Parity runtime (Agent A)
 
 **Agent:** A (Runtime Implementation)
