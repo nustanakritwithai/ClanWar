@@ -8,10 +8,12 @@ import { BotPlayer, type BotState } from '../entities/BotPlayer';
 import {
   BOT_PLAYER,
   BOT_PLAYER_DIFFICULTY_PROFILES,
+  BOT_RANGED_SPACING,
   DEFAULT_BOT_DIFFICULTY,
   type BotPlayerConfig,
   type BotDifficulty,
   type BotDifficultyProfile,
+  type RangedSpacingProfile,
 } from '../data/bot-player-config';
 import { BotBrain, type BotGoal, type BotBrainSnapshot } from '../ai/BotBrain';
 import { buildPerception } from '../ai/BotPerception';
@@ -214,6 +216,10 @@ export class BotPlayerSystem {
   private get effLeashRange(): number {
     return Math.max(this.cfg.leashRange, this.attackRange + 180);
   }
+  /** Class spacing profile (Phase 5A-6) — null for melee classes. */
+  private get rangedSpacing(): RangedSpacingProfile | null {
+    return BOT_RANGED_SPACING[this.classId] ?? null;
+  }
 
   public update(deltaMs: number): void {
     this.bot.update(deltaMs);
@@ -242,6 +248,7 @@ export class BotPlayerSystem {
     const player = this.hooks.getPlayer();
 
     // 1) Perceive → think (brain is a pure advisor).
+    const spacing = this.rangedSpacing;
     const perception = buildPerception({
       botX: this.bot.x,
       botY: this.bot.y,
@@ -252,6 +259,10 @@ export class BotPlayerSystem {
       detectionRange: this.effDetectionRange,
       attackRange: this.attackRange,
       leashRange: this.effLeashRange,
+      isRanged: this.attackKind === 'ranged',
+      dangerCloseRange: spacing?.dangerCloseRange ?? 0,
+      preferredMinRange: spacing?.preferredMinRange ?? 0,
+      preferredMaxRange: spacing?.preferredMaxRange ?? 0,
       hpRatio: this.bot.currentHp / this.bot.maxHp,
       cooldownReady: this.cooldownTimer <= 0,
       isStuck: this.debugStuckOverride ?? this.stuck,
@@ -344,7 +355,39 @@ export class BotPlayerSystem {
         break;
       }
 
-      case 'hold':
+      case 'kite': {
+        // Ranged spacing: backpedal away from the player. The brain only chooses
+        // this while reloading (attack_player outranks it), so no fire here; if
+        // the cooldown frees up the goal flips to attack_player next tick.
+        this.bot.state = 'chase';
+        const fx = intent.targetX ?? player.x;
+        const fy = intent.targetY ?? player.y;
+        this.kiteAwayFrom(fx, fy, player.moveSpeed);
+        this.updateStuck(deltaMs, true);
+        break;
+      }
+
+      case 'hold': {
+        // Ranged hold-and-fire (basicAttack) stays put and swings when in range +
+        // cooldown ready; it never chases. Melee/no-attack holds are unchanged.
+        if (intent.basicAttack && p.playerInAttackRange) {
+          this.bot.state = 'chase';
+          this.bot.body.setVelocity(0, 0);
+          this.facingAngle = p.angleToPlayer;
+          if (this.cooldownTimer <= 0) {
+            this.bot.state = 'windup';
+            this.windupTimer = this.effWindupMs;
+            this.bot.showWindupCue(this.facingAngle, this.effWindupMs);
+          }
+          this.updateStuck(deltaMs, false);
+        } else {
+          this.bot.state = 'idle';
+          this.bot.body.setVelocity(0, 0);
+          this.updateStuck(deltaMs, false);
+        }
+        break;
+      }
+
       default: {
         this.bot.state = 'idle';
         this.bot.body.setVelocity(0, 0);
@@ -361,6 +404,22 @@ export class BotPlayerSystem {
     const v = Math.min(this.effMoveSpeed, cap);
     this.bot.body.setVelocity(Math.cos(angle) * v, Math.sin(angle) * v);
     this.facingAngle = angle;
+  }
+
+  /**
+   * Kite: move directly away from (fx,fy) while keeping the aim toward it. Speed
+   * is the class kite multiplier, still fairness-clamped to the player's speed so
+   * the bot can never outrun the player. Off-leash / stuck is handled by the
+   * brain (return_to_spawn outranks kite), so this stays a simple backpedal.
+   */
+  private kiteAwayFrom(fx: number, fy: number, playerMoveSpeed: number): void {
+    const away = Math.atan2(this.bot.y - fy, this.bot.x - fx);
+    const mul = this.rangedSpacing?.kiteSpeedMul ?? 1;
+    const cap = playerMoveSpeed * this.profile.maxPlayerSpeedRatio;
+    const v = Math.min(this.effMoveSpeed * mul, cap);
+    this.bot.body.setVelocity(Math.cos(away) * v, Math.sin(away) * v);
+    // Keep facing the player so the next shot / telegraph aims correctly.
+    this.facingAngle = Math.atan2(fy - this.bot.y, fx - this.bot.x);
   }
 
   /** Brain-facing stuck detection: trying to move but barely displacing. */
@@ -601,6 +660,24 @@ export class BotPlayerSystem {
   /** Debug-only: force/clear the stuck flag for headless regression. */
   public debugSetStuck(value: boolean | null): void {
     this.debugStuckOverride = value;
+  }
+
+  /** Debug-only: prime the attack cooldown so kite/hold spacing is observable. */
+  public debugSetCooldown(ms: number): void {
+    this.cooldownTimer = Math.max(0, ms);
+  }
+
+  /** Class ranged-spacing bands (Phase 5A-6) — null for melee classes. */
+  public getRangedSpacingInfo(): {
+    isRanged: boolean;
+    attackRange: number;
+    spacing: RangedSpacingProfile | null;
+  } {
+    return {
+      isRanged: this.attackKind === 'ranged',
+      attackRange: this.attackRange,
+      spacing: this.rangedSpacing,
+    };
   }
 
   /** Debug-only: teleport the bot body for headless regression. */

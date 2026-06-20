@@ -23,6 +23,17 @@ export interface BotPerception {
   playerInAttackRange: boolean;
   playerWithinLeash: boolean;
 
+  // Ranged spacing (Phase 5A-6) — false/neutral for melee classes.
+  isRanged: boolean;
+  /** Player nearer than the class dangerCloseRange → kite backward. */
+  playerTooClose: boolean;
+  /** Player within [dangerCloseRange, attackRange] → comfortable to hold + fire. */
+  playerInComfortBand: boolean;
+  /** Lower edge of the comfortable band (px) — kite hysteresis exit. */
+  preferredMinRange: number;
+  /** Upper edge of the comfortable band (px) — preferred firing distance. */
+  preferredMaxRange: number;
+
   // Player motion (derived vs previous distance held in memory)
   playerClosing: boolean;
   playerFleeing: boolean;
@@ -47,6 +58,12 @@ export interface BuildPerceptionArgs {
   detectionRange: number;
   attackRange: number;
   leashRange: number;
+  /** Ranged class? (warrior/guardian = false; ranged spacing then stays off.) */
+  isRanged: boolean;
+  /** Class spacing bands (px). Ignored when isRanged is false. */
+  dangerCloseRange: number;
+  preferredMinRange: number;
+  preferredMaxRange: number;
   hpRatio: number;
   cooldownReady: boolean;
   isStuck: boolean;
@@ -73,6 +90,10 @@ export function buildPerception(a: BuildPerceptionArgs): BotPerception {
     else if (delta > a.motionDeadband) playerFleeing = true;
   }
 
+  const playerTooClose = a.isRanged && distanceToPlayer < a.dangerCloseRange;
+  const playerInComfortBand =
+    a.isRanged && distanceToPlayer >= a.dangerCloseRange && distanceToPlayer <= a.attackRange;
+
   return {
     botX: a.botX,
     botY: a.botY,
@@ -84,6 +105,11 @@ export function buildPerception(a: BuildPerceptionArgs): BotPerception {
     playerInDetectionRange: distanceToPlayer <= a.detectionRange,
     playerInAttackRange: distanceToPlayer <= a.attackRange,
     playerWithinLeash: distanceToPlayer <= a.leashRange,
+    isRanged: a.isRanged,
+    playerTooClose,
+    playerInComfortBand,
+    preferredMinRange: a.preferredMinRange,
+    preferredMaxRange: a.preferredMaxRange,
     playerClosing,
     playerFleeing,
     hpRatio: a.hpRatio,

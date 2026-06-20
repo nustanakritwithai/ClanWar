@@ -15,9 +15,13 @@ import type { NormalAttackProjectileKind } from '../ui/CombatVfx';
  * so ranged classes (ranger/mage/priest) fire the matching normal-attack
  * projectile while melee classes (warrior/guardian) stay melee-only.
  *
+ * Phase 5A-6 adds ranged spacing intents: `hold_range` → hold position and fire
+ * (never chase closer), `kite_back` → backpedal away from the player. Both target
+ * the player so the bot keeps aiming while it spaces.
+ *
  * Pure translation — no Phaser, no physics, no state.
  */
-export type BotIntentKind = 'engage' | 'seek' | 'patrol' | 'hold';
+export type BotIntentKind = 'engage' | 'seek' | 'patrol' | 'hold' | 'kite';
 export type BotAttackKind = 'melee' | 'ranged';
 
 export interface BotIntent {
@@ -54,6 +58,14 @@ export class BotPlayerController {
       case 'attack_player':
       case 'chase_player':
         return { kind: 'engage', targetX: ctx.playerX, targetY: ctx.playerY, basicAttack: true, attackKind: ak, projectileKind: pk };
+
+      case 'hold_range':
+        // Hold position and fire when ready; never chase closer.
+        return { kind: 'hold', targetX: ctx.playerX, targetY: ctx.playerY, basicAttack: true, attackKind: ak, projectileKind: pk };
+
+      case 'kite_back':
+        // Backpedal away from the player (target is the point to flee from).
+        return { kind: 'kite', targetX: ctx.playerX, targetY: ctx.playerY, basicAttack: false, attackKind: ak, projectileKind: pk };
 
       case 'investigate_last_seen':
         if (ctx.investigateTarget) {

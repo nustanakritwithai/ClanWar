@@ -40,6 +40,33 @@ export const BOT_PLAYER_DIFFICULTY_PROFILES: Record<BotDifficulty, BotDifficulty
 
 export const DEFAULT_BOT_DIFFICULTY: BotDifficulty = 'normal';
 
+// Phase 5A-6: class-aware ranged spacing. A ranged BotPlayer keeps a comfortable
+// gap and kites instead of rushing into melee. All distances are in pixels and
+// live here (config-driven) so behaviour is tuned without touching brain logic.
+// Constraint per class: dangerCloseRange < preferredMinRange < preferredMaxRange
+// <= the class attackRange (from heroes.ts). Melee classes have no entry and are
+// completely unaffected.
+export interface RangedSpacingProfile {
+  /** Closer than this → the bot kites backward (px). */
+  readonly dangerCloseRange: number;
+  /** Lower edge of the comfortable band; kite disengages here (hysteresis, px). */
+  readonly preferredMinRange: number;
+  /** Upper edge of the comfortable band — where the bot likes to fire from (px). */
+  readonly preferredMaxRange: number;
+  /** Backpedal speed while kiting as a fraction of effective move speed. */
+  readonly kiteSpeedMul: number;
+}
+
+// Ranger kites the most (largest dangerCloseRange → backs off from farther);
+// Mage holds mid-range; Priest holds the safest (highest comfortable band
+// relative to its range) — without any healing behaviour yet. Warrior/Guardian
+// are melee and intentionally absent.
+export const BOT_RANGED_SPACING: Partial<Record<HeroClassId, RangedSpacingProfile>> = {
+  ranger: { dangerCloseRange: 160, preferredMinRange: 210, preferredMaxRange: 300, kiteSpeedMul: 0.95 },
+  mage: { dangerCloseRange: 120, preferredMinRange: 165, preferredMaxRange: 235, kiteSpeedMul: 0.9 },
+  priest: { dangerCloseRange: 120, preferredMinRange: 170, preferredMaxRange: 220, kiteSpeedMul: 0.88 },
+};
+
 export interface BotPlayerConfig {
   /** Playable class identity the bot impersonates (Warrior for 5A-4). */
   readonly classId: HeroClassId;

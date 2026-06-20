@@ -27,6 +27,10 @@ export interface BotBrainWeights {
   readonly returnStuck: number;
   readonly returnTooFar: number;
   readonly patrolBaseline: number;
+  /** Ranged-only: player inside dangerCloseRange → kite backward. */
+  readonly kiteTooClose: number;
+  /** Ranged-only: player inside the comfortable band → hold + fire, do not chase. */
+  readonly holdInBand: number;
 }
 
 export interface BotBrainConfig {
@@ -54,6 +58,12 @@ export const BOT_BRAIN_CONFIG: BotBrainConfig = {
     returnStuck: 80, // safety: wedged → go home
     returnTooFar: 75, // safety: off-leash → go home (beats chase 70)
     patrolBaseline: 10, // floor so something always wins
+    // Ranged spacing (Phase 5A-6). Both sit between chase (70) and the safety
+    // returns (75/80): a ranged bot prefers spacing over a blind chase, but
+    // stuck / off-leash still override. attack_player (100) and recover (90)
+    // still outrank both, so "shoot when ready, kite/hold while reloading".
+    kiteTooClose: 74,
+    holdInBand: 72,
   },
   investigateArriveRadius: 40,
   scanDurationMs: 800,
