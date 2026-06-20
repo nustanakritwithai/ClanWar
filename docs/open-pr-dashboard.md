@@ -1,33 +1,36 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-18 (Phase 5A-4 BotPlayer class parity runtime draft)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `81e81a5`
+> **Last updated:** 2026-06-18 (Phase 5A-5 BotPlayer ranged class parity runtime draft)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `25514e3`
 
 ## Summary
 
 **Phase 4E complete** — PR #52–#55 merged; live verified PASS.
 
-**Phase 5A-1 → 5A-3 bot runtime + 5A-4 parity design** — PR #59, #60, #62, #63 merged @ `81e81a5`.
+**Phase 5A-1 → 5A-4 bot runtime** — PR #59, #60, #62, #64 merged @ `25514e3`.
 
-**Active draft:** Phase 5A-4 BotPlayer Class Parity **runtime** (Agent A) — the enemy is now a class-driven AI Warrior (`BotPlayer`). **Not Ready, not merged.**
+**Active draft:** Phase 5A-5 BotPlayer Ranged Class Parity **runtime** (Agent A) — BotPlayer now supports ranger/mage/priest with class projectiles. **Not Ready, not merged.**
 
 ---
 
-## Open PR — Phase 5A-4 BotPlayer Class Parity Runtime (Draft)
+## Open PR — Phase 5A-5 BotPlayer Ranged Class Parity Runtime (Draft)
 
-**Agent A: Phase 5A-4 — BotPlayer Class Parity Runtime**  
-Branch `cursor/phase-5a-4-botplayer-class-parity-runtime` — Base `81e81a59c52d6e89aa1d28406b5bb2a886afd4a3`
+**Agent A: Phase 5A-5 — BotPlayer Ranged Class Parity Runtime**  
+Branch `cursor/phase-5a-5-botplayer-ranged-parity-runtime` — Base `25514e37a623e27893883895a1224c8e2057c27f`
 
-New: `src/game/entities/BotPlayer.ts`, `src/game/systems/BotPlayerSystem.ts`, `src/game/controllers/BotPlayerController.ts`, `src/game/data/bot-player-config.ts`, `scripts/phase-5a-bot-player-parity-regression.mjs`. Touched: `src/game/entities/EnemyBot.ts` + `src/game/systems/BotSystem.ts` (now compatibility aliases), `src/game/ai/BotPerception.ts` (type import), docs. **No `MatchScene`/`Player`/`heroes.ts` edits.** No asset/package/deploy changes.
+Touched: `src/game/systems/BotPlayerSystem.ts`, `src/game/controllers/BotPlayerController.ts`, `src/game/entities/BotPlayer.ts` (telegraph cap), new `scripts/phase-5a-bot-player-ranged-parity-regression.mjs`, docs. **No `MatchScene`/`Player`/`heroes.ts`/`CombatVfx.ts`/brain edits** (reuses the existing Phase 4E projectile helpers). No asset/package/deploy changes.
 
-The enemy is an AI-controlled **Warrior** (`BotPlayer`), not a monster: stat baseline read **by value** from `getHero('warrior')`; bot-only difficulty multipliers (`normal` ≈ 5A-2 feel) + fairness clamp; the same Warrior class sprite the human uses, tinted red with enemy ring/marker/HP bar; shared `testMeleeArc`/`CombatSystem` melee path. `BotPlayerController` is the brain→intent seam. All 5A-1/5A-2/5A-3 behavior preserved; human stats unchanged.
+BotPlayer now supports ranged classes (ranger/mage/priest) alongside warrior: each reads its baseline **by value** from `HEROES`, wears its own class sprite (red enemy treatment), and ranged classes fire the matching normal-attack projectile (arrow / magic bolt / holy bolt) by reusing `showNormalAttackProjectile` — **visual-only, no new damage formula**. The brain uses the class `attackRange` (ranged bots stop + shoot from range, no needless melee rush). `debugSetClass` is the test/runtime hook (one bot). Warrior/Guardian stay melee. Human stats unchanged; difficulty bot-only.
 
-Regression: `phase-5a-bot-player-parity-regression.mjs` **17/17**; `phase-5a-bot-brain-regression` 18/18; `phase-5a-bot-regression` 20/20; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18.
+Regression: `phase-5a-bot-player-ranged-parity-regression.mjs` **26/26**; `phase-5a-bot-player-parity-regression` 17/17; `phase-5a-bot-brain-regression` 18/18; `phase-5a-bot-regression` 20/20; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18.
 
 ---
 
 ## Recently merged — Phase 5A
+
+**PR #64 (Agent A)** — Phase 5A-4 BotPlayer Class Parity Runtime  
+MERGED @ `25514e37a623e27893883895a1224c8e2057c27f`
 
 **PR #63 (Agent D)** — Phase 5A-4 BotPlayer Class Parity Design Plan  
 MERGED @ `81e81a59c52d6e89aa1d28406b5bb2a886afd4a3`

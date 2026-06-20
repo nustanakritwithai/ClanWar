@@ -1,8 +1,8 @@
 # Project Status
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-18 (Phase 5A-4 BotPlayer Class Parity runtime — Agent A draft)  
-> **Base branch:** `claude/game-file-analysis-a20xup` @ `81e81a5`
+> **Last updated:** 2026-06-18 (Phase 5A-5 BotPlayer Ranged Class Parity runtime — Agent A draft)  
+> **Base branch:** `claude/game-file-analysis-a20xup` @ `25514e3`
 
 ## Current phase
 
@@ -30,9 +30,13 @@ Respawn, idle patrol, config-driven `easy|normal|hard` difficulty (default `norm
 
 Rule-based brain (`src/game/ai/` + `bot-brain-config.ts`): perception snapshot, short-term memory (~5s), goal scoring, 1–3 step plan, decision. Brain is a pure advisor; `BotSystem` executes. All 5A-2 behavior preserved.
 
-**Phase 5A-4 — BotPlayer Class Parity** — **RUNTIME IN DRAFT (Agent A)**
+**Phase 5A-4 — BotPlayer Class Parity** — **MERGED** (PR #64 @ `25514e3`)
 
-Agent D design plan merged (PR #63). **Agent A runtime now implemented in draft** — branch `cursor/phase-5a-4-botplayer-class-parity-runtime`, base `81e81a5`: the enemy is now a `BotPlayer` (AI-controlled Warrior), not a monster. Stat baseline read **by value** from the shared `HEROES` table (`getHero('warrior')`); bot-only difficulty multipliers (`normal` tuned to ≈ 5A-2 feel) + fairness clamp; the **same Warrior class sprite** the human uses, tinted red with enemy ring/marker/HP bar; shared `testMeleeArc`/`CombatSystem` melee path. `BotPlayerController` is the brain→intent seam; `BotPlayerSystem` executes. `EnemyBot`/`BotSystem` kept as compatibility aliases. All 5A-1/5A-2/5A-3 behavior preserved; human stats unchanged. No multi-bot, ranged, skills, objective AI, or LLM/ML. **Not Ready, not merged.** Phase 5B/5C not started.
+The enemy is a `BotPlayer` (AI-controlled Warrior), not a monster. Stat baseline read by value from `HEROES`; bot-only difficulty multipliers + fairness clamp; Warrior class sprite tinted red with enemy ring/marker/HP bar; shared `testMeleeArc`/`CombatSystem` path. `EnemyBot`/`BotSystem` kept as compatibility aliases. Human stats unchanged.
+
+**Phase 5A-5 — BotPlayer Ranged Class Parity** — **RUNTIME IN DRAFT (Agent A)**
+
+**Agent A runtime in draft** — branch `cursor/phase-5a-5-botplayer-ranged-parity-runtime`, base `25514e3`: BotPlayer now supports ranged classes (ranger/mage/priest) as well as warrior. Each class reads its baseline **by value** from `HEROES`, wears its own class sprite (red enemy treatment), and ranged classes fire the matching normal-attack projectile (ranger → arrow, mage → magic bolt, priest → holy bolt) by reusing the existing Phase 4E `showNormalAttackProjectile` — **visual-only, no new damage formula**. The brain uses the class `attackRange`, so ranged bots stop and shoot from range and don't rush into melee. `debugSetClass` is the test/runtime hook (no class-select UI yet); still one bot. Warrior/Guardian stay melee. Human stats unchanged; difficulty bot-only. No multi-bot, skills, objective AI, or LLM/ML. **Not Ready, not merged.** Phase 5B/5C not started.
 
 ## Base snapshot
 
@@ -80,11 +84,11 @@ cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
 
 ## Open PRs
 
-- **Phase 5A-4 BotPlayer Class Parity Runtime** — Draft (Agent A) — branch `cursor/phase-5a-4-botplayer-class-parity-runtime`, base `81e81a5` — class-driven BotPlayer (Warrior). Not Ready, not merged.
+- **Phase 5A-5 BotPlayer Ranged Class Parity Runtime** — Draft (Agent A) — branch `cursor/phase-5a-5-botplayer-ranged-parity-runtime`, base `25514e3` — ranger/mage/priest BotPlayer with class projectiles. Not Ready, not merged.
 
 ## Agent lane status
 
-**Agent A** — 4E runtime + 5A-1/5A-2/5A-3 bot runtime merged (#52–#55, #59, #60, #62); **5A-4 BotPlayer class parity runtime in draft** (this work)
+**Agent A** — 4E runtime + 5A-1→5A-4 bot runtime merged (#52–#55, #59, #60, #62, #64); **5A-5 BotPlayer ranged class parity runtime in draft** (this work)
 
 **Agent B** — 4E assets complete (#51 merged); 5A bot asset plan merged (#57)
 
@@ -98,8 +102,9 @@ cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
 
 ## Test / deploy evidence
 
-- `npm run build` — PASS (5A-4 BotPlayer class parity)
-- `phase-5a-bot-player-parity-regression.mjs` — **17/17 PASS** (classId/baseline/difficulty/human-unchanged/visual/melee/brain/respawn/mobile/freeze)
+- `npm run build` — PASS (5A-5 BotPlayer ranged class parity)
+- `phase-5a-bot-player-ranged-parity-regression.mjs` — **26/26 PASS** (ranger/mage/priest classId+baseline+sprite+projectile, warrior melee-only, range awareness, no leak, human-unchanged, mobile, freeze)
+- `phase-5a-bot-player-parity-regression.mjs` — **17/17 PASS** (5A-4 preserved)
 - `phase-5a-bot-brain-regression.mjs` — **18/18 PASS** (preserved)
 - `phase-5a-bot-regression.mjs` — **20/20 PASS** (preserved)
 - `phase-4e-visual-reskin-regression.mjs` — **38/38 PASS**
@@ -109,7 +114,7 @@ cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
 
 ## Next safe action
 
-**One-pass QA of Phase 5A-4 BotPlayer Class Parity runtime draft (Agent F).** Do not Ready/merge without explicit authorization. Phase 5B/5C and final bot assets remain **NOT STARTED** and **NOT AUTHORIZED**.
+**One-pass QA of Phase 5A-5 BotPlayer Ranged Class Parity runtime draft (Agent F).** Do not Ready/merge without explicit authorization. Phase 5B/5C and final bot assets remain **NOT STARTED** and **NOT AUTHORIZED**.
 
 ## Must not do
 
