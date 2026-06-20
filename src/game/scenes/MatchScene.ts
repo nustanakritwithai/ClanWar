@@ -21,6 +21,12 @@ import type { ActionKey, HeroClassId, MapMarker, MatchSceneData, SkillDefinition
 import { Player } from '../entities/Player';
 import { TrainingDummy } from '../entities/TrainingDummy';
 import { BotSystem } from '../systems/BotSystem';
+import {
+  BOT_PLAYER,
+  isBotPlayableClass,
+  resolveLiveBotClass,
+  type LiveBotClassSetting,
+} from '../data/bot-player-config';
 import { InputSystem } from '../systems/InputSystem';
 import { ProjectileSystem } from '../systems/ProjectileSystem';
 import { MapRenderer, loadMapVisualAssets } from '../systems/MapRenderer';
@@ -47,8 +53,12 @@ const TIME_UP_RESULT_DELAY_MS = 1300;
 const GATE_CORE_MARKER_IDS = new Set(['blueGate', 'blueCore', 'redGate', 'redCore']);
 const CAPTURE_MARKER_IDS = new Set<string>(CAPTURE_OBJECTIVE_IDS);
 
+/** Registry key persisting the live bot-class rotation across matches. */
+const BOT_CLASS_ROTATION_KEY = 'botClassRotationIndex';
+
 export class MatchScene extends Phaser.Scene {
   private heroClass: HeroClassId = 'guardian';
+  private botClassSetting: LiveBotClassSetting = 'rotate';
   public player!: Player;
   public dummy!: TrainingDummy;
   public botSystem!: BotSystem;
@@ -85,7 +95,29 @@ export class MatchScene extends Phaser.Scene {
 
   init(data: MatchSceneData = {}): void {
     this.heroClass = data.heroClass ?? 'guardian';
+    // Phase 5A-7: live bot class. Priority: ?botClass URL param > explicit launch
+    // data > Warrior. The real game enters via ClassSelectScene, which passes
+    // `botClass: 'rotate'` so production rotates across all classes (a URL param
+    // still overrides); a bare MatchScene start stays on the Warrior default.
+    this.botClassSetting = this.readBotClassFromUrl() ?? data.botClass ?? 'warrior';
     this.lastCombatResult = '-';
+  }
+
+  /** Read + validate the `?botClass=` URL param (warrior/ranger/mage/priest/random). */
+  private readBotClassFromUrl(): LiveBotClassSetting | undefined {
+    if (typeof window === 'undefined' || !window.location?.search) return undefined;
+    const raw = new URLSearchParams(window.location.search).get('botClass');
+    if (!raw) return undefined;
+    if (raw === 'random' || raw === 'rotate') return raw;
+    return isBotPlayableClass(raw) ? raw : undefined;
+  }
+
+  /** Resolve the live bot class, advancing the persisted rotation when needed. */
+  private resolveBotClass(): HeroClassId {
+    const idx = (this.game.registry.get(BOT_CLASS_ROTATION_KEY) as number | undefined) ?? 0;
+    const { classId, nextRotationIndex } = resolveLiveBotClass(this.botClassSetting, idx);
+    this.game.registry.set(BOT_CLASS_ROTATION_KEY, nextRotationIndex);
+    return classId;
   }
 
   preload(): void {
@@ -147,15 +179,22 @@ export class MatchScene extends Phaser.Scene {
     this.dummy = new TrainingDummy(this, map.playerSpawn.x, map.playerSpawn.y - 350);
     this.skillRuntime = new SkillRuntimeSystem(this.heroClass);
 
-    // Phase 5A-1: single Basic Red Warrior Bot. AI self-freezes when the match
-    // is resolved / not in progress so bot death never affects Gate/Core/timer.
-    this.botSystem = new BotSystem(this, {
-      registerWorldObject: (obj) => this.registerWorldObject(obj),
-      getPlayer: () => this.player,
-      onBotHitPlayer: (result, x, y) => this.handleBotHitPlayer(result, x, y),
-      isMatchActive: () =>
-        !this.matchResolved && this.objectiveSystem.getMatchPhase() === 'in_progress',
-    });
+    // Phase 5A-7: single AI BotPlayer spawned as a live class (warrior/ranger/
+    // mage/priest) chosen by ?botClass / launch data / rotation — no longer locked
+    // to Warrior. AI self-freezes when the match is resolved / not in progress so
+    // bot death never affects Gate/Core/timer.
+    const botClassId = this.resolveBotClass();
+    this.botSystem = new BotSystem(
+      this,
+      {
+        registerWorldObject: (obj) => this.registerWorldObject(obj),
+        getPlayer: () => this.player,
+        onBotHitPlayer: (result, x, y) => this.handleBotHitPlayer(result, x, y),
+        isMatchActive: () =>
+          !this.matchResolved && this.objectiveSystem.getMatchPhase() === 'in_progress',
+      },
+      { ...BOT_PLAYER, classId: botClassId },
+    );
 
     this.physics.add.collider(this.player.sprite, this.walls);
     this.physics.add.collider(this.dummy.sprite, this.walls);

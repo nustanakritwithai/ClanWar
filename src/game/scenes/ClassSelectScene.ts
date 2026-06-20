@@ -169,7 +169,10 @@ export class ClassSelectScene extends Phaser.Scene {
       .setOrigin(0, 0.5);
 
     const select = () => {
-      this.scene.start(SCENE_KEYS.Match, { heroClass });
+      // Phase 5A-7: production entry into a match. Rotate the AI BotPlayer class
+      // across Warrior/Ranger/Mage/Priest so the real game is never locked to the
+      // first Warrior. A `?botClass=` URL param still overrides this.
+      this.scene.start(SCENE_KEYS.Match, { heroClass, botClass: 'rotate' });
     };
 
     bg.on('pointerover', () => bg.setFillStyle(0x273449));

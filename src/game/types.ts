@@ -198,6 +198,12 @@ export interface EdgeCaseRules {
 
 export interface MatchSceneData {
   heroClass?: HeroClassId;
+  /**
+   * Phase 5A-7: which class the live AI BotPlayer spawns as. A concrete class id,
+   * `'random'`, or `'rotate'`. Omitted → deterministic rotation so the real match
+   * is never locked to Warrior. Mirrors the `?botClass=` URL param.
+   */
+  botClass?: HeroClassId | 'random' | 'rotate';
 }
 
 // --- Phase 3B-A: combat foundation ----------------------------------------

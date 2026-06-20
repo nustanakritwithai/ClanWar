@@ -7,6 +7,7 @@ export type BotGoal =
   | 'patrol_area'
   | 'chase_player'
   | 'attack_player'
+  | 'cast_skill'
   | 'hold_range'
   | 'kite_back'
   | 'investigate_last_seen'
@@ -18,6 +19,7 @@ export type BotPlanStep =
   | 'face_player'
   | 'move_toward_player'
   | 'windup_attack'
+  | 'cast_skill_step'
   | 'hold_position'
   | 'kite_from_player'
   | 'hold_recover'
@@ -49,6 +51,8 @@ function planFor(goal: BotGoal): BotPlanStep[] {
   switch (goal) {
     case 'attack_player':
       return ['face_player', 'windup_attack'];
+    case 'cast_skill':
+      return ['face_player', 'cast_skill_step'];
     case 'chase_player':
       return ['face_player', 'move_toward_player', 'windup_attack'];
     case 'hold_range':
@@ -70,6 +74,7 @@ function planFor(goal: BotGoal): BotPlanStep[] {
 // Tie-break order for equal scores (highest priority first). Also the set of
 // goals pickGoal considers — every goal must appear here.
 const GOAL_PRIORITY: BotGoal[] = [
+  'cast_skill',
   'attack_player',
   'recover_after_attack',
   'return_to_spawn',
@@ -159,6 +164,33 @@ export class BotBrain {
       }
     }
 
+    // Class skill (Phase 5A-7, MVP). Only scored in a *healthy engage*: not
+    // stuck, on-leash, and not mid recovery/wind-up — so the safety returns and
+    // the post-attack recovery beat still win, and a skill cast never interrupts
+    // an in-flight swing. Offensive classes cast when the player is in skill
+    // range; a priest casts its heal defensively when low on HP.
+    const engageHealthy =
+      !p.isStuck &&
+      p.distanceFromSpawn <= this.cfg.returnToSpawnDistance &&
+      p.state !== 'recovery' &&
+      p.state !== 'windup' &&
+      !this.memory.recentlyMissed(nowMs); // let the recovery beat finish after a whiff
+    if (p.skillReady && engageHealthy) {
+      if (p.skillIsOffensive) {
+        // Ranged classes poke from their skill range; melee classes cast at melee
+        // (basic-attack) range so the skill weaves with autos instead of replacing
+        // the approach. Ranged never cast point-blank — inside danger-close the bot
+        // kites to its comfortable band first (5A-6), then casts.
+        const inCastRange = p.isRanged ? p.playerInSkillRange : p.playerInAttackRange;
+        const tooClose = p.isRanged && p.playerTooClose;
+        if (!tooClose && inCastRange && p.playerInDetectionRange && p.playerWithinLeash) {
+          s.cast_skill += w.castSkillReady;
+        }
+      } else if (p.selfHpLow) {
+        s.cast_skill += w.castSkillDefensive;
+      }
+    }
+
     return s;
   }
 
@@ -191,6 +223,9 @@ export class BotBrain {
       case 'windup_attack':
         advance = false; // terminal; plan rebuilds when the goal changes
         break;
+      case 'cast_skill_step':
+        advance = false; // terminal; the system resolves the cast, then re-scores
+        break;
       case 'hold_position':
         advance = false; // terminal; re-evaluated when scoring changes the goal
         break;
@@ -219,7 +254,13 @@ export class BotBrain {
     }
 
     // Anti-wedge: a non-terminal step can never block forever.
-    if (!advance && this.plan.stepElapsedMs >= this.cfg.planStepTimeoutMs && step !== 'windup_attack' && step !== 'resume_patrol') {
+    if (
+      !advance &&
+      this.plan.stepElapsedMs >= this.cfg.planStepTimeoutMs &&
+      step !== 'windup_attack' &&
+      step !== 'cast_skill_step' &&
+      step !== 'resume_patrol'
+    ) {
       advance = true;
     }
 
@@ -268,6 +309,7 @@ export class BotBrain {
       patrol_area: 0,
       chase_player: 0,
       attack_player: 0,
+      cast_skill: 0,
       hold_range: 0,
       kite_back: 0,
       investigate_last_seen: 0,
