@@ -5,6 +5,52 @@
 
 ---
 
+## 2026-06-21 — Phase 5A-8 Remove Bot Pre-Attack / Skill Radius Telegraph (Agent A)
+
+**Agent:** A (Runtime Implementation / Visual Cleanup)
+**Branch:** `cursor/phase-5a-8-remove-bot-radius-telegraph`
+**Base:** `claude/game-file-analysis-a20xup` @ `526da54691cb97c461d31d20b48d397a196f1916`
+**Task:** Product owner does not want any pre-attack/pre-skill radius, cone, or area indicator shown before a BotPlayer attacks or casts a skill. Remove the ground-painted telegraph from real gameplay while preserving actual combat logic, projectile visuals, skill VFX, damage timing, and BotBrain behaviour.
+
+### What was removed
+
+A single source: `BotPlayer.showWindupCue()` in `src/game/entities/BotPlayer.ts`. It filled+stroked a sector (`min(attackRange, 130) + radius` deep, `attackArcDegrees` wide) in front of the bot for the whole wind-up — a map-filling area for ranged classes (up to ~154px for ranger/mage/priest, ~89px for warrior). Grepped `BotPlayerSystem.ts`, `BotPlayerController.ts`, `BotBrain.ts`, `SkillRuntimeSystem.ts`, `CombatVfx.ts`, and the class/hitbox data files — this sector was the *only* ground-painted telegraph anywhere in the codebase; no other file needed touching.
+
+### Actions taken
+
+1. `src/game/entities/BotPlayer.ts` — rewrote `showWindupCue` (signature dropped its unused `angle` parameter) to draw a small **fixed** glow (`radius * 0.5`, ~12px) centred on the bot's own body instead of the range/arc-scaled sector; no dependency on `attackRange`/`attackArcDegrees` at all, so a ranger's skill cast now reads identically to a warrior's melee swing. Body tint flash (`flashBody`) and the existing `botAttackWarning`-tagged Graphics object + its visibility lifecycle are unchanged, so legacy suites that just check "some wind-up cue exists" keep passing.
+2. `src/game/entities/BotPlayer.ts` — added `getWindupCueRadius()` QA hook (returns the literal last-drawn pixel radius, 0 when hidden) so the new regression script can assert geometrically that the cue never scales with attack range.
+3. `src/game/entities/BotPlayer.ts` — deleted the now-unused `attackRange`/`attackArcDegrees` fields, constructor assignments, and `BotPlayerEntityStats` interface members (not suppressed — removed, since nothing reads them anymore).
+4. `src/game/systems/BotPlayerSystem.ts` — updated the `buildBot()` construction call to stop passing the removed `attackRange`/`attackArcDegrees` stats; updated the three `showWindupCue` call sites (`engage`/`cast_skill`/`hold`) to the new one-argument signature. No change to `resolveAttack`, `resolveSkillCast`, `testMeleeArc`, `fireRangedProjectile`, cooldown/windup timers, or any brain/controller wiring — damage calculation is byte-identical.
+5. `scripts/phase-5a-remove-bot-telegraph-regression.mjs` — new, 22 checks: per-class basic-attack no-radius (1–4), ranger/mage/priest projectile still fires (5–7), warrior melee damage resolves (8), ranger/mage/priest skill cast no-radius (9–11), skill VFX after cast still appears (12), damage/heal timing unchanged (13), BotBrain hold/kite still works (14), class rotation/live selection still works (15), reset×3 no duplicate bot/projectile/cue (16), mobile 915×412/800×360 readable (17–18), human stats unchanged (19), difficulty bot-only (20), Gate/Core/Capture/Siege/Timer/Score unchanged (21), no console errors (22).
+6. Docs updated (`project-status.md`, `open-pr-dashboard.md`, this worklog).
+
+### Design notes
+
+- **Legacy-compatible by construction.** Two regression suites not on this task's allowed-files list (`phase-5a-bot-regression.mjs` R5, `phase-5a-live-botplayer-class-skill-parity-regression.mjs` C15/C13b) assert that a `botAttackWarning`-tagged object becomes visible during windup — proving "some cue exists." Since the same tagged object and visibility lifecycle were kept, only its drawn geometry changed, both suites stayed green with zero edits to either script.
+- **Fixed-size, not range-scaled.** The new glow radius (`radius * 0.5`) depends only on the bot's own body size, never on `attackRange`/`attackArcDegrees` — that's the actual fix, not just a smaller circle. `getWindupCueRadius()` exists purely so the new suite can prove this with numbers (`MAX_CUE_RADIUS = 20`) rather than eyeballing it.
+- **No combat-logic touch.** All hit detection, damage, skill stats, cooldowns, and BotBrain scoring are untouched; this was a pure visual-layer change confined to one method plus its now-dead fields.
+
+### Regression evidence (isolated worktree @ PR head, single sequential vite preview)
+
+| Suite | Result |
+|---|---|
+| `npm run build` | PASS |
+| `phase-5a-remove-bot-telegraph-regression.mjs` (new) | **22/22** |
+| `phase-5a-live-botplayer-class-skill-parity-regression.mjs` | 28/28 |
+| `phase-5a-ranged-combat-feel-regression.mjs` | 24/24 |
+| `phase-5a-bot-player-ranged-parity-regression.mjs` | 26/26 |
+| `phase-5a-bot-player-parity-regression.mjs` | 17/17 |
+| `phase-5a-bot-brain-regression.mjs` | 18/18 |
+| `phase-5a-bot-regression.mjs` | 20/20 |
+| `phase-4e` / `phase-4d` / `phase-4c-c` | 38/38 · 17/17 · 18/18 |
+
+All 10 commands run sequentially on a single idle preview, per task instruction — no concurrent preview servers.
+
+**Verdict:** RUNTIME READY FOR ONE-PASS QA. Draft only — not Ready, not merged. Phase 5B/5C not started.
+
+---
+
 ## 2026-06-20 — Phase 5A-7 Live BotPlayer Class + Player Attack/Skill Parity runtime fix (Agent A)
 
 **Agent:** A (Runtime Implementation / Bugfix)
