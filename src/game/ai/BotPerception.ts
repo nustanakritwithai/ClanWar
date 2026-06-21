@@ -34,6 +34,16 @@ export interface BotPerception {
   /** Upper edge of the comfortable band (px) — preferred firing distance. */
   preferredMaxRange: number;
 
+  // Class skill (Phase 5A-7) — the bot's signature skill, MVP.
+  /** A class skill exists and its cooldown + mana are ready to cast. */
+  skillReady: boolean;
+  /** The class skill deals damage (vs. a defensive heal skill). */
+  skillIsOffensive: boolean;
+  /** Player is within the class skill's cast range. */
+  playerInSkillRange: boolean;
+  /** Bot HP is at/below the defensive cast threshold. */
+  selfHpLow: boolean;
+
   // Player motion (derived vs previous distance held in memory)
   playerClosing: boolean;
   playerFleeing: boolean;
@@ -73,6 +83,12 @@ export interface BuildPerceptionArgs {
   prevDistanceToPlayer: number | null;
   /** Deadband (px) so tiny jitter does not flip closing/fleeing. */
   motionDeadband: number;
+  // Class skill (Phase 5A-7) — computed by the system from the shared skill data.
+  skillReady: boolean;
+  skillIsOffensive: boolean;
+  skillRange: number;
+  /** HP ratio at/below which a defensive heal skill should fire. */
+  defensiveHpRatio: number;
 }
 
 /** Pure perception builder. No Phaser, no side effects. */
@@ -94,6 +110,9 @@ export function buildPerception(a: BuildPerceptionArgs): BotPerception {
   const playerInComfortBand =
     a.isRanged && distanceToPlayer >= a.dangerCloseRange && distanceToPlayer <= a.attackRange;
 
+  const playerInSkillRange = distanceToPlayer <= a.skillRange;
+  const selfHpLow = a.hpRatio <= a.defensiveHpRatio;
+
   return {
     botX: a.botX,
     botY: a.botY,
@@ -110,6 +129,10 @@ export function buildPerception(a: BuildPerceptionArgs): BotPerception {
     playerInComfortBand,
     preferredMinRange: a.preferredMinRange,
     preferredMaxRange: a.preferredMaxRange,
+    skillReady: a.skillReady,
+    skillIsOffensive: a.skillIsOffensive,
+    playerInSkillRange,
+    selfHpLow,
     playerClosing,
     playerFleeing,
     hpRatio: a.hpRatio,

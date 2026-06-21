@@ -1,8 +1,8 @@
 # Project Status
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-20 (Phase 5A-6 Ranged Combat Feel Tuning runtime — Agent A draft)  
-> **Base branch:** `claude/game-file-analysis-a20xup` @ `d975274`
+> **Last updated:** 2026-06-20 (Phase 5A-7 Live BotPlayer Class + Skill Parity runtime fix — Agent A draft)  
+> **Base branch:** `claude/game-file-analysis-a20xup` @ `96727ac`
 
 ## Current phase
 
@@ -38,9 +38,13 @@ The enemy is a `BotPlayer` (AI-controlled Warrior), not a monster. Stat baseline
 
 BotPlayer supports ranged classes (ranger/mage/priest) alongside warrior. Each class reads its baseline **by value** from `HEROES`, wears its own class sprite (red enemy treatment), and ranged classes fire the matching normal-attack projectile (ranger → arrow, mage → magic bolt, priest → holy bolt) by reusing the existing Phase 4E `showNormalAttackProjectile` — **visual-only, no new damage formula**. The brain uses the class `attackRange`. `debugSetClass` is the test/runtime hook. Warrior/Guardian stay melee. Human stats unchanged; difficulty bot-only.
 
-**Phase 5A-6 — Ranged Combat Feel Tuning** — **RUNTIME IN DRAFT (Agent A)**
+**Phase 5A-6 — Ranged Combat Feel Tuning** — **MERGED** (PR #66 @ `96727ac`)
 
-**Agent A runtime in draft** — branch `cursor/phase-5a-6-ranged-combat-feel-tuning`, base `d975274`: ranged BotPlayers (ranger/mage/priest) now **space like a real player**. A class-aware spacing config (`BOT_RANGED_SPACING`: `dangerCloseRange`/`preferredMinRange`/`preferredMaxRange`/`kiteSpeedMul`) drives two new brain goals — `hold_range` (stop and fire from the comfortable band, never chase closer) and `kite_back` (backpedal when the player gets inside dangerCloseRange). Both score between chase and the safety returns, so the bot prefers spacing over a blind rush but **stuck/off-leash still overrides**, and `attack_player`/`recover_after_attack` still outrank them (shoot when ready, kite/hold while reloading). Kite uses a hysteresis band (engage at dangerClose, disengage at preferredMin) plus the existing motion deadband to prevent goal thrashing. Ranger kites most, mage holds mid, priest holds safest (no healing AI). Projectiles, wind-up dodge window, lost-player investigate, human stats, difficulty scope and all frozen systems are unchanged. `kiteSpeedMul` is still fairness-clamped to the player's speed. No multi-bot, skills, objective AI, advanced pathfinding, or LLM/ML. **Not Ready, not merged.** Phase 5B/5C not started.
+Ranged BotPlayers (ranger/mage/priest) space like a real player: a class-aware `BOT_RANGED_SPACING` config drives `hold_range` (stop and fire from the comfortable band) and `kite_back` (backpedal inside dangerCloseRange), scored between chase and the safety returns with kite hysteresis to prevent thrashing. Fairness-clamped, no healing AI, human stats / difficulty scope / frozen systems unchanged.
+
+**Phase 5A-7 — Live BotPlayer Class + Player Attack/Skill Parity Fix** — **RUNTIME IN DRAFT (Agent A)**
+
+**Agent A runtime in draft** — branch `cursor/phase-5a-7-live-botplayer-class-skill-parity-fix`, base `96727ac`. Fixes the **actual live match path** the product owner saw: the bot was hard-locked to the first Warrior because `MatchScene` constructed `BotPlayerSystem` with no class config (always `BOT_PLAYER.classId = 'warrior'`); `debugSetClass` (tests only) was the sole class switch. Now the live spawn path selects a real class — `resolveLiveBotClass` (concrete `?botClass=` / launch data, `random`, or deterministic rotation), with `ClassSelectScene` opting production into **rotation** across Warrior/Ranger/Mage/Priest so the real game is no longer stuck on Warrior (a bare `MatchScene` start keeps the Warrior default for tooling). Each ranged class shows its sprite + matching normal-attack projectile in the real match. **Skill parity MVP:** the bot reads its class signature skill (slot1) from the shared `SKILLS` table through the same `SkillRuntimeSystem` the human uses, and **weaves** it like a real player — `castSkillReady` (95) sits between chase (70) and attack (100), so the bot basic-attacks when it can and casts when the auto is on cooldown or the target is in skill-but-not-attack range; a low-HP priest prioritises its heal (`castSkillDefensive` 105). Offensive skill damage resolves through the shared `player.takeDamage`/`CombatSystem` formula (no bot-only numbers); skill VFX reuse the player's cast-flash/projectile/heal visuals; cooldown + (bot-only) mana gate spam; ranged bots never cast point-blank (kite first, then cast). 5A-6 spacing/kite, lost-player investigate, wind-up dodge, mobile readability, human stats, difficulty scope and all frozen systems are unchanged. No multi-bot / objective AI / advanced combo / healing AI / pathfinding / LLM-ML. **Not Ready, not merged.** Phase 5B/5C not started.
 
 ## Base snapshot
 
@@ -88,11 +92,11 @@ cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
 
 ## Open PRs
 
-- **Phase 5A-6 Ranged Combat Feel Tuning Runtime** — Draft (Agent A) — branch `cursor/phase-5a-6-ranged-combat-feel-tuning`, base `d975274` — ranged bot spacing/kite/hold-range + readability. Not Ready, not merged.
+- **Phase 5A-7 Live BotPlayer Class + Skill Parity Runtime Fix** — Draft (Agent A) — branch `cursor/phase-5a-7-live-botplayer-class-skill-parity-fix`, base `96727ac` — live class selection (rotation/`?botClass=`) + class-skill weave MVP via the shared skill pipeline. Not Ready, not merged.
 
 ## Agent lane status
 
-**Agent A** — 4E runtime + 5A-1→5A-5 bot runtime merged (#52–#55, #59, #60, #62, #64, #65); **5A-6 ranged combat feel tuning runtime in draft** (this work)
+**Agent A** — 4E runtime + 5A-1→5A-6 bot runtime merged (#52–#55, #59, #60, #62, #64, #65, #66); **5A-7 live class + skill parity runtime fix in draft** (this work)
 
 **Agent B** — 4E assets complete (#51 merged); 5A bot asset plan merged (#57)
 
@@ -106,11 +110,12 @@ cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
 
 ## Test / deploy evidence
 
-- `npm run build` — PASS (5A-6 ranged combat feel tuning)
-- `phase-5a-ranged-combat-feel-regression.mjs` — **24/24 PASS** (ranger/mage/priest stop-in-range + kite + hold + projectile, no thrash, stuck/off-leash return, investigate, dodge window, human-unchanged, difficulty bot-only, mobile, freeze)
+- `npm run build` — PASS (5A-7 live class + skill parity fix)
+- `phase-5a-live-botplayer-class-skill-parity-regression.mjs` — **28/28 PASS** (live spawn of warrior/ranger/mage/priest via launch path, rotation not locked to warrior, class sprite + projectile in real match, skill cast via shared `SKILLS`/`SkillRuntimeSystem`, shared-formula damage, readable telegraph + VFX, cooldown spam-guard, priest defensive heal, 5A-6 spacing/kite preserved, investigate, reset×3, mobile, human-unchanged, difficulty bot-only, freeze, no console errors)
+- `phase-5a-ranged-combat-feel-regression.mjs` — **24/24 PASS** (5A-6 preserved)
 - `phase-5a-bot-player-ranged-parity-regression.mjs` — **26/26 PASS** (5A-5 preserved)
 - `phase-5a-bot-player-parity-regression.mjs` — **17/17 PASS** (5A-4 preserved)
-- `phase-5a-bot-brain-regression.mjs` — **17/18** (B10 plan-step sampling-window flake — pre-existing, reproduces byte-identically on the unmodified base `d975274`; warrior-only path untouched by 5A-6)
+- `phase-5a-bot-brain-regression.mjs` — **18/18 PASS** (B10 plan-step now green — the skill weave keeps the chase plan's basic-attack windup observable; verified 18/18 ×3)
 - `phase-5a-bot-regression.mjs` — **20/20 PASS** (preserved)
 - `phase-4e-visual-reskin-regression.mjs` — **38/38 PASS**
 - `phase-4d-combat-feel-regression.mjs` — 17/17 PASS
@@ -119,7 +124,7 @@ cc6cbde  Merge pull request #49 (Phase 4E visual design spec)
 
 ## Next safe action
 
-**One-pass QA of Phase 5A-6 Ranged Combat Feel Tuning runtime draft (Agent F).** Do not Ready/merge without explicit authorization. Phase 5B/5C and final bot assets remain **NOT STARTED** and **NOT AUTHORIZED**.
+**One-pass QA of Phase 5A-7 Live BotPlayer Class + Skill Parity runtime fix (Agent F).** Do not Ready/merge without explicit authorization. Phase 5B/5C and final bot assets remain **NOT STARTED** and **NOT AUTHORIZED**.
 
 ## Must not do
 

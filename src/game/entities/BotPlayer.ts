@@ -196,6 +196,19 @@ export class BotPlayer implements CombatTarget {
     return result;
   }
 
+  /**
+   * Restore HP from a class heal skill (Phase 5A-7). The heal *amount* comes from
+   * the shared SKILLS definition — no bot-only formula — and is simply clamped to
+   * maxHp here. Returns the HP actually restored.
+   */
+  public heal(amount: number): number {
+    if (this.dead || amount <= 0) return 0;
+    const before = this.currentHp;
+    this.currentHp = Math.min(this.maxHp, this.currentHp + amount);
+    this.flashBody(0x4ade80, 140);
+    return this.currentHp - before;
+  }
+
   /** Telegraph shown for the whole wind-up window so the player can react. */
   public showWindupCue(angle: number, windupMs: number): void {
     if (this.dead) return;

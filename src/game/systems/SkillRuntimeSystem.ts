@@ -65,6 +65,32 @@ export class SkillRuntimeSystem {
     return { ok: true, skillName: skill.name, cooldown: skill.cooldown };
   }
 
+  /**
+   * Phase 5A-7: caster-agnostic cast for non-`Player` casters (the BotPlayer).
+   * Mirrors {@link tryUseSkill}'s gating but takes a plain mana value instead of a
+   * `Player`, so the AI-controlled bot reuses the *same* skill source, cooldown
+   * table, and mana gating the human uses — only the caster differs. Purely
+   * additive: {@link tryUseSkill} (the human path) is untouched.
+   */
+  public tryUseSkillForCaster(action: ActionKey, currentMana: number): SkillUseResult {
+    const skill = this.getSkillForAction(action);
+    if (!skill) {
+      this.lastResult = 'fail: no-skill';
+      return { ok: false, reason: 'no-skill' };
+    }
+    if (this.getCooldownRemaining(action) > 0) {
+      this.lastResult = 'fail: cooldown';
+      return { ok: false, reason: 'cooldown', skillName: skill.name };
+    }
+    if (currentMana < skill.manaCost) {
+      this.lastResult = 'fail: mana';
+      return { ok: false, reason: 'mana', skillName: skill.name };
+    }
+    this.cooldownRemaining.set(action, skill.cooldown);
+    this.lastResult = `used: ${skill.name}`;
+    return { ok: true, skillName: skill.name, cooldown: skill.cooldown };
+  }
+
   public getCooldownRemaining(action: ActionKey): number {
     return this.cooldownRemaining.get(action) ?? 0;
   }

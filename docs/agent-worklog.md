@@ -5,6 +5,57 @@
 
 ---
 
+## 2026-06-20 — Phase 5A-7 Live BotPlayer Class + Player Attack/Skill Parity runtime fix (Agent A)
+
+**Agent:** A (Runtime Implementation / Bugfix)
+**Branch:** `cursor/phase-5a-7-live-botplayer-class-skill-parity-fix`
+**Base:** `claude/game-file-analysis-a20xup` @ `96727ac0927dc761fad08425f60712f00f9465c8`
+**Task:** Fix the *actual playable* runtime path — the live BotPlayer was always the first Warrior and never used class skills. Make the real match spawn Warrior/Ranger/Mage/Priest and have the bot weave class skills like a real player, reusing the shared player skill pipeline. No player stat / damage-formula change.
+
+### Root cause
+
+`MatchScene.create()` constructed `new BotSystem(this, hooks)` with **no class config**, so `BotPlayerSystem` always fell back to `BOT_PLAYER.classId = 'warrior'`. The only class switch was `debugSetClass` — a test/runtime hook never called on the live spawn path. So the visible game was hard-locked to Warrior, and there was no skill system wired into the bot at all (basic attack only).
+
+### Actions taken
+
+1. `src/game/data/bot-player-config.ts` — `BOT_PLAYABLE_CLASSES`, `isBotPlayableClass`, pure `resolveLiveBotClass(setting, rotationIndex, rng)` (concrete class / `random` / deterministic `rotate`), and `BOT_SKILL` config (slot, defensive HP ratio, mana regen).
+2. `src/game/scenes/MatchScene.ts` — read live bot class from `?botClass=` URL param > launch data > Warrior default; resolve via `resolveLiveBotClass` with the rotation index persisted in the game registry; pass `{ ...BOT_PLAYER, classId }` into `BotPlayerSystem`.
+3. `src/game/scenes/ClassSelectScene.ts` — production entry now starts the match with `botClass: 'rotate'` so the real game rotates across classes (a bare `MatchScene` start keeps the historical Warrior default, so the legacy warrior-based suites stay deterministic).
+4. `src/game/types.ts` — `MatchSceneData.botClass`.
+5. `src/game/systems/SkillRuntimeSystem.ts` — **additive** `tryUseSkillForCaster(action, mana)` (caster-agnostic cast for the non-`Player` bot); the human `tryUseSkill` path is untouched.
+6. `src/game/systems/BotPlayerSystem.ts` — own a `SkillRuntimeSystem(classId)` + bot-only mana pool (seeded by value from the class baseline); compute `skillReady`/`skillIsOffensive`/`skillRange`; execute a `cast_skill` intent (telegraphed wind-up → `resolveSkillCast`); offensive damage through the shared `player.takeDamage` formula + class projectile/slash VFX, priest heal through `bot.heal(skill.heal)` + heal VFX; a whiffed offensive skill records a miss; debug/QA getters `getSkillInfo` / `getSkillCastDebug`.
+7. `src/game/ai/BotPerception.ts` — `skillReady` / `skillIsOffensive` / `playerInSkillRange` / `selfHpLow` inputs + outputs.
+8. `src/game/ai/BotBrain.ts` + `src/game/data/bot-brain-config.ts` — new `cast_skill` goal + `cast_skill_step` plan step; weights `castSkillReady` (95, between chase 70 and attack 100 → **weave**) and `castSkillDefensive` (105, priest survival). Gated to a healthy engage (not stuck / off-leash / recovering / recently-missed) so the safety returns and recovery beat win; ranged poke from skill range, melee cast at attack range, never point-blank for ranged.
+9. `src/game/controllers/BotPlayerController.ts` — `cast_skill` intent kind + `skillId`.
+10. `src/game/entities/BotPlayer.ts` — `heal(amount)` (clamped, shared SKILLS value, green flash).
+11. `scripts/phase-5a-live-botplayer-class-skill-parity-regression.mjs` — new, 28 checks (C1–C27 + priest defensive heal) exercising the **real launch path**, not `debugSetClass`.
+12. Docs updated (`project-status.md`, `open-pr-dashboard.md`, this worklog).
+
+### Design notes
+
+- **Weave, not skill-spam.** `castSkillReady` (95) sits below `attackInRange` (100): the bot basic-attacks when it can and casts when the auto is recharging or the target is in skill-but-not-attack range — like a real player. This also keeps the legacy `phase-5a-bot-brain` B10 plan-step test green: the warrior's chase plan still reaches its basic-attack wind-up before any skill cast.
+- **Shared source of truth.** Skill stats (damage/heal/range/cooldown/manaCost) come from the shared `SKILLS` table via the same `SkillRuntimeSystem` the human uses; the bot only adds a thin caster-agnostic gate + bot-only mana. No bot-only damage/heal numbers exist.
+- **Default split.** Production (ClassSelectScene) rotates; a bare `MatchScene` start defaults to Warrior so the existing warrior-based regressions remain deterministic. A `?botClass=` URL param overrides both.
+
+### Regression evidence (isolated worktree @ PR head, vite preview)
+
+| Suite | Result |
+|---|---|
+| `npm run build` | PASS |
+| `phase-5a-live-botplayer-class-skill-parity-regression.mjs` | **28/28** |
+| `phase-5a-ranged-combat-feel-regression.mjs` | 24/24 |
+| `phase-5a-bot-player-ranged-parity-regression.mjs` | 26/26 |
+| `phase-5a-bot-player-parity-regression.mjs` | 17/17 |
+| `phase-5a-bot-brain-regression.mjs` | **18/18** (verified ×3) |
+| `phase-5a-bot-regression.mjs` | 20/20 |
+| `phase-4e` / `phase-4d` / `phase-4c-c` | 38/38 · 17/17 · 18/18 |
+
+**Note on B10:** the prior phase saw `phase-5a-bot-brain` B10 as a sampling-window flake. In 5A-7 it is **green and stable** because the skill weave (cast below basic) preserves the warrior chase plan's basic-attack wind-up that B10 samples — i.e., the skill feature does not interrupt the approach.
+
+**Verdict:** RUNTIME READY FOR ONE-PASS QA. Draft only — not Ready, not merged. Phase 5B/5C not started.
+
+---
+
 ## 2026-06-20 — Phase 5A-6 Ranged Combat Feel Tuning runtime (Agent A)
 
 **Agent:** A (Runtime Implementation)

@@ -1,33 +1,36 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-20 (Phase 5A-6 ranged combat feel tuning runtime draft)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `d975274`
+> **Last updated:** 2026-06-20 (Phase 5A-7 live BotPlayer class + skill parity runtime fix draft)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `96727ac`
 
 ## Summary
 
 **Phase 4E complete** — PR #52–#55 merged; live verified PASS.
 
-**Phase 5A-1 → 5A-5 bot runtime** — PR #59, #60, #62, #64, #65 merged @ `d975274`.
+**Phase 5A-1 → 5A-6 bot runtime** — PR #59, #60, #62, #64, #65, #66 merged @ `96727ac`.
 
-**Active draft:** Phase 5A-6 Ranged Combat Feel Tuning **runtime** (Agent A) — ranged bots now space/kite/hold-range like a real player. **Not Ready, not merged.**
+**Active draft:** Phase 5A-7 Live BotPlayer Class + Skill Parity **runtime fix** (Agent A) — the live match now spawns the bot as a real rotating class and weaves class skills through the shared skill pipeline. **Not Ready, not merged.**
 
 ---
 
-## Open PR — Phase 5A-6 Ranged Combat Feel Tuning Runtime (Draft)
+## Open PR — Phase 5A-7 Live BotPlayer Class + Skill Parity Runtime Fix (Draft)
 
-**Agent A: Phase 5A-6 — Ranged Bot Combat Feel Tuning**  
-Branch `cursor/phase-5a-6-ranged-combat-feel-tuning` — Base `d975274362d54db6bda12ec9015598e811bdaa96`
+**Agent A: Phase 5A-7 — Live BotPlayer Class + Player Attack/Skill Parity Fix**  
+Branch `cursor/phase-5a-7-live-botplayer-class-skill-parity-fix` — Base `96727ac0927dc761fad08425f60712f00f9465c8`
 
-Touched: `src/game/ai/BotBrain.ts`, `src/game/ai/BotPerception.ts`, `src/game/data/bot-brain-config.ts`, `src/game/data/bot-player-config.ts`, `src/game/controllers/BotPlayerController.ts`, `src/game/systems/BotPlayerSystem.ts`, new `scripts/phase-5a-ranged-combat-feel-regression.mjs`, docs. **No `MatchScene`/`Player`/`heroes.ts`/`CombatVfx.ts`/`BotPlayer.ts`/objective/capture/timer edits.** No asset/package/deploy changes.
+Touched: `src/game/scenes/MatchScene.ts` (pass live class to the bot system), `src/game/scenes/ClassSelectScene.ts` (production opts into rotation), `src/game/ai/BotBrain.ts`, `src/game/ai/BotPerception.ts`, `src/game/controllers/BotPlayerController.ts`, `src/game/systems/BotPlayerSystem.ts`, `src/game/systems/SkillRuntimeSystem.ts` (additive caster-agnostic cast — human path untouched), `src/game/entities/BotPlayer.ts` (heal), `src/game/data/bot-player-config.ts`, `src/game/data/bot-brain-config.ts`, `src/game/types.ts` (`MatchSceneData.botClass`), new `scripts/phase-5a-live-botplayer-class-skill-parity-regression.mjs`, docs. **No `Player`/`heroes.ts`/`CombatVfx.ts`/objective/capture/siege/timer/result edits.** No asset/package/deploy changes.
 
-Ranged BotPlayers (ranger/mage/priest) now keep a comfortable gap and kite instead of rushing into melee. A class-aware spacing config (`BOT_RANGED_SPACING`: `dangerCloseRange`/`preferredMinRange`/`preferredMaxRange`/`kiteSpeedMul`) feeds two new brain goals — `hold_range` (stop and fire from the band, never chase closer) and `kite_back` (backpedal when the player gets too close). Both score between chase and the safety returns, with hysteresis (engage at dangerClose, disengage at preferredMin) + the motion deadband to avoid thrashing; `attack_player`/`recover_after_attack` still outrank them and stuck/off-leash still wins. Ranger kites most, mage holds mid, priest holds safest (no healing AI). Kite speed is fairness-clamped to the player. Projectiles, dodge window, investigate, human stats, difficulty scope and frozen systems unchanged.
+**Root cause:** `MatchScene` built `BotPlayerSystem` with no class config, so the live bot was always `BOT_PLAYER.classId = 'warrior'`; the only class switch was `debugSetClass` (tests). **Fix:** `resolveLiveBotClass` selects the class from `?botClass=` / launch data / `random` / deterministic rotation; `ClassSelectScene` passes `botClass: 'rotate'` so production rotates Warrior→Ranger→Mage→Priest. **Skill MVP:** the bot reads its class signature skill (slot1) from the shared `SKILLS` table through the same `SkillRuntimeSystem` the human uses and **weaves** it (`castSkillReady` 95, between chase 70 and attack 100) — basic-attack when able, cast when the auto is on cooldown or the target is in skill-but-not-attack range; offensive damage via the shared `player.takeDamage`/`CombatSystem` formula, priest heal via the shared SKILLS value; skill VFX reuse the player's cast/projectile/heal visuals; cooldown + bot-only mana guard spam; ranged never cast point-blank. 5A-6 spacing/kite, investigate, dodge window, human stats, difficulty scope, frozen systems unchanged.
 
-Regression: `phase-5a-ranged-combat-feel-regression.mjs` **24/24**; `phase-5a-bot-player-ranged-parity` 26/26; `phase-5a-bot-player-parity` 17/17; `phase-5a-bot-brain` 17/18 (B10 pre-existing sampling-window flake, reproduces on base); `phase-5a-bot-regression` 20/20; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18.
+Regression: `phase-5a-live-botplayer-class-skill-parity-regression.mjs` **28/28**; `phase-5a-ranged-combat-feel` 24/24; `phase-5a-bot-player-ranged-parity` 26/26; `phase-5a-bot-player-parity` 17/17; `phase-5a-bot-brain` **18/18** (B10 green — skill weave keeps the chase basic-attack windup observable; verified ×3); `phase-5a-bot-regression` 20/20; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18.
 
 ---
 
 ## Recently merged — Phase 5A
+
+**PR #66 (Agent A)** — Phase 5A-6 Ranged Combat Feel Tuning Runtime  
+MERGED @ `96727ac0927dc761fad08425f60712f00f9465c8`
 
 **PR #65 (Agent A)** — Phase 5A-5 BotPlayer Ranged Class Parity Runtime  
 MERGED @ `d975274362d54db6bda12ec9015598e811bdaa96`

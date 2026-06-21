@@ -19,13 +19,17 @@ import type { NormalAttackProjectileKind } from '../ui/CombatVfx';
  * (never chase closer), `kite_back` → backpedal away from the player. Both target
  * the player so the bot keeps aiming while it spaces.
  *
+ * Phase 5A-7 adds the `cast_skill` intent: the bot casts its class signature
+ * skill (`skillId`, drawn from the shared player SKILLS table) like a player. The
+ * controller stays a pure translator — the system owns the cast/cooldown/VFX.
+ *
  * Pure translation — no Phaser, no physics, no state.
  */
-export type BotIntentKind = 'engage' | 'seek' | 'patrol' | 'hold' | 'kite';
+export type BotIntentKind = 'engage' | 'seek' | 'patrol' | 'hold' | 'kite' | 'cast_skill';
 export type BotAttackKind = 'melee' | 'ranged';
 
 export interface BotIntent {
-  /** engage = pursue/attack the player; seek = move to a point; patrol; hold. */
+  /** engage = pursue/attack; seek = move to a point; patrol; hold; kite; cast_skill. */
   kind: BotIntentKind;
   /** Target world point for `engage` (player) / `seek` (last-seen or spawn). */
   targetX?: number;
@@ -36,6 +40,8 @@ export interface BotIntent {
   attackKind: BotAttackKind;
   /** Projectile to fire for ranged classes (null for melee). */
   projectileKind: NormalAttackProjectileKind | null;
+  /** Class skill to cast for `cast_skill` (shared SKILLS id; null otherwise). */
+  skillId?: string | null;
 }
 
 export interface BotIntentContext {
@@ -47,6 +53,8 @@ export interface BotIntentContext {
   /** Class-derived attack identity (filled by BotPlayerSystem). */
   attackKind: BotAttackKind;
   projectileKind: NormalAttackProjectileKind | null;
+  /** Class signature skill id (shared SKILLS table) or null when none. */
+  skillId: string | null;
 }
 
 export class BotPlayerController {
@@ -58,6 +66,11 @@ export class BotPlayerController {
       case 'attack_player':
       case 'chase_player':
         return { kind: 'engage', targetX: ctx.playerX, targetY: ctx.playerY, basicAttack: true, attackKind: ak, projectileKind: pk };
+
+      case 'cast_skill':
+        // Cast the class signature skill at the player (heal skills self-target,
+        // resolved by the system); never a bot-only ability.
+        return { kind: 'cast_skill', targetX: ctx.playerX, targetY: ctx.playerY, basicAttack: false, attackKind: ak, projectileKind: pk, skillId: ctx.skillId };
 
       case 'hold_range':
         // Hold position and fire when ready; never chase closer.

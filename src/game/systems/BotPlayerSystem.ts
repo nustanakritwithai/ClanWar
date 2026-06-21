@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { PLAYER_RADIUS } from '../constants';
 import { testMeleeArc } from '../combat/HitShapes';
-import type { DamageResult, HeroClassId, HeroStats } from '../types';
+import type { ActionKey, DamageResult, HeroClassId, HeroStats, SkillDefinition } from '../types';
 import type { Player } from '../entities/Player';
 import { getHero } from '../data/heroes';
 import { BotPlayer, type BotState } from '../entities/BotPlayer';
@@ -9,6 +9,7 @@ import {
   BOT_PLAYER,
   BOT_PLAYER_DIFFICULTY_PROFILES,
   BOT_RANGED_SPACING,
+  BOT_SKILL,
   DEFAULT_BOT_DIFFICULTY,
   type BotPlayerConfig,
   type BotDifficulty,
@@ -18,11 +19,16 @@ import {
 import { BotBrain, type BotGoal, type BotBrainSnapshot } from '../ai/BotBrain';
 import { buildPerception } from '../ai/BotPerception';
 import { BOT_BRAIN_CONFIG } from '../data/bot-brain-config';
+import { SkillRuntimeSystem } from './SkillRuntimeSystem';
 import { BotPlayerController, type BotIntent, type BotAttackKind } from '../controllers/BotPlayerController';
 import {
   isRangedNormalAttackClass,
   normalAttackProjectileKind,
   showNormalAttackProjectile,
+  showSkillCastFlash,
+  showSlashArc,
+  showHealBurst,
+  showHealSpark,
   type NormalAttackProjectileKind,
 } from '../ui/CombatVfx';
 
@@ -124,6 +130,18 @@ export class BotPlayerSystem {
   private recoveryTimer = 0;
   private cooldownTimer = 0;
 
+  // Class skill (Phase 5A-7) — reuses the shared player skill runtime + SKILLS.
+  private skillRuntime!: SkillRuntimeSystem;
+  private classSkill: SkillDefinition | undefined;
+  private readonly skillAction: ActionKey = BOT_SKILL.action;
+  private skillMana = 0;
+  private skillMaxMana = 0;
+  /** Skill currently being wound up (resolves at the end of the wind-up). */
+  private castingSkill: SkillDefinition | null = null;
+  // Debug/QA mirror of the last cast (proves shared source + shared damage path).
+  private skillCastCount = 0;
+  private lastSkillCast: { skillId: string; rawAmount: number; applied: number; heal: boolean } | null = null;
+
   // Respawn
   private respawnTimer = 0;
   private respawnArmed = false;
@@ -171,6 +189,16 @@ export class BotPlayerSystem {
     this.classId = classId;
     this.classStats = { ...getHero(classId).stats };
     this.attackRange = this.classStats.attackRange;
+
+    // Class skill (Phase 5A-7): build a SkillRuntimeSystem for this class — the
+    // SAME runtime + SKILLS source the human player uses — and cache the
+    // signature slot skill. The bot's mana pool is seeded BY VALUE from the class
+    // baseline (bot-only; the player's mana is never touched).
+    this.skillRuntime = new SkillRuntimeSystem(classId);
+    this.classSkill = this.skillRuntime.getSkillForAction(this.skillAction);
+    this.skillMaxMana = this.classStats.mana;
+    this.skillMana = this.classStats.mana;
+    this.castingSkill = null;
 
     this.bot = new BotPlayer(
       this.scene,
@@ -221,6 +249,20 @@ export class BotPlayerSystem {
     return BOT_RANGED_SPACING[this.classId] ?? null;
   }
 
+  // --- class skill awareness (Phase 5A-7) ---
+  /** The class skill deals damage (offensive) vs. heals (defensive support). */
+  private get skillIsOffensive(): boolean {
+    return this.classSkill?.damage !== undefined;
+  }
+  /** Cast range for the class skill (its own range, else the class attack range). */
+  private get skillRange(): number {
+    return this.classSkill?.range ?? this.attackRange;
+  }
+  /** A class skill exists and its cooldown + mana are ready right now. */
+  private get skillReady(): boolean {
+    return !!this.classSkill && this.skillRuntime.canUseSkill(this.skillAction, this.skillMana);
+  }
+
   public update(deltaMs: number): void {
     this.bot.update(deltaMs);
     const now = this.scene.time.now;
@@ -244,6 +286,12 @@ export class BotPlayerSystem {
     }
 
     this.cooldownTimer = Math.max(0, this.cooldownTimer - deltaMs);
+
+    // Class skill (Phase 5A-7): advance the shared cooldown runtime and regen the
+    // bot-only mana pool so the skill becomes available like a player's would.
+    const deltaSeconds = deltaMs / 1000;
+    this.skillRuntime.update(deltaSeconds);
+    this.skillMana = Math.min(this.skillMaxMana, this.skillMana + BOT_SKILL.manaRegenPerSecond * deltaSeconds);
 
     const player = this.hooks.getPlayer();
 
@@ -270,6 +318,10 @@ export class BotPlayerSystem {
       matchActive: true,
       prevDistanceToPlayer: this.brain.memory.prevDistanceToPlayer,
       motionDeadband: BOT_BRAIN_CONFIG.motionDeadband,
+      skillReady: this.skillReady,
+      skillIsOffensive: this.skillIsOffensive,
+      skillRange: this.skillRange,
+      defensiveHpRatio: BOT_SKILL.defensiveHpRatio,
     });
     this.brain.tick(perception, now, deltaMs);
 
@@ -279,12 +331,22 @@ export class BotPlayerSystem {
       this.windupTimer -= deltaMs;
       if (this.windupTimer <= 0) {
         this.bot.hideWindupCue();
-        // Ranged classes fire a visual-only normal-attack projectile when the
-        // shot resolves. Damage stays on the shared melee-arc/CombatSystem path.
-        this.fireRangedProjectile(player);
-        const hit = this.resolveAttack(player);
-        this.brain.memory.recordAttack(now);
-        if (!hit) this.brain.memory.recordMissedAttack(now);
+        if (this.castingSkill) {
+          // Class skill resolves through the shared skill/combat pipeline. A
+          // whiffed offensive skill records a miss (like a basic attack) so the
+          // recovery rhythm is preserved.
+          const hit = this.resolveSkillCast(player, this.castingSkill);
+          this.castingSkill = null;
+          this.brain.memory.recordAttack(now);
+          if (!hit) this.brain.memory.recordMissedAttack(now);
+        } else {
+          // Ranged classes fire a visual-only normal-attack projectile when the
+          // shot resolves. Damage stays on the shared melee-arc/CombatSystem path.
+          this.fireRangedProjectile(player);
+          const hit = this.resolveAttack(player);
+          this.brain.memory.recordAttack(now);
+          if (!hit) this.brain.memory.recordMissedAttack(now);
+        }
         this.bot.state = 'recovery';
         this.recoveryTimer = this.cfg.recoveryMs;
         this.cooldownTimer = this.effCooldownMs;
@@ -310,6 +372,7 @@ export class BotPlayerSystem {
       investigateTarget: this.brain.investigateTarget(),
       attackKind: this.attackKind,
       projectileKind: this.projectileKind,
+      skillId: this.classSkill?.id ?? null,
     });
     this.executeIntent(intent, perception, player, deltaMs);
   }
@@ -351,6 +414,25 @@ export class BotPlayerSystem {
       case 'patrol': {
         this.bot.state = 'idle';
         this.patrol(deltaMs);
+        this.updateStuck(deltaMs, false);
+        break;
+      }
+
+      case 'cast_skill': {
+        // Cast the class signature skill like a player: face the target, plant,
+        // and start a telegraphed wind-up. The cast resolves through the shared
+        // skill/combat pipeline when the wind-up completes (see update()).
+        this.bot.state = 'chase';
+        this.bot.body.setVelocity(0, 0);
+        this.facingAngle = p.angleToPlayer;
+        // The skill has its own cooldown (skillReady), decoupled from the basic
+        // attack timer, so it can weave in while the auto is recharging.
+        if (this.classSkill && this.skillReady) {
+          this.castingSkill = this.classSkill;
+          this.bot.state = 'windup';
+          this.windupTimer = this.effWindupMs;
+          this.bot.showWindupCue(this.facingAngle, this.effWindupMs);
+        }
         this.updateStuck(deltaMs, false);
         break;
       }
@@ -506,6 +588,8 @@ export class BotPlayerSystem {
     this.windupTimer = 0;
     this.recoveryTimer = 0;
     this.cooldownTimer = 0;
+    this.castingSkill = null;
+    this.skillMana = this.skillMaxMana;
     this.resetPatrol();
     this.brain.onRespawn(now);
   }
@@ -551,6 +635,85 @@ export class BotPlayerSystem {
       kind,
       (o) => this.hooks.registerWorldObject(o),
     );
+  }
+
+  /**
+   * Resolve a class skill cast (Phase 5A-7, MVP). Cooldown + mana are consumed
+   * through the SAME SkillRuntimeSystem the human uses; the *effect* uses the
+   * shared combat path — offensive skills deal `skill.damage` via the shared
+   * `player.takeDamage` (CombatSystem) formula, the priest heal restores
+   * `skill.heal` from the shared SKILLS definition. No bot-only damage/heal
+   * numbers exist anywhere here. VFX reuse the player's skill visuals.
+   */
+  private resolveSkillCast(player: Player, skill: SkillDefinition): boolean {
+    const res = this.skillRuntime.tryUseSkillForCaster(this.skillAction, this.skillMana);
+    if (!res.ok) return false; // cooldown/mana not actually ready — abort cleanly
+    this.skillMana = Math.max(0, this.skillMana - skill.manaCost);
+
+    const reg = (o: Phaser.GameObjects.GameObject) => this.hooks.registerWorldObject(o);
+    showSkillCastFlash(this.scene, this.bot.x, this.bot.y, reg);
+    this.bot.showAttackFlash();
+    this.skillCastCount += 1;
+
+    if (skill.damage !== undefined) {
+      // Offensive: readable cast visual toward the player + shared-formula damage.
+      // Ranged skills fire a DISTINCT skill bolt (its own tag/colour) so it reads
+      // as a skill, not a normal shot, and never pollutes normal-attack projectile
+      // counts. Melee skills show a slash arc.
+      if (this.attackKind === 'ranged' && this.projectileKind) {
+        const dist = Math.hypot(player.x - this.bot.x, player.y - this.bot.y);
+        const travel = Math.min(Math.max(dist, 1), this.skillRange);
+        this.showSkillProjectile(this.facingAngle, travel, this.projectileKind, reg);
+      } else {
+        showSlashArc(this.scene, this.bot.x, this.bot.y, this.facingAngle, reg);
+      }
+      const dist = Math.hypot(player.x - this.bot.x, player.y - this.bot.y);
+      let applied = 0;
+      if (dist <= this.skillRange + PLAYER_RADIUS) {
+        const result = player.takeDamage(skill.damage);
+        this.hooks.onBotHitPlayer(result, player.x, player.y);
+        applied = result.finalDamage;
+      }
+      this.lastSkillCast = { skillId: skill.id, rawAmount: skill.damage, applied, heal: false };
+      return applied > 0; // whiff ⇒ recorded as a miss by the caller
+    }
+    if (skill.heal !== undefined) {
+      // Defensive: heal self with the shared SKILLS heal value + player heal VFX.
+      const healed = this.bot.heal(skill.heal);
+      showHealBurst(this.scene, this.bot.x, this.bot.y, reg);
+      showHealSpark(this.scene, this.bot.x, this.bot.y, reg);
+      this.lastSkillCast = { skillId: skill.id, rawAmount: skill.heal, applied: healed, heal: true };
+    }
+    return true; // a heal / support cast never counts as a miss
+  }
+
+  /**
+   * Distinct readable skill bolt (Phase 5A-7). Tagged `botSkillProjectile` (NOT
+   * the normal-attack tag) so a woven skill reads as its own thing and never
+   * inflates normal-attack projectile counts. Visual-only + self-destroying; the
+   * damage already resolved through the shared combat path in resolveSkillCast.
+   */
+  private showSkillProjectile(
+    angle: number,
+    travel: number,
+    kind: NormalAttackProjectileKind,
+    register: (o: Phaser.GameObjects.GameObject) => void,
+  ): void {
+    const color = kind === 'arrow' ? 0xfcd34d : kind === 'magic_bolt' ? 0xa78bfa : 0xfde68a;
+    const startX = this.bot.x;
+    const startY = this.bot.y;
+    const bolt = this.scene.add.circle(startX, startY, 9, color, 0.95).setDepth(94);
+    bolt.setStrokeStyle(2, 0xffffff, 0.85);
+    bolt.setData('botSkillProjectile', kind);
+    register(bolt);
+    this.scene.tweens.add({
+      targets: bolt,
+      x: startX + Math.cos(angle) * travel,
+      y: startY + Math.sin(angle) * travel,
+      duration: Math.max(120, Math.min(360, travel * 1.1)),
+      ease: 'Quad.easeIn',
+      onComplete: () => bolt.destroy(),
+    });
   }
 
   /** Player basic/melee attack against the bot. Returns null when it misses. */
@@ -665,6 +828,59 @@ export class BotPlayerSystem {
   /** Debug-only: prime the attack cooldown so kite/hold spacing is observable. */
   public debugSetCooldown(ms: number): void {
     this.cooldownTimer = Math.max(0, ms);
+  }
+
+  /**
+   * Class skill identity (Phase 5A-7). Proves the bot reads its skill from the
+   * shared SKILLS table via the same SkillRuntimeSystem the player uses — the
+   * `skillId` matches the human's class slot skill exactly.
+   */
+  public getSkillInfo(): {
+    action: ActionKey;
+    skillId: string | null;
+    skillName: string | null;
+    source: string;
+    offensive: boolean;
+    isHeal: boolean;
+    range: number;
+    manaCost: number;
+    cooldownTotal: number;
+    cooldownRemaining: number;
+    mana: number;
+    ready: boolean;
+  } {
+    const skill = this.classSkill ?? null;
+    return {
+      action: this.skillAction,
+      skillId: skill?.id ?? null,
+      skillName: skill?.name ?? null,
+      source: 'shared:SKILLS+SkillRuntimeSystem',
+      offensive: this.skillIsOffensive,
+      isHeal: skill?.heal !== undefined,
+      range: this.skillRange,
+      manaCost: skill?.manaCost ?? 0,
+      cooldownTotal: this.skillRuntime.getCooldownTotal(this.skillAction),
+      cooldownRemaining: this.skillRuntime.getCooldownRemaining(this.skillAction),
+      mana: Math.round(this.skillMana),
+      ready: this.skillReady,
+    };
+  }
+
+  /** Last-cast mirror (Phase 5A-7) for QA — count + the raw shared-def amount. */
+  public getSkillCastDebug(): {
+    casts: number;
+    lastSkillId: string | null;
+    lastRawAmount: number | null;
+    lastApplied: number | null;
+    lastWasHeal: boolean | null;
+  } {
+    return {
+      casts: this.skillCastCount,
+      lastSkillId: this.lastSkillCast?.skillId ?? null,
+      lastRawAmount: this.lastSkillCast?.rawAmount ?? null,
+      lastApplied: this.lastSkillCast?.applied ?? null,
+      lastWasHeal: this.lastSkillCast?.heal ?? null,
+    };
   }
 
   /** Class ranged-spacing bands (Phase 5A-6) — null for melee classes. */

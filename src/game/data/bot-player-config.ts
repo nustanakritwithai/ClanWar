@@ -8,7 +8,7 @@
 // Phase 5A-4 ships Warrior melee only. `classId` makes future class bots a
 // config change, not a rewrite.
 
-import type { HeroClassId } from '../types';
+import type { ActionKey, HeroClassId } from '../types';
 
 export type BotDifficulty = 'easy' | 'normal' | 'hard';
 
@@ -98,6 +98,66 @@ export interface BotPlayerConfig {
   readonly patrolPauseMinMs: number;
   readonly patrolPauseMaxMs: number;
 }
+
+// Phase 5A-7: the playable classes the live match may spawn the single bot as.
+// Order also defines the deterministic rotation used by default so the real game
+// no longer always shows the first Warrior. Guardian is intentionally excluded
+// from the auto-rotation (it is a tank kit), but is still a valid explicit pick.
+export const BOT_PLAYABLE_CLASSES: readonly HeroClassId[] = ['warrior', 'ranger', 'mage', 'priest'];
+
+export type LiveBotClassSetting = HeroClassId | 'random' | 'rotate';
+
+/** True when `value` is one of the classes the live match may spawn the bot as. */
+export function isBotPlayableClass(value: unknown): value is HeroClassId {
+  return typeof value === 'string' && (BOT_PLAYABLE_CLASSES as readonly string[]).includes(value);
+}
+
+/**
+ * Resolve the live BotPlayer class for a match from the launch setting.
+ *
+ * - a concrete class id → that class (explicit `?botClass=ranger` etc.)
+ * - `'random'`          → a random playable class
+ * - `'rotate'` / unset  → deterministic rotation across BOT_PLAYABLE_CLASSES
+ *
+ * Pure: rotation state is passed in and the next index returned, so the caller
+ * (MatchScene) owns persistence (the game registry) and this stays testable.
+ */
+export function resolveLiveBotClass(
+  setting: LiveBotClassSetting | undefined,
+  rotationIndex: number,
+  rng: () => number = Math.random,
+): { classId: HeroClassId; nextRotationIndex: number } {
+  if (isBotPlayableClass(setting)) {
+    return { classId: setting, nextRotationIndex: rotationIndex };
+  }
+  if (setting === 'random') {
+    const i = Math.floor(rng() * BOT_PLAYABLE_CLASSES.length) % BOT_PLAYABLE_CLASSES.length;
+    return { classId: BOT_PLAYABLE_CLASSES[i], nextRotationIndex: rotationIndex };
+  }
+  // rotate / undefined → cycle deterministically.
+  const idx = ((rotationIndex % BOT_PLAYABLE_CLASSES.length) + BOT_PLAYABLE_CLASSES.length) %
+    BOT_PLAYABLE_CLASSES.length;
+  return { classId: BOT_PLAYABLE_CLASSES[idx], nextRotationIndex: rotationIndex + 1 };
+}
+
+// Phase 5A-7: class skill (MVP) tuning. The bot casts its class signature skill
+// (slot1 from the shared SKILLS table) like a player — offensive classes when the
+// player is in skill range, priest defensively when low. Config-driven so the
+// decision tuning lives here, not inside the system/brain logic.
+export interface BotSkillConfig {
+  /** Which skill slot the bot uses as its signature class skill. */
+  readonly action: ActionKey;
+  /** HP ratio at/below which a defensive (heal) skill is cast. */
+  readonly defensiveHpRatio: number;
+  /** Bot mana regen per second (bot-only pool seeded from the class baseline). */
+  readonly manaRegenPerSecond: number;
+}
+
+export const BOT_SKILL: BotSkillConfig = {
+  action: 'skill1',
+  defensiveHpRatio: 0.55,
+  manaRegenPerSecond: 25,
+};
 
 export const BOT_PLAYER: BotPlayerConfig = {
   classId: 'warrior',

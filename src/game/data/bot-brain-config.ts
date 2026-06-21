@@ -31,6 +31,10 @@ export interface BotBrainWeights {
   readonly kiteTooClose: number;
   /** Ranged-only: player inside the comfortable band → hold + fire, do not chase. */
   readonly holdInBand: number;
+  /** Phase 5A-7: offensive class skill ready + player in skill range → cast it. */
+  readonly castSkillReady: number;
+  /** Phase 5A-7: defensive class skill (priest heal) ready + low HP → cast it. */
+  readonly castSkillDefensive: number;
 }
 
 export interface BotBrainConfig {
@@ -64,6 +68,15 @@ export const BOT_BRAIN_CONFIG: BotBrainConfig = {
     // still outrank both, so "shoot when ready, kite/hold while reloading".
     kiteTooClose: 74,
     holdInBand: 72,
+    // Phase 5A-7 class skill (MVP). castSkillReady (95) sits between chase (70)
+    // and attackInRange (100): the bot basic-attacks when it can and *weaves* its
+    // class skill when the basic is on cooldown or the target is in skill-but-not
+    // attack range — like a real player, not "skill on every cooldown". Gated to a
+    // healthy engage (not stuck / off-leash / recovering) so the safety returns
+    // and the recovery beat are preserved. castSkillDefensive (105) lets a low-HP
+    // priest prioritise its heal over a basic attack (survival first).
+    castSkillReady: 95,
+    castSkillDefensive: 105,
   },
   investigateArriveRadius: 40,
   scanDurationMs: 800,
