@@ -15,6 +15,7 @@ import {
   type BotDifficulty,
   type BotDifficultyProfile,
   type RangedSpacingProfile,
+  type MultiBotSeparationConfig,
 } from '../data/bot-player-config';
 import { BotBrain, type BotGoal, type BotBrainSnapshot } from '../ai/BotBrain';
 import { buildPerception } from '../ai/BotPerception';
@@ -68,6 +69,7 @@ export interface BotSnapshot {
   dead: boolean;
   detectionRange: number;
   attackRange: number;
+  leashRange: number;
   moveSpeed: number;
   speed: number;
   difficulty: BotDifficulty;
@@ -91,6 +93,15 @@ export interface PlayerMeleeHitResult {
   result: DamageResult;
   x: number;
   y: number;
+}
+
+/** Phase 5B-2 — per-frame neighbour sample the manager feeds to separation. */
+export interface BotSeparationSample {
+  x: number;
+  y: number;
+  radius: number;
+  isRanged: boolean;
+  alive: boolean;
 }
 
 /**
@@ -165,6 +176,12 @@ export class BotUnit {
   private lastStuckY = 0;
   private stuck = false;
   private debugStuckOverride: boolean | null = null;
+
+  // Separation (Phase 5B-2): smoothed bot-vs-bot push so units never stack. The
+  // smoothing state lives per unit; the manager only supplies neighbour samples
+  // each frame and the push post-processes the velocity this unit already set.
+  private sepVelX = 0;
+  private sepVelY = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -585,6 +602,8 @@ export class BotUnit {
     this.stuck = false;
     this.lastStuckX = this.bot.x;
     this.lastStuckY = this.bot.y;
+    this.sepVelX = 0;
+    this.sepVelY = 0;
   }
 
   private respawnBot(now: number): void {
@@ -763,6 +782,7 @@ export class BotUnit {
       dead: this.bot.isDead(),
       detectionRange: this.effDetectionRange,
       attackRange: this.attackRange,
+      leashRange: this.effLeashRange,
       moveSpeed: this.effMoveSpeed,
       speed: Math.hypot(this.bot.body.velocity.x, this.bot.body.velocity.y),
       difficulty: this.difficulty,
@@ -906,6 +926,126 @@ export class BotUnit {
   public debugTeleportBot(x: number, y: number): void {
     this.bot.sprite.setPosition(x, y);
     this.bot.body.reset(x, y);
+  }
+
+  /** Phase 5B-2 — lightweight sample the manager uses to compute separation. */
+  public getSeparationSample(): BotSeparationSample {
+    return {
+      x: this.bot.x,
+      y: this.bot.y,
+      radius: this.bot.radius,
+      isRanged: this.attackKind === 'ranged',
+      alive: !this.bot.isDead(),
+    };
+  }
+
+  /**
+   * Phase 5B-2 — soft bot-vs-bot separation. The manager calls this AFTER this
+   * unit's own update() has set its intent velocity for the frame, so it only
+   * post-processes movement; the brain/controller are never touched.
+   *
+   * It is suppressed when the bot is dead, planted in a swing (windup/recovery —
+   * protects the telegraph→hit and avoids jitter), or returning to spawn (the
+   * off-leash / stuck safety owns movement and must win). The push is class-aware
+   * (melee yields less so it holds the front; ranged yields fully and is pushed
+   * harder off a melee body), smoothed with a rest dead-zone so it never jitters,
+   * clamped to the bot's fair move speed, and stripped of any outward component
+   * once at the leash edge so it can never carry a bot past its leash.
+   */
+  public applySeparation(
+    selfIndex: number,
+    samples: ReadonlyArray<BotSeparationSample>,
+    cfg: MultiBotSeparationConfig,
+  ): void {
+    if (this.bot.isDead()) {
+      this.sepVelX = 0;
+      this.sepVelY = 0;
+      return;
+    }
+    // A planted swing must not be nudged (clean attacks, no jitter); the off-leash
+    // return must not be fought (safety outranks separation).
+    const planted = this.bot.state === 'windup' || this.bot.state === 'recovery';
+    const returning = this.brain.currentGoal() === 'return_to_spawn';
+    if (planted || returning) {
+      this.sepVelX = 0;
+      this.sepVelY = 0;
+      return;
+    }
+
+    const selfRanged = this.attackKind === 'ranged';
+    let px = 0;
+    let py = 0;
+    for (let i = 0; i < samples.length; i++) {
+      if (i === selfIndex) continue;
+      const n = samples[i];
+      if (!n.alive) continue;
+      const dx = this.bot.x - n.x;
+      const dy = this.bot.y - n.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist <= 0.0001) {
+        // Exact stack: nudge along a deterministic axis so the pair unsticks.
+        px += selfIndex < i ? 1 : -1;
+        continue;
+      }
+      if (dist >= cfg.radius) continue;
+      const proximity = (cfg.radius - dist) / cfg.radius; // 1 overlapping → 0 at edge
+      // Formation read: a ranged bot pushes away from a melee bot more strongly so
+      // Ranger/Mage/Priest do not stand inside the Warrior's body.
+      const bias = selfRanged && !n.isRanged ? cfg.rangedVsMeleeBias : 1;
+      px += (dx / dist) * proximity * bias;
+      py += (dy / dist) * proximity * bias;
+    }
+
+    const mag = Math.hypot(px, py);
+    let targetX = 0;
+    let targetY = 0;
+    if (mag > 0.0001) {
+      // Melee holds the front (yields less); ranged keeps clear (yields fully).
+      const yieldMul = selfRanged ? cfg.rangedYieldMul : cfg.meleeYieldMul;
+      const pushSpeed = Math.min(cfg.maxPush, cfg.strength * this.effMoveSpeed * mag) * yieldMul;
+      targetX = (px / mag) * pushSpeed;
+      targetY = (py / mag) * pushSpeed;
+    }
+
+    // Smooth toward the target (which is 0 once apart) — damps frame-to-frame
+    // direction changes so there is no left-right shaking.
+    this.sepVelX += (targetX - this.sepVelX) * cfg.smoothing;
+    this.sepVelY += (targetY - this.sepVelY) * cfg.smoothing;
+
+    // Rest dead-zone: below this the unit truly rests (no micro-drift / jitter).
+    if (Math.hypot(this.sepVelX, this.sepVelY) < cfg.restThreshold) {
+      this.sepVelX = 0;
+      this.sepVelY = 0;
+      return;
+    }
+
+    let sx = this.sepVelX;
+    let sy = this.sepVelY;
+
+    // Never carry the bot past its leash: drop the outward-from-spawn component
+    // once at/over the leash boundary (separation must not break the leash).
+    const spawnDx = this.bot.x - this.cfg.spawn.x;
+    const spawnDy = this.bot.y - this.cfg.spawn.y;
+    const spawnDist = Math.hypot(spawnDx, spawnDy);
+    if (spawnDist >= this.effLeashRange && spawnDist > 0) {
+      const radial = (sx * spawnDx + sy * spawnDy) / spawnDist; // outward component
+      if (radial > 0) {
+        sx -= (spawnDx / spawnDist) * radial;
+        sy -= (spawnDy / spawnDist) * radial;
+      }
+    }
+
+    // Blend into the intent velocity the unit already set, then clamp the total to
+    // the bot's fair move speed so separation never makes it faster than allowed.
+    const vx = this.bot.body.velocity.x + sx;
+    const vy = this.bot.body.velocity.y + sy;
+    const speed = Math.hypot(vx, vy);
+    const cap = this.effMoveSpeed;
+    if (speed > cap && speed > 0) {
+      this.bot.body.setVelocity((vx / speed) * cap, (vy / speed) * cap);
+    } else {
+      this.bot.body.setVelocity(vx, vy);
+    }
   }
 
   public destroy(): void {

@@ -5,6 +5,7 @@ import type { BotBrainSnapshot } from '../ai/BotBrain';
 import {
   BOT_PLAYER,
   DEFAULT_BOT_DIFFICULTY,
+  MULTI_BOT_SEPARATION,
   type BotPlayerConfig,
   type BotDifficulty,
 } from '../data/bot-player-config';
@@ -61,6 +62,19 @@ export class BotPlayerSystem {
 
   public update(deltaMs: number): void {
     for (const unit of this.units) unit.update(deltaMs);
+
+    // Phase 5B-2: soft bot-vs-bot separation post-process. Each unit has already
+    // computed its own brain/controller intent; here the manager feeds every unit
+    // a snapshot of its neighbours (sampled BEFORE any push, so the result is
+    // order-independent) and lets each unit nudge itself apart. Single-bot matches
+    // skip this entirely, so the whole 5A regression surface is byte-for-byte
+    // unchanged. This is NOT squad AI / shared targeting / objective AI.
+    if (this.units.length > 1 && MULTI_BOT_SEPARATION.enabled) {
+      const samples = this.units.map((u) => u.getSeparationSample());
+      for (let i = 0; i < this.units.length; i++) {
+        this.units[i].applySeparation(i, samples, MULTI_BOT_SEPARATION);
+      }
+    }
   }
 
   /**

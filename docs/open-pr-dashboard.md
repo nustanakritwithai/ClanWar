@@ -1,8 +1,8 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-21 (Phase 5B-1 multi bot spawn foundation draft)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `f73766e`
+> **Last updated:** 2026-06-21 (Phase 5B-2 multi bot separation / formation safety draft)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `fa7480f`
 
 ## Summary
 
@@ -10,20 +10,29 @@
 
 **Phase 5A-1 → 5A-8 bot runtime** — PR #59, #60, #62, #64, #65, #66, #67, #68 merged @ `f73766e`.
 
-**Active draft:** Phase 5B-1 Multi Bot Spawn Foundation (Agent A) — the match can now spawn more than one AI BotPlayer (config-driven encounter presets, each its own class/spawn/brain/skill/HP); single-bot path unchanged. Spawn foundation only — no squad AI / objective AI / separation / balance scaling. **Not Ready, not merged.**
+**Phase 5B-1 Multi Bot Spawn Foundation** — PR #69 merged @ `fa7480f`.
+
+**Active draft:** Phase 5B-2 Multi Bot Separation / Formation Safety (Agent A) — multiple BotPlayers no longer stack / collapse into one blob when converging on the player; a soft, class-aware bot-vs-bot separation push keeps a readable gap without breaking attacks, kiting, leash, or the off-leash return. Separation safety only — no squad AI / objective AI / balance scaling. **Not Ready, not merged.**
 
 ---
 
-## Open PR — Phase 5B-1 Multi Bot Spawn Foundation (Draft)
+## Open PR — Phase 5B-2 Multi Bot Separation / Formation Safety (Draft)
 
-**Agent A: Phase 5B-1 — Multi Bot Spawn Foundation**  
-Branch `cursor/phase-5b-1-multi-bot-spawn-foundation` — Base `f73766eb419333608df081a2977a3633e7e2f13c`
+**Agent A: Phase 5B-2 — Multi Bot Separation / Formation Safety**  
+Branch `cursor/phase-5b-2-multi-bot-separation-formation-safety` — Base `fa7480ffd1fe3bfc315e795ab05f63cd2b0cf2b4`
 
-Touched: `src/game/systems/BotUnit.ts` (new — the Phase-5A per-bot brain/combat runtime extracted unchanged), `src/game/systems/BotPlayerSystem.ts` (now a thin manager owning `BotUnit[]`; legacy single-bot API delegates to the primary unit, new multi-bot API is additive), `src/game/data/bot-player-config.ts` (encounter presets + `MAX_BOTS` + `resolveBotEncounter`), `src/game/scenes/MatchScene.ts` (build N bot configs from an encounter; wall collider per bot body; `?encounter=` param), `src/game/scenes/ClassSelectScene.ts` (production opts into the default `duel_plus` encounter), `src/game/types.ts` (`MatchSceneData.encounter`), new `scripts/phase-5b-1-multi-bot-spawn-regression.mjs`, docs. **No `Player`/`heroes.ts`/`CombatVfx.ts`/`BotBrain.ts`/`BotPlayerController.ts`/`SkillRuntimeSystem.ts`/objective/capture/siege/timer/result edits.** No asset/package/deploy changes.
+Touched: `src/game/systems/BotUnit.ts` (separation state + `getSeparationSample()` / `applySeparation()`; additive `leashRange` in the snapshot), `src/game/systems/BotPlayerSystem.ts` (manager applies a post-process separation pass after each unit's intent, multi-bot only), `src/game/data/bot-player-config.ts` (`MULTI_BOT_SEPARATION` config), new `scripts/phase-5b-2-multi-bot-separation-regression.mjs`, docs. **No `Player`/`heroes.ts`/`CombatVfx.ts`/`BotBrain.ts`/`BotPlayerController.ts`/`SkillRuntimeSystem.ts`/`MatchScene.ts`/`ClassSelectScene.ts`/`types.ts`/objective/capture/siege/timer/result edits.** No asset/package/deploy changes.
 
-**What changed:** `BotPlayerSystem` was both the MatchScene-facing system and the single bot's runtime; in 5B-1 the per-bot runtime moved verbatim into `BotUnit` and `BotPlayerSystem` became a manager over a collection. A bare `MatchScene` start still spawns exactly one bot (legacy `botClass` path → primary unit, so every 5A suite is unchanged); an encounter preset (`?encounter=` / launch data, used by production) spawns a class mix, each bot fully independent (own id/class/spawn/brain/cooldown/skill runtime/mana/HP). Player melee cleaves all bots in arc (closest returned for HUD). Encounter presets are capped at `MAX_BOTS = 4` with per-member spawn offsets so bots start apart (dynamic separation is 5B-2). **Out of scope (NOT done):** squad AI, shared targeting, objective AI, inter-bot separation (5B-2), multi-bot balance scaling (5B-3), commander.
+**What changed:** Each `BotUnit` still computes its own brain/controller intent; the manager then applies a SOFT bot-vs-bot separation push as a post-process — nearby living bots push away from each other, scaled by proximity, smoothed over time, clamped to the bot's fair move speed. It is class-aware (melee yields less so the Warrior holds the front and reaches melee; ranged yields fully and is pushed harder off a melee body so Ranger/Mage/Priest stay out of the Warrior's space), and is suppressed while a bot is planted in a swing (windup/recovery → clean attacks, no jitter) or returning to spawn (the off-leash/stuck safety wins). The outward-from-spawn component is dropped at the leash edge so separation can never carry a bot past its leash. Single-bot matches skip the pass entirely, so the whole 5A surface is byte-for-byte unchanged. **Out of scope (NOT done):** squad AI, shared targeting, group target selection, objective AI, formation commander, tactical roles, flank/surround AI, advanced pathfinding, multi-bot balance scaling (5B-3).
 
-Regression: `phase-5b-1-multi-bot-spawn-regression.mjs` (new) **23/23** (verified ×2); `phase-5a-remove-bot-telegraph` 22/22; `phase-5a-live-botplayer-class-skill-parity` 28/28; `phase-5a-ranged-combat-feel` 24/24; `phase-5a-bot-player-ranged-parity` 26/26; `phase-5a-bot-player-parity` 17/17; `phase-5a-bot-brain` 18/18; `phase-5a-bot-regression` 20/20; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18 — all run sequentially on a single idle preview. `npm run build` PASS.
+Regression: `phase-5b-2-multi-bot-separation-regression.mjs` (new) **23/23** (verified ×2); `phase-5b-1-multi-bot-spawn` 23/23; `phase-5a-remove-bot-telegraph` 22/22; `phase-5a-live-botplayer-class-skill-parity` 28/28; `phase-5a-ranged-combat-feel` 24/24; `phase-5a-bot-player-ranged-parity` 26/26; `phase-5a-bot-player-parity` 17/17; `phase-5a-bot-brain` 18/18; `phase-5a-bot-regression` 20/20; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18 — all run sequentially on a single idle preview. `npm run build` PASS.
+
+---
+
+## Recently merged — Phase 5B-1 Multi Bot Spawn Foundation
+
+**PR #69 (Agent A)** — Phase 5B-1 Multi Bot Spawn Foundation  
+MERGED @ `fa7480ffd1fe3bfc315e795ab05f63cd2b0cf2b4`
 
 ---
 

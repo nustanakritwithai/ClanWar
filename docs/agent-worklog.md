@@ -5,6 +5,52 @@
 
 ---
 
+## 2026-06-21 — Phase 5B-2 Multi Bot Separation / Formation Safety (Agent A)
+
+**Agent:** A (Runtime Implementation)
+**Branch:** `cursor/phase-5b-2-multi-bot-separation-formation-safety`
+**Base:** `claude/game-file-analysis-a20xup` @ `fa7480ffd1fe3bfc315e795ab05f63cd2b0cf2b4`
+**Task:** With 5B-1 multi-bot spawn merged, bots could visually overlap / converge into one space when chasing or fighting the player, making combat hard to read. Add a lightweight bot-vs-bot separation + simple class-aware formation safety — without squad AI, objective AI, shared targeting, a commander, or balance scaling (5B-3 / 5C).
+
+### Approach (post-process separation in the manager)
+
+Each `BotUnit` already computes its full movement intent from its own brain/controller and finalizes a velocity each frame (seek/kite/patrol/hold). Rather than touch the brain or controller, separation is a **post-process** applied by `BotPlayerSystem.update()` AFTER every unit has set its intent: the manager samples all units' positions/radii/class once (so the pass is order-independent), then asks each unit to nudge itself apart. Single-bot matches skip the pass entirely → the whole 5A surface is byte-for-byte unchanged.
+
+### Actions taken
+
+1. `src/game/data/bot-player-config.ts` — added `MultiBotSeparationConfig` + `MULTI_BOT_SEPARATION` (`radius` 64, `strength` 0.6, `maxPush` 90, `smoothing` 0.2, `meleeYieldMul` 0.5, `rangedYieldMul` 1.0, `rangedVsMeleeBias` 1.5, `restThreshold` 6). All tuning lives in config.
+2. `src/game/systems/BotUnit.ts` — added smoothed separation state (`sepVelX/Y`, reset in `resetPatrol`), a `getSeparationSample()` neighbour probe, and `applySeparation(selfIndex, samples, cfg)`: sums proximity-scaled away-vectors from nearby living bots, class-biases them (ranged pushes harder off melee), scales by a per-class yield, smooths toward the target with a rest dead-zone (kills jitter), drops the outward-from-spawn component at the leash edge, blends into the intent velocity, and clamps the total to the bot's fair move speed. Suppressed when dead, planted in a swing (windup/recovery), or returning to spawn. Also added an additive `leashRange` field to `BotSnapshot`/`getBotSnapshot()` for QA.
+3. `src/game/systems/BotPlayerSystem.ts` — `update()` now runs the separation pass after the per-unit updates (only when `units.length > 1` and `MULTI_BOT_SEPARATION.enabled`).
+4. `scripts/phase-5b-2-multi-bot-separation-regression.mjs` — new, 23 checks.
+5. Docs updated (`project-status.md`, `open-pr-dashboard.md`, this worklog).
+
+### Design notes
+
+- **Soft, weaker than safety.** Separation is proximity-scaled, capped, smoothed and dead-zoned; it yields entirely to the off-leash/stuck `return_to_spawn` goal and never runs during a planted swing, so it never breaks an attack, never fights the leash, and never jitters.
+- **Formation read, not a commander.** The only "formation" logic is a per-class push weight: melee yields less (Warrior holds the front, still reaches melee), ranged yields fully and is pushed harder off a melee body (Ranger/Mage/Priest keep out of the Warrior's space). No roles, no group targeting, no surround/flank, no pathfinding.
+- **Leash guarantee.** Once a bot is at/over its leash, the outward-from-spawn component of the push is removed, so separation can never carry a bot further out.
+- **Zero 5A risk.** Single-bot matches never enter the pass; all 11 prior suites stay green with no script edits.
+
+### Regression evidence (isolated worktree @ branch head, single sequential vite preview)
+
+| Suite | Result |
+|---|---|
+| `npm run build` | PASS |
+| `phase-5b-2-multi-bot-separation-regression.mjs` (new) | **23/23** (verified ×2) |
+| `phase-5b-1-multi-bot-spawn-regression.mjs` | 23/23 |
+| `phase-5a-remove-bot-telegraph-regression.mjs` | 22/22 |
+| `phase-5a-live-botplayer-class-skill-parity-regression.mjs` | 28/28 |
+| `phase-5a-ranged-combat-feel-regression.mjs` | 24/24 |
+| `phase-5a-bot-player-ranged-parity-regression.mjs` | 26/26 |
+| `phase-5a-bot-player-parity-regression.mjs` | 17/17 |
+| `phase-5a-bot-brain-regression.mjs` | 18/18 |
+| `phase-5a-bot-regression.mjs` | 20/20 |
+| `phase-4e` / `phase-4d` / `phase-4c-c` | 38/38 · 17/17 · 18/18 |
+
+**Verdict:** RUNTIME READY FOR ONE-PASS QA. Draft only — not Ready, not merged. Phase 5B-3…5C not started.
+
+---
+
 ## 2026-06-21 — Phase 5B-1 Multi Bot Spawn Foundation (Agent A)
 
 **Agent:** A (Runtime Implementation)
