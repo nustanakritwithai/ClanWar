@@ -195,6 +195,50 @@ export const BOT_ENCOUNTER_PRESETS: Record<BotEncounterId, readonly BotEncounter
   ],
 };
 
+// Phase 5B-2: lightweight bot-vs-bot separation so multiple BotPlayers never
+// stack on the same spot or collapse into one blob when converging on the
+// player. It is a SOFT post-process push that BotPlayerSystem applies after each
+// BotUnit has computed its own brain/controller intent for the frame — NOT squad
+// AI, shared targeting, objective AI, a formation commander, or pathfinding.
+//
+// It is deliberately weaker than the leash / return-to-spawn safety, never runs
+// while a bot is planted in a swing (windup/recovery), and is smoothed + given a
+// rest dead-zone, so it never breaks an attack, never fights the off-leash
+// return, and never causes left-right jitter. Class-aware bias keeps the melee
+// bot holding the front while ranged casters stay out of its body.
+export interface MultiBotSeparationConfig {
+  /** Master switch (kept so the behaviour is trivially disablable). */
+  readonly enabled: boolean;
+  /** Desired minimum centre-to-centre distance (px); the push only acts inside this. */
+  readonly radius: number;
+  /** Softness scaler for the push speed (fraction of the bot's move speed). */
+  readonly strength: number;
+  /** Hard cap on the push speed (px/s) so separation never shoves hard. */
+  readonly maxPush: number;
+  /** Per-frame smoothing toward the target push (0..1) — damps jitter. */
+  readonly smoothing: number;
+  /** Melee bots yield less so they hold the front / reach melee range. */
+  readonly meleeYieldMul: number;
+  /** Ranged bots yield fully so they keep out of the melee bot's body. */
+  readonly rangedYieldMul: number;
+  /** Extra push for a ranged bot away from a melee bot (formation read). */
+  readonly rangedVsMeleeBias: number;
+  /** Below this push speed (px/s) the unit truly rests — kills micro-jitter. */
+  readonly restThreshold: number;
+}
+
+export const MULTI_BOT_SEPARATION: MultiBotSeparationConfig = {
+  enabled: true,
+  radius: 64,
+  strength: 0.6,
+  maxPush: 90,
+  smoothing: 0.2,
+  meleeYieldMul: 0.5,
+  rangedYieldMul: 1.0,
+  rangedVsMeleeBias: 1.5,
+  restThreshold: 6,
+};
+
 export type LiveBotEncounterSetting = BotEncounterId;
 
 /** True when `value` is a known encounter preset id. */
