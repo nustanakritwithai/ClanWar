@@ -30,8 +30,6 @@ export interface BotPlayerEntityStats {
   maxHp: number;
   armor: number;
   radius: number;
-  attackRange: number;
-  attackArcDegrees: number;
   spawn: { x: number; y: number };
 }
 
@@ -66,8 +64,6 @@ export class BotPlayer implements CombatTarget {
 
   private readonly scene: Phaser.Scene;
   private readonly register: RegisterFn;
-  private readonly attackRange: number;
-  private readonly attackArcDegrees: number;
   private readonly spawn: { x: number; y: number };
   private readonly marker: Phaser.GameObjects.Triangle;
   private readonly nameTag: Phaser.GameObjects.Text;
@@ -77,6 +73,8 @@ export class BotPlayer implements CombatTarget {
   private dead = false;
   private displayedHpRatio = 1;
   private bobPhase = 0;
+  /** Radius actually used for the last wind-up glow — QA proof it never scales with attackRange. */
+  private lastCueRadius = 0;
 
   constructor(scene: Phaser.Scene, stats: BotPlayerEntityStats, register: RegisterFn) {
     this.scene = scene;
@@ -86,8 +84,6 @@ export class BotPlayer implements CombatTarget {
     this.maxHp = stats.maxHp;
     this.currentHp = stats.maxHp;
     this.armor = stats.armor;
-    this.attackRange = stats.attackRange;
-    this.attackArcDegrees = stats.attackArcDegrees;
     this.spawn = { x: stats.spawn.x, y: stats.spawn.y };
     this.displaySize = stats.radius * 2.2;
 
@@ -209,28 +205,25 @@ export class BotPlayer implements CombatTarget {
     return this.currentHp - before;
   }
 
-  /** Telegraph shown for the whole wind-up window so the player can react. */
-  public showWindupCue(angle: number, windupMs: number): void {
+  /**
+   * Wind-up cue (Phase 5A-8: no ground-painted radius/cone/area). The product
+   * owner removed the pre-attack/pre-skill range indicator entirely; the only
+   * spatial cue left is a small glow fixed to the bot's own body — its size
+   * never depends on attackRange/attackArcDegrees, so a ranger's 320-range
+   * skill reads identically to a warrior's melee swing. The body tint flash
+   * is the primary readability signal.
+   */
+  public showWindupCue(windupMs: number): void {
     if (this.dead) return;
     this.warning.setVisible(true);
     this.warning.setAlpha(1);
     this.warning.clear();
 
-    const half = Phaser.Math.DegToRad(this.attackArcDegrees) / 2;
-    // Cap the telegraph radius so a ranged class's large attackRange does not
-    // draw a map-filling cone. Damage still uses the full class attackRange in
-    // BotPlayerSystem; this caps the visual cue only (warrior 65 is unaffected).
-    const r = Math.min(this.attackRange, 130) + this.radius;
-    const start = angle - half;
-    const end = angle + half;
-
-    this.warning.fillStyle(WINDUP_TINT, 0.24);
-    this.warning.slice(this.x, this.y, r, start, end, false);
-    this.warning.fillPath();
-    this.warning.lineStyle(3, WINDUP_TINT, 0.95);
-    this.warning.beginPath();
-    this.warning.arc(this.x, this.y, r, start, end, false);
-    this.warning.strokePath();
+    this.lastCueRadius = this.radius * 0.5;
+    this.warning.fillStyle(WINDUP_TINT, 0.55);
+    this.warning.fillCircle(this.x, this.y, this.lastCueRadius);
+    this.warning.lineStyle(2, WINDUP_TINT, 0.95);
+    this.warning.strokeCircle(this.x, this.y, this.lastCueRadius);
 
     this.scene.tweens.killTweensOf(this.warning);
     this.scene.tweens.add({
@@ -243,6 +236,11 @@ export class BotPlayer implements CombatTarget {
     });
 
     this.flashBody(WINDUP_TINT, windupMs);
+  }
+
+  /** QA hook (Phase 5A-8): the literal pixel radius the last cue drew, 0 when hidden. */
+  public getWindupCueRadius(): number {
+    return this.warning.visible ? this.lastCueRadius : 0;
   }
 
   public hideWindupCue(): void {

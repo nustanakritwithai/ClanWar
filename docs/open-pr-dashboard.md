@@ -1,33 +1,36 @@
 # Open PR Dashboard
 
 > **Maintained by:** Agent E  
-> **Last updated:** 2026-06-20 (Phase 5A-7 live BotPlayer class + skill parity runtime fix draft)  
-> **Latest base:** `claude/game-file-analysis-a20xup` @ `96727ac`
+> **Last updated:** 2026-06-21 (Phase 5A-8 remove bot radius telegraph draft)  
+> **Latest base:** `claude/game-file-analysis-a20xup` @ `526da54`
 
 ## Summary
 
 **Phase 4E complete** — PR #52–#55 merged; live verified PASS.
 
-**Phase 5A-1 → 5A-6 bot runtime** — PR #59, #60, #62, #64, #65, #66 merged @ `96727ac`.
+**Phase 5A-1 → 5A-7 bot runtime** — PR #59, #60, #62, #64, #65, #66, #67 merged @ `526da54`.
 
-**Active draft:** Phase 5A-7 Live BotPlayer Class + Skill Parity **runtime fix** (Agent A) — the live match now spawns the bot as a real rotating class and weaves class skills through the shared skill pipeline. **Not Ready, not merged.**
+**Active draft:** Phase 5A-8 Remove Bot Pre-Attack / Skill Radius Telegraph (Agent A) — removes the ground-painted attack/skill radius/cone from real gameplay; basic attack + skill cast keep a small fixed body glow + tint flash only. **Not Ready, not merged.**
 
 ---
 
-## Open PR — Phase 5A-7 Live BotPlayer Class + Skill Parity Runtime Fix (Draft)
+## Open PR — Phase 5A-8 Remove Bot Radius Telegraph (Draft)
 
-**Agent A: Phase 5A-7 — Live BotPlayer Class + Player Attack/Skill Parity Fix**  
-Branch `cursor/phase-5a-7-live-botplayer-class-skill-parity-fix` — Base `96727ac0927dc761fad08425f60712f00f9465c8`
+**Agent A: Phase 5A-8 — Remove Bot Radius Telegraph**  
+Branch `cursor/phase-5a-8-remove-bot-radius-telegraph` — Base `526da54691cb97c461d31d20b48d397a196f1916`
 
-Touched: `src/game/scenes/MatchScene.ts` (pass live class to the bot system), `src/game/scenes/ClassSelectScene.ts` (production opts into rotation), `src/game/ai/BotBrain.ts`, `src/game/ai/BotPerception.ts`, `src/game/controllers/BotPlayerController.ts`, `src/game/systems/BotPlayerSystem.ts`, `src/game/systems/SkillRuntimeSystem.ts` (additive caster-agnostic cast — human path untouched), `src/game/entities/BotPlayer.ts` (heal), `src/game/data/bot-player-config.ts`, `src/game/data/bot-brain-config.ts`, `src/game/types.ts` (`MatchSceneData.botClass`), new `scripts/phase-5a-live-botplayer-class-skill-parity-regression.mjs`, docs. **No `Player`/`heroes.ts`/`CombatVfx.ts`/objective/capture/siege/timer/result edits.** No asset/package/deploy changes.
+Touched: `src/game/entities/BotPlayer.ts` (replace the sector/cone wind-up draw with a small fixed body glow; drop now-unused `attackRange`/`attackArcDegrees` entity fields; add `getWindupCueRadius()` QA hook), `src/game/systems/BotPlayerSystem.ts` (call-site update, drop the now-unused stats passed into the entity), new `scripts/phase-5a-remove-bot-telegraph-regression.mjs`, docs. **No `Player`/`heroes.ts`/`CombatVfx.ts`/`BotPlayerController.ts`/`BotBrain.ts`/`SkillRuntimeSystem.ts`/objective/capture/siege/timer/result edits** — none were needed; the only ground-painted telegraph in the codebase was the one sector drawn in `BotPlayer.showWindupCue`.
 
-**Root cause:** `MatchScene` built `BotPlayerSystem` with no class config, so the live bot was always `BOT_PLAYER.classId = 'warrior'`; the only class switch was `debugSetClass` (tests). **Fix:** `resolveLiveBotClass` selects the class from `?botClass=` / launch data / `random` / deterministic rotation; `ClassSelectScene` passes `botClass: 'rotate'` so production rotates Warrior→Ranger→Mage→Priest. **Skill MVP:** the bot reads its class signature skill (slot1) from the shared `SKILLS` table through the same `SkillRuntimeSystem` the human uses and **weaves** it (`castSkillReady` 95, between chase 70 and attack 100) — basic-attack when able, cast when the auto is on cooldown or the target is in skill-but-not-attack range; offensive damage via the shared `player.takeDamage`/`CombatSystem` formula, priest heal via the shared SKILLS value; skill VFX reuse the player's cast/projectile/heal visuals; cooldown + bot-only mana guard spam; ranged never cast point-blank. 5A-6 spacing/kite, investigate, dodge window, human stats, difficulty scope, frozen systems unchanged.
+**What changed:** `showWindupCue` used to fill+stroke a sector (`min(attackRange, 130) + radius`, `attackArcDegrees` wide) in front of the bot for the whole wind-up — a map-filling area for ranged classes (up to ~154px for ranger/mage/priest). It now draws a small circle fixed at `radius * 0.5` (~12px) centered on the bot's own body, with no dependency on `attackRange`/`attackArcDegrees` at all — so a ranger's skill cast reads identically to a warrior's melee swing. The existing body tint flash, `botAttackWarning`-tagged visibility lifecycle (so older suites that just check "some wind-up cue exists" keep passing), normal-attack projectiles, distinct skill bolt, heal burst/spark, and all damage/heal timing are untouched.
 
-Regression: `phase-5a-live-botplayer-class-skill-parity-regression.mjs` **28/28**; `phase-5a-ranged-combat-feel` 24/24; `phase-5a-bot-player-ranged-parity` 26/26; `phase-5a-bot-player-parity` 17/17; `phase-5a-bot-brain` **18/18** (B10 green — skill weave keeps the chase basic-attack windup observable; verified ×3); `phase-5a-bot-regression` 20/20; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18.
+Regression: `phase-5a-remove-bot-telegraph-regression.mjs` (new) **22/22**; `phase-5a-live-botplayer-class-skill-parity` 28/28; `phase-5a-ranged-combat-feel` 24/24; `phase-5a-bot-player-ranged-parity` 26/26; `phase-5a-bot-player-parity` 17/17; `phase-5a-bot-brain` 18/18; `phase-5a-bot-regression` 20/20; `phase-4e` 38/38; `phase-4d` 17/17; `phase-4c-c` 18/18 — all 10 commands run sequentially on a single idle preview.
 
 ---
 
 ## Recently merged — Phase 5A
+
+**PR #67 (Agent A)** — Phase 5A-7 Live BotPlayer Class + Player Attack/Skill Parity Fix  
+MERGED @ `526da54691cb97c461d31d20b48d397a196f1916`
 
 **PR #66 (Agent A)** — Phase 5A-6 Ranged Combat Feel Tuning Runtime  
 MERGED @ `96727ac0927dc761fad08425f60712f00f9465c8`

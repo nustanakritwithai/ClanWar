@@ -208,8 +208,6 @@ export class BotPlayerSystem {
         maxHp: Math.max(1, Math.round(this.classStats.hp * this.profile.hpMul)),
         armor: this.classStats.armor,
         radius: this.cfg.radius,
-        attackRange: this.attackRange,
-        attackArcDegrees: this.cfg.attackArcDegrees,
         spawn: { x: this.cfg.spawn.x, y: this.cfg.spawn.y },
       },
       (o) => this.hooks.registerWorldObject(o),
@@ -387,7 +385,7 @@ export class BotPlayerSystem {
           if (intent.basicAttack && this.cooldownTimer <= 0) {
             this.bot.state = 'windup';
             this.windupTimer = this.effWindupMs;
-            this.bot.showWindupCue(this.facingAngle, this.effWindupMs);
+            this.bot.showWindupCue(this.effWindupMs);
           }
           this.updateStuck(deltaMs, false);
         } else {
@@ -431,7 +429,7 @@ export class BotPlayerSystem {
           this.castingSkill = this.classSkill;
           this.bot.state = 'windup';
           this.windupTimer = this.effWindupMs;
-          this.bot.showWindupCue(this.facingAngle, this.effWindupMs);
+          this.bot.showWindupCue(this.effWindupMs);
         }
         this.updateStuck(deltaMs, false);
         break;
@@ -459,7 +457,7 @@ export class BotPlayerSystem {
           if (this.cooldownTimer <= 0) {
             this.bot.state = 'windup';
             this.windupTimer = this.effWindupMs;
-            this.bot.showWindupCue(this.facingAngle, this.effWindupMs);
+            this.bot.showWindupCue(this.effWindupMs);
           }
           this.updateStuck(deltaMs, false);
         } else {
