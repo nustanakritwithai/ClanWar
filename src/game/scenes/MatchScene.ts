@@ -24,8 +24,12 @@ import { BotSystem } from '../systems/BotSystem';
 import {
   BOT_PLAYER,
   isBotPlayableClass,
+  isBotEncounterId,
   resolveLiveBotClass,
+  resolveBotEncounter,
   type LiveBotClassSetting,
+  type BotEncounterId,
+  type BotPlayerConfig,
 } from '../data/bot-player-config';
 import { InputSystem } from '../systems/InputSystem';
 import { ProjectileSystem } from '../systems/ProjectileSystem';
@@ -59,6 +63,8 @@ const BOT_CLASS_ROTATION_KEY = 'botClassRotationIndex';
 export class MatchScene extends Phaser.Scene {
   private heroClass: HeroClassId = 'guardian';
   private botClassSetting: LiveBotClassSetting = 'rotate';
+  /** Phase 5B-1: multi-bot encounter preset (undefined ⇒ legacy single bot). */
+  private botEncounterSetting?: BotEncounterId;
   public player!: Player;
   public dummy!: TrainingDummy;
   public botSystem!: BotSystem;
@@ -100,6 +106,11 @@ export class MatchScene extends Phaser.Scene {
     // `botClass: 'rotate'` so production rotates across all classes (a URL param
     // still overrides); a bare MatchScene start stays on the Warrior default.
     this.botClassSetting = this.readBotClassFromUrl() ?? data.botClass ?? 'warrior';
+    // Phase 5B-1: optional multi-bot encounter. Priority: ?encounter URL param >
+    // launch data > undefined. When set, the match spawns that preset's class mix;
+    // when unset, the legacy single-bot path (resolveBotClass) is used so every
+    // bare-MatchScene tool/regression keeps getting exactly one bot.
+    this.botEncounterSetting = this.readBotEncounterFromUrl() ?? data.encounter;
     this.lastCombatResult = '-';
   }
 
@@ -118,6 +129,34 @@ export class MatchScene extends Phaser.Scene {
     const { classId, nextRotationIndex } = resolveLiveBotClass(this.botClassSetting, idx);
     this.game.registry.set(BOT_CLASS_ROTATION_KEY, nextRotationIndex);
     return classId;
+  }
+
+  /** Read + validate the `?encounter=` URL param (Phase 5B-1 multi-bot preset). */
+  private readBotEncounterFromUrl(): BotEncounterId | undefined {
+    if (typeof window === 'undefined' || !window.location?.search) return undefined;
+    const raw = new URLSearchParams(window.location.search).get('encounter');
+    return isBotEncounterId(raw) ? raw : undefined;
+  }
+
+  /**
+   * Build the per-bot config list (Phase 5B-1). With an encounter preset, each
+   * member becomes a config with its own class + a distinct spawn (base anchor +
+   * member offset) so the bots start apart. Without one, the legacy single-bot
+   * path is used (class from ?botClass / launch data / rotation) — exactly one
+   * config — keeping bare-MatchScene starts unchanged.
+   */
+  private buildBotConfigs(): BotPlayerConfig[] {
+    if (this.botEncounterSetting) {
+      return resolveBotEncounter(this.botEncounterSetting).map((member) => ({
+        ...BOT_PLAYER,
+        classId: member.classId,
+        spawn: {
+          x: BOT_PLAYER.spawn.x + member.spawnOffset.x,
+          y: BOT_PLAYER.spawn.y + member.spawnOffset.y,
+        },
+      }));
+    }
+    return [{ ...BOT_PLAYER, classId: this.resolveBotClass() }];
   }
 
   preload(): void {
@@ -179,11 +218,12 @@ export class MatchScene extends Phaser.Scene {
     this.dummy = new TrainingDummy(this, map.playerSpawn.x, map.playerSpawn.y - 350);
     this.skillRuntime = new SkillRuntimeSystem(this.heroClass);
 
-    // Phase 5A-7: single AI BotPlayer spawned as a live class (warrior/ranger/
-    // mage/priest) chosen by ?botClass / launch data / rotation — no longer locked
-    // to Warrior. AI self-freezes when the match is resolved / not in progress so
-    // bot death never affects Gate/Core/timer.
-    const botClassId = this.resolveBotClass();
+    // Phase 5B-1: one or more AI BotPlayers. A bare start spawns a single live
+    // class (warrior/ranger/mage/priest) via ?botClass / launch data / rotation;
+    // an encounter preset (?encounter / launch data, used by production) spawns a
+    // class mix, each bot with its own class/spawn/brain. AI self-freezes when the
+    // match is resolved / not in progress so bot death never affects Gate/Core/timer.
+    const botConfigs = this.buildBotConfigs();
     this.botSystem = new BotSystem(
       this,
       {
@@ -193,12 +233,14 @@ export class MatchScene extends Phaser.Scene {
         isMatchActive: () =>
           !this.matchResolved && this.objectiveSystem.getMatchPhase() === 'in_progress',
       },
-      { ...BOT_PLAYER, classId: botClassId },
+      botConfigs,
     );
 
     this.physics.add.collider(this.player.sprite, this.walls);
     this.physics.add.collider(this.dummy.sprite, this.walls);
-    this.physics.add.collider(this.botSystem.bot.sprite, this.walls);
+    for (const botEntity of this.botSystem.getBotEntities()) {
+      this.physics.add.collider(botEntity.sprite, this.walls);
+    }
 
     this.cameras.main.startFollow(this.player.sprite, true, 0.12, 0.12);
     this.cameras.main.setZoom(this.computeZoom());

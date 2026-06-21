@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { COLORS, COMPACT_LAYOUT_HEIGHT, SCENE_KEYS } from '../constants';
 import { HEROES, HERO_CLASS_ORDER, HERO_ROLE_LABEL } from '../data/heroes';
 import type { HeroClassId } from '../types';
+import { DEFAULT_BOT_ENCOUNTER } from '../data/bot-player-config';
 import { loadPhase4eTheme1Assets, resolvePhase4eCharacterTexture } from '../theme/Phase4ETheme';
 
 /** Viewport height below which class cards use ultra-compact stacking. */
@@ -169,10 +170,11 @@ export class ClassSelectScene extends Phaser.Scene {
       .setOrigin(0, 0.5);
 
     const select = () => {
-      // Phase 5A-7: production entry into a match. Rotate the AI BotPlayer class
-      // across Warrior/Ranger/Mage/Priest so the real game is never locked to the
-      // first Warrior. A `?botClass=` URL param still overrides this.
-      this.scene.start(SCENE_KEYS.Match, { heroClass, botClass: 'rotate' });
+      // Phase 5B-1: production entry into a match. Spawn the default multi-bot
+      // encounter (Duel Plus — Warrior + Ranger) so the real game shows more than
+      // one AI BotPlayer with a class mix. A `?encounter=` URL param overrides the
+      // preset, and `?botClass=` still forces the legacy single-bot path.
+      this.scene.start(SCENE_KEYS.Match, { heroClass, encounter: DEFAULT_BOT_ENCOUNTER });
     };
 
     bg.on('pointerover', () => bg.setFillStyle(0x273449));
