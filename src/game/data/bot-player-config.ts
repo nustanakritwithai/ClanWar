@@ -140,6 +140,80 @@ export function resolveLiveBotClass(
   return { classId: BOT_PLAYABLE_CLASSES[idx], nextRotationIndex: rotationIndex + 1 };
 }
 
+// Phase 5B-1: multi-bot encounter presets. The match can spawn more than one
+// AI-controlled BotPlayer, each its own class with its own spawn point, brain,
+// cooldown/skill runtime and HP. This is *spawn foundation only* — no squad AI,
+// no shared targeting, no objective AI, no commander (those are out of scope).
+// Each member declares a spawn OFFSET from the base bot anchor (BOT_PLAYER.spawn)
+// so members start apart; dynamic separation/spacing is a later phase (5B-2).
+export interface BotEncounterMember {
+  readonly classId: HeroClassId;
+  /** Spawn offset (px) from the base bot spawn anchor — keeps members apart. */
+  readonly spawnOffset: { readonly x: number; readonly y: number };
+}
+
+// Encounter presets (Phase 5B-4 names, foundation here). `solo` is the single-bot
+// shape; the live default (Duel Plus) is an easy, readable two-bot mix. Heavier
+// mixes exist for testing/debug but are not the production default until balance.
+export type BotEncounterId =
+  | 'solo'
+  | 'duel_plus'
+  | 'arcane_pressure'
+  | 'sustain_pressure'
+  | 'ranged_harass'
+  | 'full_party_lite';
+
+/** Hard cap on simultaneous bots (performance + readability guard). */
+export const MAX_BOTS = 4;
+
+/** Default live encounter — easy + readable (Warrior front, Ranger poke). */
+export const DEFAULT_BOT_ENCOUNTER: BotEncounterId = 'duel_plus';
+
+export const BOT_ENCOUNTER_PRESETS: Record<BotEncounterId, readonly BotEncounterMember[]> = {
+  solo: [{ classId: 'warrior', spawnOffset: { x: 0, y: 0 } }],
+  duel_plus: [
+    { classId: 'warrior', spawnOffset: { x: -70, y: 40 } },
+    { classId: 'ranger', spawnOffset: { x: 90, y: -50 } },
+  ],
+  arcane_pressure: [
+    { classId: 'warrior', spawnOffset: { x: -70, y: 40 } },
+    { classId: 'mage', spawnOffset: { x: 100, y: -60 } },
+  ],
+  sustain_pressure: [
+    { classId: 'warrior', spawnOffset: { x: -70, y: 40 } },
+    { classId: 'priest', spawnOffset: { x: 110, y: -40 } },
+  ],
+  ranged_harass: [
+    { classId: 'ranger', spawnOffset: { x: -90, y: -40 } },
+    { classId: 'mage', spawnOffset: { x: 100, y: -70 } },
+  ],
+  full_party_lite: [
+    { classId: 'warrior', spawnOffset: { x: -80, y: 50 } },
+    { classId: 'ranger', spawnOffset: { x: 95, y: -45 } },
+    { classId: 'mage', spawnOffset: { x: -110, y: -70 } },
+    { classId: 'priest', spawnOffset: { x: 120, y: 75 } },
+  ],
+};
+
+export type LiveBotEncounterSetting = BotEncounterId;
+
+/** True when `value` is a known encounter preset id. */
+export function isBotEncounterId(value: unknown): value is BotEncounterId {
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(BOT_ENCOUNTER_PRESETS, value);
+}
+
+/**
+ * Resolve an encounter setting to its member list, clamped to {@link MAX_BOTS}.
+ * Unknown / undefined falls back to the default live encounter. Pure: spawn
+ * offsets are applied by the caller (MatchScene) against the base anchor.
+ */
+export function resolveBotEncounter(
+  setting: LiveBotEncounterSetting | undefined,
+): readonly BotEncounterMember[] {
+  const id = isBotEncounterId(setting) ? setting : DEFAULT_BOT_ENCOUNTER;
+  return BOT_ENCOUNTER_PRESETS[id].slice(0, MAX_BOTS);
+}
+
 // Phase 5A-7: class skill (MVP) tuning. The bot casts its class signature skill
 // (slot1 from the shared SKILLS table) like a player — offensive classes when the
 // player is in skill range, priest defensively when low. Config-driven so the

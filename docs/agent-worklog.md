@@ -5,6 +5,56 @@
 
 ---
 
+## 2026-06-21 — Phase 5B-1 Multi Bot Spawn Foundation (Agent A)
+
+**Agent:** A (Runtime Implementation)
+**Branch:** `cursor/phase-5b-1-multi-bot-spawn-foundation`
+**Base:** `claude/game-file-analysis-a20xup` @ `f73766eb419333608df081a2977a3633e7e2f13c`
+**Task:** Begin Phase 5B. Turn the single-BotPlayer system into a config-driven *collection* of BotPlayers — multiple AI-controlled player classes in one match — without adding squad AI, shared targeting, objective AI, inter-bot separation, or balance scaling (those are 5B-2…5C).
+
+### Approach (manager + unit split)
+
+Through Phase 5A, `BotPlayerSystem` did double duty: it was both the system MatchScene talked to AND the single bot's brain/combat runtime (with ~14 test hooks on it). To go multi-bot with zero risk to the 5A regression surface:
+
+1. The per-bot runtime was extracted **verbatim** into a new `BotUnit` (only additions: an `id` and `id` in its snapshot). `BotUnit` already took a per-bot `BotPlayerConfig` (class + spawn), so each unit is naturally independent.
+2. `BotPlayerSystem` became a thin **manager** owning `BotUnit[]`. Every legacy single-bot accessor (`bot`, `getBotSnapshot`, `getBrainSnapshot`, `tryPlayerMeleeHit`, `getSkillInfo`/`getSkillCastDebug`/`getDifficultyInfo`/`getClassBaseline`/`getRangedSpacingInfo`, and all `debug*` hooks) delegates to the primary unit (`units[0]`). The `BotSystem` alias still re-exports the manager, so MatchScene and all scripts are source-compatible.
+
+### Actions taken
+
+1. `src/game/data/bot-player-config.ts` — added `BotEncounterMember`, `BotEncounterId`, `BOT_ENCOUNTER_PRESETS` (`solo`/`duel_plus`/`arcane_pressure`/`sustain_pressure`/`ranged_harass`/`full_party_lite`), `MAX_BOTS = 4`, `DEFAULT_BOT_ENCOUNTER = 'duel_plus'`, `isBotEncounterId`, and pure `resolveBotEncounter(setting)` (clamps to `MAX_BOTS`). Each member declares a spawn OFFSET from the base anchor so bots start apart.
+2. `src/game/systems/BotUnit.ts` — new file; the Phase-5A `BotPlayerSystem` per-bot runtime, unchanged, plus a per-unit `id`.
+3. `src/game/systems/BotPlayerSystem.ts` — rewritten as the manager over `BotUnit[]`. Single-config constructor shape still works (wrapped into one unit); an array spawns N units. New additive API: `getBotCount`, `getBotEntities`, `getBotSnapshots`, `getBrainSnapshots`, `getSkillInfos`, `getSkillCastDebugs`, per-index getters + `debugDamageBotAt`/`debugSetCooldownAt`/`debugTeleportBotAt`/`debugSetCooldownAll`. `debugSetDifficulty` applies to all units (global). Player melee now cleaves: every live bot in the arc takes damage, closest returned for the HUD line.
+4. `src/game/scenes/MatchScene.ts` — `buildBotConfigs()` builds the per-bot config list: an encounter preset (`?encounter=` > launch data) maps each member to a config (own class + base anchor + member offset); otherwise the legacy single-bot path (`resolveBotClass`) returns exactly one config. A wall collider is now added per bot body.
+5. `src/game/scenes/ClassSelectScene.ts` — production now starts the match with `encounter: DEFAULT_BOT_ENCOUNTER` (Duel Plus = Warrior + Ranger) so the real game shows a multi-bot class mix; `?encounter=` overrides, `?botClass=` still forces the legacy single-bot path.
+6. `src/game/types.ts` — `MatchSceneData.encounter` (type-only import of `BotEncounterId`, erased at runtime → no cycle).
+7. `scripts/phase-5b-1-multi-bot-spawn-regression.mjs` — new, 23 checks.
+8. Docs updated (`project-status.md`, `open-pr-dashboard.md`, this worklog).
+
+### Design notes
+
+- **Back-compat by construction.** A bare `MatchScene` start (every 5A tool/regression) takes the single-config path → one `BotUnit` → `botSystem.bot` etc. resolve to it. The entire 5A regression surface is unchanged (all 10 suites green), with no edits to any 5A script.
+- **Encounter, not rotation, in production.** 5A-7's production rotation is superseded by a default 2-bot encounter (more variety per match than one rotating bot). The rotation path still exists for bare/`?botClass=` starts.
+- **Scope discipline.** Bots do not coordinate, share targets, separate dynamically, or scale with count yet — those are explicitly 5B-2 / 5B-3. Spawn offsets are static so members merely start apart.
+
+### Regression evidence (isolated worktree @ PR head, single sequential vite preview)
+
+| Suite | Result |
+|---|---|
+| `npm run build` | PASS |
+| `phase-5b-1-multi-bot-spawn-regression.mjs` (new) | **23/23** (verified ×2) |
+| `phase-5a-remove-bot-telegraph-regression.mjs` | 22/22 |
+| `phase-5a-live-botplayer-class-skill-parity-regression.mjs` | 28/28 |
+| `phase-5a-ranged-combat-feel-regression.mjs` | 24/24 |
+| `phase-5a-bot-player-ranged-parity-regression.mjs` | 26/26 |
+| `phase-5a-bot-player-parity-regression.mjs` | 17/17 |
+| `phase-5a-bot-brain-regression.mjs` | 18/18 |
+| `phase-5a-bot-regression.mjs` | 20/20 |
+| `phase-4e` / `phase-4d` / `phase-4c-c` | 38/38 · 17/17 · 18/18 |
+
+**Verdict:** RUNTIME READY FOR ONE-PASS QA. Draft only — not Ready, not merged. Phase 5B-2…5C not started.
+
+---
+
 ## 2026-06-21 — Phase 5A-8 Remove Bot Pre-Attack / Skill Radius Telegraph (Agent A)
 
 **Agent:** A (Runtime Implementation / Visual Cleanup)

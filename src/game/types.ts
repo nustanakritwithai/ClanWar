@@ -1,6 +1,10 @@
 // Core shared types. Map/input types for runtime; hero/skill/item/economy specs
 // for Phase 3+ live in src/game/data/*.
 
+// Type-only (erased at runtime, so no import cycle) — the multi-bot encounter
+// preset ids live with the presets themselves in data/bot-player-config.
+import type { BotEncounterId } from './data/bot-player-config';
+
 export type TeamId = 'blue' | 'red';
 
 export type ObjectiveType =
@@ -204,6 +208,13 @@ export interface MatchSceneData {
    * is never locked to Warrior. Mirrors the `?botClass=` URL param.
    */
   botClass?: HeroClassId | 'random' | 'rotate';
+  /**
+   * Phase 5B-1: optional multi-bot encounter preset id (e.g. `'duel_plus'`). When
+   * set, the match spawns that preset's class mix instead of a single bot; when
+   * omitted, the legacy single-bot path (`botClass`) is used. Mirrors the
+   * `?encounter=` URL param.
+   */
+  encounter?: BotEncounterId;
 }
 
 // --- Phase 3B-A: combat foundation ----------------------------------------
