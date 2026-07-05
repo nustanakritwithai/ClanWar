@@ -1,15 +1,11 @@
-import Phaser from 'phaser';
-import { createGameConfig } from './game/config';
+// Single entry point. Picks the renderer, then dynamic-imports its bootstrap
+// so each mode only downloads its own engine chunk:
+//   default          → Phaser 2D game (unchanged behavior)
+//   ?renderer=3d     → Phase 6 Three.js renderer (2.5D: same sim plane, 3D view)
+const renderer = new URLSearchParams(window.location.search).get('renderer');
 
-// Single entry point. Phaser is bootstrapped here; all gameplay lives in scenes.
-const game = new Phaser.Game(createGameConfig());
-
-// Exposed for mobile verification / debug tooling (read-only state inspection).
-(window as unknown as Record<string, unknown>).__CLANWAR_GAME__ = game;
-
-// Keep the canvas matched to the window on resize / orientation change.
-window.addEventListener('resize', () => {
-  game.scale.refresh();
-});
-
-export default game;
+if (renderer === '3d') {
+  import('./game3d/boot3d').then((m) => m.boot3d());
+} else {
+  import('./main2d').then((m) => m.boot2d());
+}

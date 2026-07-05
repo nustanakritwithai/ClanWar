@@ -7,6 +7,11 @@ Browser-based 2D top-down siege arena (MVP). Built with **Vite + TypeScript + Ph
 
 See [docs/phase-4a-map-visual-runtime-foundation.md](docs/phase-4a-map-visual-runtime-foundation.md).
 
+> **Phase 6 (in progress): 3D renderer with Three.js.** Append `?renderer=3d`
+> to the game URL to try it (Phase 6A: walk the map in 3D; 2D stays the
+> default until feature parity). Plan: [docs/phase-6-3d-threejs-upgrade-plan.md](docs/phase-6-3d-threejs-upgrade-plan.md),
+> current slice: [docs/phase-6a-renderer-foundation.md](docs/phase-6a-renderer-foundation.md).
+
 ## Run
 
 ```bash
