@@ -8,10 +8,11 @@ Browser-based 2D top-down siege arena (MVP). Built with **Vite + TypeScript + Ph
 See [docs/phase-4a-map-visual-runtime-foundation.md](docs/phase-4a-map-visual-runtime-foundation.md).
 
 > **Phase 6 (in progress): 3D renderer with Three.js.** Append `?renderer=3d`
-> to the game URL to try it (Phase 6B: full low-poly battlefield — routes,
-> bases, gates, structures; 2D stays the default until feature parity).
+> to the game URL to try it (Phase 6C: battlefield + full dummy combat —
+> all 5 classes, skills, HUD; `?class=` picks the hero; 2D stays the default
+> until feature parity).
 > Plan: [docs/phase-6-3d-threejs-upgrade-plan.md](docs/phase-6-3d-threejs-upgrade-plan.md),
-> current slice: [docs/phase-6b-map-structures-3d.md](docs/phase-6b-map-structures-3d.md).
+> current slice: [docs/phase-6c-combat-port.md](docs/phase-6c-combat-port.md).
 
 ## Run
 

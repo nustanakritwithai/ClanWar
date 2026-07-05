@@ -88,6 +88,12 @@ export class InputSystem3D {
     document.addEventListener('visibilitychange', this.onBlurOrHide);
   }
 
+  /** Queue an action from a HUD touch button (edge-triggered, like a key). */
+  public queueAction(action: ActionKey): void {
+    this.pendingActions.add(action);
+    this.state.inputMode = 'touch';
+  }
+
   /** Recompute input state for this frame. Call once per rAF. */
   public update(): void {
     this.updateMovement();
