@@ -28,7 +28,8 @@ export function boot3d(): void {
 
   const sim = new MatchSim(map, heroClass);
   const renderer = new Renderer3D(container);
-  renderer.scene.add(buildMap(map));
+  const mapView = buildMap(map);
+  renderer.scene.add(mapView.group);
 
   const playerView = new PlayerView();
   renderer.scene.add(playerView.group);
@@ -68,6 +69,7 @@ export function boot3d(): void {
     }
 
     const alpha = accumulator / SIM_TICK_SECONDS;
+    mapView.update(dt);
     playerView.sync(sim.player, alpha, dt);
 
     const p = sim.player;
@@ -80,7 +82,7 @@ export function boot3d(): void {
       frames = 0;
       fpsWindowStart = now;
       hud.set(
-        `3D · Phase 6A · ${HEROES[heroClass].name}\n` +
+        `3D · Phase 6B · ${HEROES[heroClass].name}\n` +
           `fps ${fps} · pos ${Math.round(p.x)},${Math.round(p.y)}\n` +
           `input ${input.state.inputMode} · last ${input.state.lastAction || '-'}`,
       );
