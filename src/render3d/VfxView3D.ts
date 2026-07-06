@@ -20,24 +20,29 @@ const BOLT_COLORS: Record<NormalAttackBoltKind, number> = {
 };
 
 // Phase 6F: one pooled additive Points cloud for every spark/burst/trail.
-// Fixed budget (mobile-friendly), no allocation per effect: fading works by
-// lerping vertex colors to black under additive blending (black == invisible).
-const PARTICLE_BUDGET = 500;
+// Fixed budget (per quality tier since 6G), no allocation per effect: fading
+// works by lerping vertex colors to black under additive blending.
 
 class ParticlePool {
   public readonly points: THREE.Points;
+  private readonly budget: number;
   private readonly positions: Float32Array;
   private readonly colors: Float32Array;
-  private readonly vel = new Float32Array(PARTICLE_BUDGET * 3);
-  private readonly life = new Float32Array(PARTICLE_BUDGET);
-  private readonly maxLife = new Float32Array(PARTICLE_BUDGET);
+  private readonly vel: Float32Array;
+  private readonly life: Float32Array;
+  private readonly maxLife: Float32Array;
   private readonly baseColor: THREE.Color[] = [];
-  private readonly gravity = new Float32Array(PARTICLE_BUDGET);
+  private readonly gravity: Float32Array;
   private cursor = 0;
 
-  constructor() {
-    this.positions = new Float32Array(PARTICLE_BUDGET * 3);
-    this.colors = new Float32Array(PARTICLE_BUDGET * 3);
+  constructor(budget: number) {
+    this.budget = budget;
+    this.vel = new Float32Array(budget * 3);
+    this.life = new Float32Array(budget);
+    this.maxLife = new Float32Array(budget);
+    this.gravity = new Float32Array(budget);
+    this.positions = new Float32Array(budget * 3);
+    this.colors = new Float32Array(budget * 3);
     this.positions.fill(-99999);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
@@ -53,7 +58,7 @@ class ParticlePool {
     });
     this.points = new THREE.Points(geo, mat);
     this.points.frustumCulled = false;
-    for (let i = 0; i < PARTICLE_BUDGET; i++) this.baseColor.push(new THREE.Color(0));
+    for (let i = 0; i < this.budget; i++) this.baseColor.push(new THREE.Color(0));
   }
 
   /** Spawn `count` particles bursting from (x, h, y). */
@@ -65,7 +70,7 @@ class ParticlePool {
     const c = new THREE.Color(color);
     for (let n = 0; n < count; n++) {
       const i = this.cursor;
-      this.cursor = (this.cursor + 1) % PARTICLE_BUDGET;
+      this.cursor = (this.cursor + 1) % this.budget;
       const a = Math.random() * Math.PI * 2;
       const v = speed * (0.4 + Math.random() * 0.6);
       this.positions[i * 3] = x;
@@ -82,7 +87,7 @@ class ParticlePool {
   }
 
   public update(dt: number): void {
-    for (let i = 0; i < PARTICLE_BUDGET; i++) {
+    for (let i = 0; i < this.budget; i++) {
       if (this.life[i] <= 0) continue;
       this.life[i] -= dt;
       if (this.life[i] <= 0) {
@@ -108,9 +113,10 @@ class ParticlePool {
 export class VfxView3D {
   public readonly group = new THREE.Group();
   private readonly effects: Effect[] = [];
-  private readonly particles = new ParticlePool();
+  private readonly particles: ParticlePool;
 
-  constructor() {
+  constructor(particleBudget = 500) {
+    this.particles = new ParticlePool(particleBudget);
     this.group.add(this.particles.points);
   }
 

@@ -14,6 +14,7 @@ import { PlayerView } from '../render3d/PlayerView';
 import { ProjectileView3D } from '../render3d/ProjectileView3D';
 import { Renderer3D } from '../render3d/Renderer3D';
 import { VfxView3D } from '../render3d/VfxView3D';
+import { detectQuality, QualityWatchdog } from '../render3d/Quality';
 import { CombatHud } from '../ui-html/CombatHud';
 import { DebugHud } from '../ui-html/DebugHud';
 import { MatchHud } from '../ui-html/MatchHud';
@@ -36,8 +37,25 @@ export function boot3d(): void {
   const map = smallTwinFortress;
 
   const sim = new MatchSim(map, heroClass, resolveMatchOptions());
-  const renderer = new Renderer3D(container);
+
+  // Phase 6G: quality tier (?quality=low|med|high or device heuristic) with an
+  // fps watchdog that steps the tier down if the frame rate stays low.
+  let quality = detectQuality(window.location.search);
+  const renderer = new Renderer3D(container, quality);
+  const watchdog = new QualityWatchdog(quality.tier, (next) => {
+    quality = next;
+    renderer.applyQuality(next);
+  });
+
   const mapView = buildMap(map);
+  // Shadow flags are no-ops unless the high tier enabled shadow maps.
+  mapView.group.traverse((obj) => {
+    const mesh = obj as { isMesh?: boolean; castShadow: boolean; receiveShadow: boolean };
+    if (mesh.isMesh) {
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+    }
+  });
   renderer.scene.add(mapView.group);
 
   const playerView = new PlayerView();
@@ -49,7 +67,7 @@ export function boot3d(): void {
   const projectileView = new ProjectileView3D();
   renderer.scene.add(projectileView.group);
 
-  const vfx = new VfxView3D();
+  const vfx = new VfxView3D(quality.particleBudget);
   renderer.scene.add(vfx.group);
 
   const combatText = new CombatTextLayer(container, renderer.scene);
@@ -241,6 +259,8 @@ export function boot3d(): void {
     dummyLabel.set(`Dummy ${Math.ceil(sim.dummy.currentHp)}/${sim.dummy.maxHp}`);
 
     const p = sim.player;
+    renderer.followSun(p.x, p.y);
+    watchdog.update(fps, dt);
     cameraRig.follow(p.prevX + (p.x - p.prevX) * alpha, p.prevY + (p.y - p.prevY) * alpha, p.facingAngle, dt);
     renderer.render(cameraRig.camera);
     combatText.render(cameraRig.camera);
@@ -252,7 +272,7 @@ export function boot3d(): void {
       fpsWindowStart = now;
       const aliveBots = sim.bots.filter((b) => !b.dead).length;
       debugHud.set(
-        `3D · Phase 6E · ${HEROES[heroClass].name}\n` +
+        `3D · ${HEROES[heroClass].name} · q:${quality.tier} · cam:${cameraRig.mode}\n` +
           `fps ${fps} · pos ${Math.round(p.x)},${Math.round(p.y)} · hp ${Math.ceil(p.currentHp)}\n` +
           `bots ${aliveBots}/${sim.bots.length} · ${sim.objectives.getPriority()} · ${sim.lastCombatResult}`,
       );

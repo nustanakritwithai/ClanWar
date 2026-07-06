@@ -78,6 +78,7 @@ export function createCharacter(
   const tint = new THREE.Color(teamTint);
   model.traverse((child) => {
     if (!(child instanceof THREE.Mesh)) return;
+    child.castShadow = true; // no-op unless the high tier enables shadow maps
     const src = child.material as THREE.MeshStandardMaterial;
     const mat = src.clone();
     child.material = mat;

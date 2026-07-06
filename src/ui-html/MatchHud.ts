@@ -95,6 +95,21 @@ export class MatchHud {
     });
     barBg.appendChild(this.captureFill);
 
+    // Fullscreen toggle (mobile checklist item — mirrors the 2D button).
+    const fs = document.createElement('div');
+    Object.assign(fs.style, {
+      position: 'absolute', top: '8px', left: '10px',
+      width: '34px', height: '34px', lineHeight: '34px', textAlign: 'center',
+      color: '#e6edf3', background: 'rgba(0,0,0,0.5)', borderRadius: '6px',
+      fontSize: '18px', pointerEvents: 'auto', cursor: 'pointer', userSelect: 'none',
+    });
+    fs.textContent = '⛶';
+    fs.addEventListener('pointerdown', () => {
+      if (document.fullscreenElement) void document.exitFullscreen();
+      else void document.documentElement.requestFullscreen?.();
+    });
+    this.root.appendChild(fs);
+
     // Siege buff badge (left of centre strip).
     this.siegeBadge = document.createElement('div');
     Object.assign(this.siegeBadge.style, {

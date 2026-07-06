@@ -1,8 +1,8 @@
 # Project Status
 
 > **Maintained by:** Agent E (Final Gate / Release Auditor)  
-> **Last updated:** 2026-06-21 (Phase 5B-2 Multi Bot Separation / Formation Safety — Agent A draft)  
-> **Base branch:** `claude/game-file-analysis-a20xup` @ `fa7480f`
+> **Last updated:** 2026-07-06 (Phase 6 — 3D upgrade COMPLETE, 6A–6G all live)  
+> **Base branch:** `claude/game-file-analysis-a20xup` (Render deploys this branch)
 
 ## Current phase
 
@@ -57,6 +57,42 @@ The match can spawn **more than one** AI BotPlayer, config-driven, each its own 
 **Phase 5B-2 — Multi Bot Separation / Formation Safety** — **RUNTIME IN DRAFT (Agent A)**
 
 **Agent A runtime in draft** — branch `cursor/phase-5b-2-multi-bot-separation-formation-safety`, base `fa7480f`. Fixes the readability problem that with multiple bots they could visually overlap / converge into the same space when chasing or fighting the player. Each `BotUnit` still computes its own brain/controller intent; `BotPlayerSystem` then applies a **soft bot-vs-bot separation push** as a post-process (multi-bot only — single-bot matches skip it, so the whole 5A surface is byte-for-byte unchanged). Nearby living bots push away from each other scaled by proximity, smoothed over time, clamped to the bot's fair move speed, with a rest dead-zone so it never jitters. It is **class-aware** (`MULTI_BOT_SEPARATION` in `bot-player-config.ts`): the melee bot yields less so the Warrior holds the front and still reaches melee, while ranged casters yield fully and are pushed harder off a melee body so Ranger/Mage/Priest stay out of the Warrior's space (formation read, NOT a commander). Separation is **suppressed** while a bot is planted in a swing (windup/recovery → clean attacks, no jitter) or returning to spawn (the off-leash/stuck safety wins), and its outward-from-spawn component is dropped at the leash edge so it can never carry a bot past its leash. The bot snapshot gains an additive `leashRange` field for QA. **Out of scope (NOT done):** squad AI, shared targeting, group target selection, objective AI, formation commander, tactical roles, flank/surround AI, advanced pathfinding, multi-bot balance scaling (5B-3). New regression `phase-5b-2-multi-bot-separation-regression.mjs` (23 checks) proves duel_plus / full_party_lite bots keep a readable gap while chasing and attacking, every class still attacks / holds / kites / fires / casts, no jitter, no leash break, the off-leash return still overrides separation, player melee multi-hit, reset×3 with no leak, mobile readability, human stats, difficulty scope, and frozen systems unchanged. All 11 existing suites stay green. **Not Ready, not merged.** Phase 5B-3…5C not started.
+
+## Phase 6 — 3D Upgrade (Three.js) — **COMPLETE, LIVE** (2026-07-05 → 2026-07-06)
+
+The game is now a full 3D title on Three.js; **Phaser and the 2D runtime were
+removed in 6F**. All balance/AI/rules logic from Phases 3–5B survived
+untouched (pure-TS `data/ ai/ combat/ controllers/` + headless ports in
+`sim/`). Development branch `claude/3d-game-threejs-36f1wj`, fast-forwarded
+into the base branch per slice; every slice was verified live on Render.
+
+- **6A Renderer Foundation** — fixed-tick `MatchSim` + `MovementSim` (same
+  circle-vs-WallRect collision), `render3d/` + HTML joystick/HUD, `?renderer=3d`.
+- **6B Map & Structures** — three routes / zones / bases / all 12 markers as
+  low-poly structures at exact 2D coordinates; instanced trees/rocks.
+- **6C Combat Port** — all 5 classes vs training dummy: HitShapes/CombatSystem/
+  SkillRuntimeSystem reused byte-for-byte; damage/mana/cooldown parity verified
+  numerically. Telegraphs, CSS2D combat text, skill-button HUD.
+- **6D Bots** — `SimBot` ports the BotUnit executor headlessly; BotBrain/
+  Perception/Memory/Controller + all bot configs reused unchanged; both combat
+  directions; encounters + 5B-2 separation. 13/13 checks.
+- **6E Match Loop (Parity Gate — passed)** — `SimObjectives`/`SimCapture` +
+  timer + `resolveTimeUp`; protected-core rule, gate bonuses (player/skill/
+  siege ×1.3), capture score, priority prompt, VICTORY/DEFEAT/DRAW overlay.
+  28/28 checks incl. exact damage math. **3D became the site default.**
+- **6F Visual Upgrade** — animated GLTF characters (RobotExpressive, CC0 by
+  Tomás Laulhé; SkeletonUtils clones, team tints, class props, full clip set
+  incl. Death/Jump/Dance), pooled particle VFX, banners/lamps; **Phaser
+  removed** → bundle 2,168 KB → 712 KB (gzip 186 KB).
+- **Camera** — GTA-style close third-person chase (default) with
+  camera-relative controls; V toggles the classic oblique view (`?cam=top`).
+- **6G Performance & Release** — quality tiers low/med/high (`?quality=`,
+  device heuristic, fps watchdog auto-downgrade), PCF shadows on high with a
+  player-following sun, per-tier particle budget, fullscreen button; mobile
+  landscape touch verified (joystick drag, ATK tap, rotate-hint intact).
+
+Regression suites (Playwright, rerun each slice): 6E match-loop 28/28 ·
+camera 3/3 · 6F 7/7 · 6G 9/9. Docs: `phase-6a…6g-*.md` in `docs/`.
 
 ## Base snapshot
 
