@@ -73,8 +73,17 @@ export function boot3d(): void {
   const captureView = new CaptureView3D(combatText);
   renderer.scene.add(captureView.group);
 
-  const cameraRig = new CameraRig(container.clientWidth / container.clientHeight);
-  cameraRig.snapTo(sim.player.x, sim.player.y);
+  // Camera: GTA-style close chase by default; ?cam=top restores the 2D-parity
+  // oblique view, and the V key toggles at runtime.
+  const camParam = new URLSearchParams(window.location.search).get('cam');
+  const cameraRig = new CameraRig(
+    container.clientWidth / container.clientHeight,
+    camParam === 'top' ? 'top' : 'chase',
+  );
+  cameraRig.snapTo(sim.player.x, sim.player.y, sim.player.facingAngle);
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'KeyV' && !e.repeat) cameraRig.toggleMode();
+  });
 
   const input = new InputSystem3D(document.body);
   const hud = new CombatHud(document.body, sim, (action) => input.queueAction(action));
@@ -206,7 +215,10 @@ export function boot3d(): void {
 
     accumulator += dt;
     while (accumulator >= SIM_TICK_SECONDS) {
-      sim.tick(input.state);
+      // Movement is camera-relative (chase mode rotates the stick/WASD vector
+      // into world space; top mode is the identity). The sim stays world-space.
+      const move = cameraRig.worldizeMove(input.state.moveX, input.state.moveY);
+      sim.tick({ ...input.state, moveX: move.x, moveY: move.y });
       clearActionEdges(input.state);
       accumulator -= SIM_TICK_SECONDS;
     }
@@ -229,7 +241,7 @@ export function boot3d(): void {
     dummyLabel.set(`Dummy ${Math.ceil(sim.dummy.currentHp)}/${sim.dummy.maxHp}`);
 
     const p = sim.player;
-    cameraRig.follow(p.prevX + (p.x - p.prevX) * alpha, p.prevY + (p.y - p.prevY) * alpha, dt);
+    cameraRig.follow(p.prevX + (p.x - p.prevX) * alpha, p.prevY + (p.y - p.prevY) * alpha, p.facingAngle, dt);
     renderer.render(cameraRig.camera);
     combatText.render(cameraRig.camera);
 
