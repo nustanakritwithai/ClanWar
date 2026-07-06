@@ -51,6 +51,16 @@ export class CombatTextLayer {
     });
   }
 
+  /** Generic world-anchored feedback line ("Gate Breached", "Capture Paused"…). */
+  public floatText(x: number, y: number, message: string, color: string): void {
+    this.floating(x, y, 90, message, {
+      color,
+      textShadow: '0 1px 3px #000',
+      fontSize: '14px',
+      fontWeight: '700',
+    });
+  }
+
   public denied(x: number, y: number, reason: 'mana' | 'cooldown'): void {
     this.floating(x, y, 96, reason === 'mana' ? 'NO MANA' : 'CD', {
       color: '#fff',

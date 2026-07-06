@@ -8,12 +8,14 @@ import { CameraRig } from '../render3d/CameraRig';
 import { CombatTextLayer } from '../render3d/CombatTextLayer';
 import { DummyView } from '../render3d/DummyView';
 import { buildMap } from '../render3d/MapBuilder';
+import { CaptureView3D, ObjectiveView3D } from '../render3d/ObjectiveView3D';
 import { PlayerView } from '../render3d/PlayerView';
 import { ProjectileView3D } from '../render3d/ProjectileView3D';
 import { Renderer3D } from '../render3d/Renderer3D';
 import { VfxView3D } from '../render3d/VfxView3D';
 import { CombatHud } from '../ui-html/CombatHud';
 import { DebugHud } from '../ui-html/DebugHud';
+import { MatchHud } from '../ui-html/MatchHud';
 import { InputSystem3D } from './InputSystem3D';
 
 // Phase 6C bootstrap: fixed-tick simulation (60 Hz) + rAF rendering with
@@ -55,11 +57,18 @@ export function boot3d(): void {
   const botView = new BotView3D(combatText);
   renderer.scene.add(botView.group);
 
+  const objectiveView = new ObjectiveView3D(combatText, mapView.structures);
+  renderer.scene.add(objectiveView.group);
+
+  const captureView = new CaptureView3D(combatText);
+  renderer.scene.add(captureView.group);
+
   const cameraRig = new CameraRig(container.clientWidth / container.clientHeight);
   cameraRig.snapTo(sim.player.x, sim.player.y);
 
   const input = new InputSystem3D(document.body);
   const hud = new CombatHud(document.body, sim, (action) => input.queueAction(action));
+  const matchHud = new MatchHud(document.body);
   const debugHud = new DebugHud(document.body);
 
   window.addEventListener('resize', () => {
@@ -125,6 +134,32 @@ export function boot3d(): void {
         playerView.hurtFlash();
         combatText.damageNumber(ev.x, ev.y, ev.amount);
         break;
+      // Phase 6E: objectives / capture / match flow.
+      case 'objectiveHit':
+        vfx.hitSpark(ev.x, ev.y);
+        combatText.damageNumber(ev.x, ev.y, ev.amount);
+        break;
+      case 'objectiveDestroyed':
+        vfx.impactBurst(ev.x, ev.y);
+        break;
+      case 'objectiveFeedback':
+      case 'captureFeedback':
+        combatText.floatText(ev.x, ev.y, ev.message, ev.color);
+        break;
+      case 'captureCompleted':
+        combatText.floatText(ev.x, ev.y - 24, `+${ev.score} Objective Score`, '#fbbf24');
+        break;
+      case 'priorityChanged':
+        break; // MatchHud reads the label each frame
+      case 'finalMinute':
+        matchHud.toast('Final Minute');
+        break;
+      case 'timeUp':
+        matchHud.toast('Time Up', '#f4d35e');
+        break;
+      case 'matchOver':
+        matchHud.showMatchOver(ev.resolution);
+        break;
       case 'dummyKilled':
       case 'dummyReset':
         break;
@@ -172,9 +207,12 @@ export function boot3d(): void {
     playerView.sync(sim.player, alpha, dt);
     dummyView.sync(sim.dummy, dt);
     botView.sync(sim.getBots(), alpha, dt);
+    objectiveView.sync(sim.objectives.getSnapshots(), dt);
+    captureView.sync(sim.capture.getSnapshots());
     projectileView.sync(sim.getProjectiles(), alpha);
     vfx.update(dt);
     hud.update(sim);
+    matchHud.update(sim);
     dummyLabel.set(`Dummy ${Math.ceil(sim.dummy.currentHp)}/${sim.dummy.maxHp}`);
 
     const p = sim.player;
@@ -189,9 +227,9 @@ export function boot3d(): void {
       fpsWindowStart = now;
       const aliveBots = sim.bots.filter((b) => !b.dead).length;
       debugHud.set(
-        `3D · Phase 6D · ${HEROES[heroClass].name}\n` +
+        `3D · Phase 6E · ${HEROES[heroClass].name}\n` +
           `fps ${fps} · pos ${Math.round(p.x)},${Math.round(p.y)} · hp ${Math.ceil(p.currentHp)}\n` +
-          `bots ${aliveBots}/${sim.bots.length} · ${sim.lastCombatResult}`,
+          `bots ${aliveBots}/${sim.bots.length} · ${sim.objectives.getPriority()} · ${sim.lastCombatResult}`,
       );
     }
 

@@ -14,9 +14,20 @@ import {
   type BotEncounterId,
   type BotPlayerConfig,
 } from '../data/bot-player-config';
+import { skipsObjectiveDamage } from '../combat/SkillPlaceholder';
+import { SIEGE_RUINS_GATE_BONUS } from '../data/siege-buff';
+import {
+  FINAL_MINUTE_THRESHOLD_SEC,
+  MATCH_DURATION_SEC,
+  resolveTimeUp,
+  type MatchResolution,
+} from '../data/match-rules';
+import { PLAYER_TEAM } from '../constants';
 import type { ActionKey, HeroClassId, InputState, MapDefinition, SkillDefinition } from '../types';
 import { stepCircleMovement } from './MovementSim';
 import { SimBot, type BotEmit, type BotSnapshot, type SimBotHooks } from './SimBot';
+import { SimCapture, type CaptureEmit } from './SimCapture';
+import { SimObjectives, type ObjectiveEmit } from './SimObjectives';
 
 // Phase 6A/6C: headless match simulation for the 3D renderer path.
 //
@@ -69,6 +80,8 @@ export interface PlayerSimState {
   attack: number;
   armor: number;
   attackRange: number;
+  /** Extra gate damage multiplier from the class kit (guardian). */
+  gateDamageBonus?: number;
 }
 
 export interface DummySimState {
@@ -116,7 +129,13 @@ export type SimEvent =
   | { type: 'dummyReset' }
   // Phase 6D: bot-side events (bots hit the player, player hits bots).
   | { type: 'playerHurt'; x: number; y: number; amount: number }
-  | BotEmit;
+  | BotEmit
+  // Phase 6E: objectives / capture / match flow.
+  | ObjectiveEmit
+  | CaptureEmit
+  | { type: 'finalMinute' }
+  | { type: 'timeUp' }
+  | { type: 'matchOver'; resolution: MatchResolution };
 
 /** Phase 6D: match setup — which bots to spawn (mirrors MatchSceneData). */
 export interface MatchSimOptions {
@@ -129,6 +148,9 @@ export interface MatchSimOptions {
 }
 
 const DELTA_MS = SIM_TICK_SECONDS * 1000;
+
+/** 2D MatchScene delay between "Time Up" and the Result screen. */
+const TIME_UP_RESULT_DELAY_MS = 1300;
 
 export class MatchSim {
   public readonly map: MapDefinition;
@@ -149,6 +171,17 @@ export class MatchSim {
   public readonly bots: SimBot[] = [];
   /** Sim clock in ms (monotonic) — the bot AI's time source. */
   public clockMs = 0;
+
+  // Phase 6E: objectives / capture / match flow.
+  public readonly objectives: SimObjectives;
+  public readonly capture: SimCapture;
+  /** Countdown, ms. Mirrors MatchTimerSystem. */
+  public timerRemainingMs = MATCH_DURATION_SEC * 1000;
+  public matchResolved = false;
+  public matchResolution: MatchResolution | null = null;
+  private finalMinuteShown = false;
+  /** Delay between time-up and the matchOver event (2D: 1300ms to Result). */
+  private matchOverCountdownMs = -1;
 
   constructor(map: MapDefinition, heroClass: HeroClassId = 'warrior', options: MatchSimOptions = {}) {
     this.map = map;
@@ -171,6 +204,7 @@ export class MatchSim {
       attack: hero.stats.attack,
       armor: hero.stats.armor,
       attackRange: hero.stats.attackRange,
+      gateDamageBonus: hero.stats.gateDamageBonus,
     };
     // Same placement as MatchScene: 350 north of the player spawn.
     this.dummy = {
@@ -184,7 +218,48 @@ export class MatchSim {
       resetRemaining: 0,
     };
     this.skillRuntime = new SkillRuntimeSystem(heroClass);
+
+    this.capture = new SimCapture((e) => this.events.push(e));
+    this.objectives = new SimObjectives({
+      emit: (e) => this.events.push(e),
+      onMatchEnd: (outcome) => this.handleCoreMatchEnd(outcome),
+      getSiegeGateBonus: (team) => (this.capture.siegeBuffActive(team) ? SIEGE_RUINS_GATE_BONUS : 0),
+    });
+
     this.spawnBots(options);
+  }
+
+  /** Core destroyed → decide the match (mirrors MatchScene.handleMatchEnd). */
+  private handleCoreMatchEnd(outcome: 'victory' | 'defeat'): void {
+    if (this.matchResolved) return;
+    this.matchResolved = true;
+    this.matchResolution = {
+      outcome,
+      reason: outcome === 'victory' ? 'enemy_core_destroyed' : 'friendly_core_destroyed',
+      blueScore: this.capture.getTeamScore('blue'),
+      redScore: this.capture.getTeamScore('red'),
+      blueCoreHp: this.objectives.getCoreHp('blue'),
+      redCoreHp: this.objectives.getCoreHp('red'),
+    };
+    this.events.push({ type: 'matchOver', resolution: this.matchResolution });
+  }
+
+  /** Timer expired with no Core down → score / core-HP / draw resolution. */
+  private resolveTimeUpNow(): void {
+    if (this.matchResolved) return;
+    if (this.objectives.getMatchPhase() !== 'in_progress') return;
+
+    this.matchResolved = true;
+    this.objectives.freeze();
+    this.matchResolution = resolveTimeUp({
+      playerTeam: PLAYER_TEAM,
+      blueScore: this.capture.getTeamScore('blue'),
+      redScore: this.capture.getTeamScore('red'),
+      blueCoreHp: this.objectives.getCoreHp('blue'),
+      redCoreHp: this.objectives.getCoreHp('red'),
+    });
+    this.events.push({ type: 'timeUp' });
+    this.matchOverCountdownMs = TIME_UP_RESULT_DELAY_MS;
   }
 
   /** Build the bot roster from the encounter preset or a single class. */
@@ -253,16 +328,51 @@ export class MatchSim {
 
     this.updateDummyReset();
 
-    if (input.attackPressed) this.handleAttack();
-    if (input.skill1Pressed) this.handleSkill('skill1');
-    if (input.skill2Pressed) this.handleSkill('skill2');
-    if (input.skill3Pressed) this.handleSkill('skill3');
-    if (input.ultimatePressed) this.handleSkill('ultimate');
-
-    this.updateBots();
+    // Combat inputs are ignored once the match is decided (MatchScene guard).
+    const matchActive = !this.matchResolved && this.objectives.getMatchPhase() === 'in_progress';
+    if (matchActive) {
+      if (input.attackPressed) this.handleAttack();
+      if (input.skill1Pressed) this.handleSkill('skill1');
+      if (input.skill2Pressed) this.handleSkill('skill2');
+      if (input.skill3Pressed) this.handleSkill('skill3');
+      if (input.ultimatePressed) this.handleSkill('ultimate');
+      this.updateBots();
+    }
     this.updateProjectiles();
 
+    // Phase 6E match flow — same order as MatchScene.update: objectives →
+    // capture → timer → time-up resolution (Core result wins a same-tick race).
+    this.objectives.update(DELTA_MS);
+    this.capture.update(DELTA_MS, p.x, p.y, PLAYER_TEAM);
+
+    if (!this.matchResolved && this.objectives.getMatchPhase() === 'in_progress') {
+      this.timerRemainingMs = Math.max(0, this.timerRemainingMs - DELTA_MS);
+      if (
+        !this.finalMinuteShown &&
+        this.timerRemainingMs > 0 &&
+        this.timerRemainingMs <= FINAL_MINUTE_THRESHOLD_SEC * 1000
+      ) {
+        this.finalMinuteShown = true;
+        this.events.push({ type: 'finalMinute' });
+      }
+      if (this.timerRemainingMs <= 0) {
+        this.resolveTimeUpNow();
+      }
+    }
+
+    // Deferred time-up → matchOver beat (2D: delayedCall to ResultScene).
+    if (this.matchOverCountdownMs >= 0) {
+      this.matchOverCountdownMs -= DELTA_MS;
+      if (this.matchOverCountdownMs < 0 && this.matchResolution) {
+        this.events.push({ type: 'matchOver', resolution: this.matchResolution });
+      }
+    }
+
     this.tickCount += 1;
+  }
+
+  public getRemainingSeconds(): number {
+    return Math.ceil(this.timerRemainingMs / 1000);
   }
 
   /**
@@ -332,6 +442,21 @@ export class MatchSim {
       hit = true;
     }
     if (this.damageBotsInArc(p.x, p.y, p.facingAngle, p.attackRange, DEFAULT_MELEE_ARC_DEGREES, p.attack)) hit = true;
+
+    const objResult = this.objectives.applyMeleeArcDamage({
+      ownerTeam: PLAYER_TEAM,
+      casterX: p.x,
+      casterY: p.y,
+      facingAngle: p.facingAngle,
+      range: p.attackRange,
+      rawDamage: p.attack,
+      playerGateDamageBonus: p.gateDamageBonus,
+    });
+    if (objResult) {
+      this.lastCombatResult = `Attack hit objective ${objResult.finalDamage}`;
+      hit = true;
+    }
+
     if (!hit) this.lastCombatResult = 'Attack missed';
   }
 
@@ -385,6 +510,25 @@ export class MatchSim {
       hit = true;
     }
     if (this.damageBotsInArc(p.x, p.y, p.facingAngle, range, arcDegrees, skill.damage)) hit = true;
+
+    if (!skipsObjectiveDamage(skill.id)) {
+      const objResult = this.objectives.applyMeleeArcDamage({
+        ownerTeam: PLAYER_TEAM,
+        casterX: p.x,
+        casterY: p.y,
+        facingAngle: p.facingAngle,
+        range,
+        arcDegrees,
+        rawDamage: skill.damage,
+        skillGateDamageBonus: skill.gateDamageBonus,
+        playerGateDamageBonus: p.gateDamageBonus,
+      });
+      if (objResult) {
+        this.lastCombatResult = `${skill.name} hit objective ${objResult.finalDamage}`;
+        hit = true;
+      }
+    }
+
     if (!hit) this.lastCombatResult = `${skill.name} missed`;
   }
 
@@ -458,6 +602,23 @@ export class MatchSim {
       if (!hit) this.events.push({ type: 'impactBurst', x: center.x, y: center.y });
       hit = true;
     }
+
+    if (!skipsObjectiveDamage(skill.id)) {
+      const objResult = this.objectives.applyAoeDamage({
+        ownerTeam: PLAYER_TEAM,
+        centerX: center.x,
+        centerY: center.y,
+        radius,
+        rawDamage,
+        skillGateDamageBonus: skill.gateDamageBonus,
+        playerGateDamageBonus: p.gateDamageBonus,
+      });
+      if (objResult) {
+        this.lastCombatResult = `${skill.name} hit ${objResult.finalDamage} objective`;
+        hit = true;
+      }
+    }
+
     if (!hit) this.lastCombatResult = `${skill.name} missed`;
   }
 
@@ -482,6 +643,23 @@ export class MatchSim {
       }
       // Legacy range check vs bots: circle centred on the player.
       if (this.damageBotsInCircle(this.player.x, this.player.y, range, skill.damage)) hit = true;
+
+      if (!skipsObjectiveDamage(skill.id)) {
+        const objResult = this.objectives.applyRangeDamage({
+          ownerTeam: PLAYER_TEAM,
+          casterX: this.player.x,
+          casterY: this.player.y,
+          range,
+          rawDamage: skill.damage,
+          skillGateDamageBonus: skill.gateDamageBonus,
+          playerGateDamageBonus: this.player.gateDamageBonus,
+        });
+        if (objResult) {
+          this.lastCombatResult = `${skill.name} hit objective ${objResult.finalDamage}`;
+          hit = true;
+        }
+      }
+
       if (!hit) this.lastCombatResult = `${skill.name} missed`;
       return;
     }
@@ -580,6 +758,16 @@ export class MatchSim {
           if (proj.impactAoeRadius !== undefined && proj.impactAoeRadius > 0) {
             this.events.push({ type: 'impactBurst', x: proj.x, y: proj.y });
             this.damageBotsInCircle(proj.x, proj.y, proj.impactAoeRadius, proj.damage);
+            // 2D parity: an impact AoE also splashes objectives in radius.
+            if (!skipsObjectiveDamage(proj.skillId)) {
+              this.objectives.applyAoeDamage({
+                ownerTeam: PLAYER_TEAM,
+                centerX: proj.x,
+                centerY: proj.y,
+                radius: proj.impactAoeRadius,
+                rawDamage: proj.damage,
+              });
+            }
           } else {
             const res = bot.applyDamage(proj.damage);
             this.events.push({ type: 'damageNumber', x: bot.x, y: bot.y, amount: res.finalDamage });
@@ -587,6 +775,22 @@ export class MatchSim {
           }
           destroyed = true;
           break;
+        }
+      }
+
+      // Objectives: swept segment vs gates/cores (2D ProjectileSystem's
+      // checkObjectiveSegment). Damages inside, consumes the projectile —
+      // including a blocked splash off a protected core.
+      if (!destroyed) {
+        const objHit = this.objectives.handleProjectileSegmentHit(
+          PLAYER_TEAM, proj.prevX, proj.prevY, proj.x, proj.y, proj.hitRadius, proj.damage,
+        );
+        if (objHit.hit) {
+          this.events.push({ type: 'hitSpark', x: proj.x, y: proj.y });
+          if (objHit.result) {
+            this.lastCombatResult = `${proj.skillName} hit objective ${objHit.result.finalDamage}`;
+          }
+          destroyed = true;
         }
       }
 

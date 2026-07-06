@@ -43,6 +43,9 @@ const SEWER_MOUTHS = [{ x: 2150, y: 3550 }, { x: 2150, y: 2300 }, { x: 2150, y: 
 
 export interface MapView {
   group: THREE.Group;
+  /** Marker structure groups by marker id (gates/cores/camps…), so dynamic
+   * views (Phase 6E objectives) can restyle them when state changes. */
+  structures: ReadonlyMap<string, THREE.Group>;
   /** Advance animated structure bits (core crystals). */
   update(dt: number): void;
 }
@@ -50,17 +53,21 @@ export interface MapView {
 export function buildMap(map: MapDefinition): MapView {
   const group = new THREE.Group();
   const updatables: Updatable[] = [];
+  const structures = new Map<string, THREE.Group>();
 
   group.add(buildGround(map));
   group.add(buildWalls(map));
   group.add(buildRouteExtras());
   group.add(buildProps(map));
   for (const marker of map.markers) {
-    group.add(buildStructure(marker, updatables));
+    const structure = buildStructure(marker, updatables);
+    structures.set(marker.id, structure);
+    group.add(structure);
   }
 
   return {
     group,
+    structures,
     update(dt: number): void {
       for (const u of updatables) u(dt);
     },
