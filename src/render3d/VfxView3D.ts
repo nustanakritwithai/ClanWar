@@ -19,11 +19,103 @@ const BOLT_COLORS: Record<NormalAttackBoltKind, number> = {
   holy_bolt: 0xfff7cc,
 };
 
+// Phase 6F: one pooled additive Points cloud for every spark/burst/trail.
+// Fixed budget (mobile-friendly), no allocation per effect: fading works by
+// lerping vertex colors to black under additive blending (black == invisible).
+const PARTICLE_BUDGET = 500;
+
+class ParticlePool {
+  public readonly points: THREE.Points;
+  private readonly positions: Float32Array;
+  private readonly colors: Float32Array;
+  private readonly vel = new Float32Array(PARTICLE_BUDGET * 3);
+  private readonly life = new Float32Array(PARTICLE_BUDGET);
+  private readonly maxLife = new Float32Array(PARTICLE_BUDGET);
+  private readonly baseColor: THREE.Color[] = [];
+  private readonly gravity = new Float32Array(PARTICLE_BUDGET);
+  private cursor = 0;
+
+  constructor() {
+    this.positions = new Float32Array(PARTICLE_BUDGET * 3);
+    this.colors = new Float32Array(PARTICLE_BUDGET * 3);
+    this.positions.fill(-99999);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(this.colors, 3));
+    // Huge static bounds — the cloud spans the whole map; skip per-frame BVH.
+    geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(1500, 60, 2100), 6000);
+    const mat = new THREE.PointsMaterial({
+      size: 9,
+      vertexColors: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      transparent: true,
+    });
+    this.points = new THREE.Points(geo, mat);
+    this.points.frustumCulled = false;
+    for (let i = 0; i < PARTICLE_BUDGET; i++) this.baseColor.push(new THREE.Color(0));
+  }
+
+  /** Spawn `count` particles bursting from (x, h, y). */
+  public burst(
+    x: number, h: number, y: number,
+    count: number, color: number,
+    speed: number, upBias: number, gravity: number, lifeSec: number,
+  ): void {
+    const c = new THREE.Color(color);
+    for (let n = 0; n < count; n++) {
+      const i = this.cursor;
+      this.cursor = (this.cursor + 1) % PARTICLE_BUDGET;
+      const a = Math.random() * Math.PI * 2;
+      const v = speed * (0.4 + Math.random() * 0.6);
+      this.positions[i * 3] = x;
+      this.positions[i * 3 + 1] = h;
+      this.positions[i * 3 + 2] = y;
+      this.vel[i * 3] = Math.cos(a) * v;
+      this.vel[i * 3 + 1] = upBias * (0.5 + Math.random());
+      this.vel[i * 3 + 2] = Math.sin(a) * v;
+      this.gravity[i] = gravity;
+      this.life[i] = lifeSec * (0.6 + Math.random() * 0.4);
+      this.maxLife[i] = this.life[i];
+      this.baseColor[i].copy(c);
+    }
+  }
+
+  public update(dt: number): void {
+    for (let i = 0; i < PARTICLE_BUDGET; i++) {
+      if (this.life[i] <= 0) continue;
+      this.life[i] -= dt;
+      if (this.life[i] <= 0) {
+        this.positions[i * 3 + 1] = -99999;
+        this.colors[i * 3] = 0; this.colors[i * 3 + 1] = 0; this.colors[i * 3 + 2] = 0;
+        continue;
+      }
+      this.vel[i * 3 + 1] -= this.gravity[i] * dt;
+      this.positions[i * 3] += this.vel[i * 3] * dt;
+      this.positions[i * 3 + 1] = Math.max(2, this.positions[i * 3 + 1] + this.vel[i * 3 + 1] * dt);
+      this.positions[i * 3 + 2] += this.vel[i * 3 + 2] * dt;
+      const f = this.life[i] / this.maxLife[i];
+      this.colors[i * 3] = this.baseColor[i].r * f;
+      this.colors[i * 3 + 1] = this.baseColor[i].g * f;
+      this.colors[i * 3 + 2] = this.baseColor[i].b * f;
+    }
+    const geo = this.points.geometry;
+    (geo.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
+    (geo.getAttribute('color') as THREE.BufferAttribute).needsUpdate = true;
+  }
+}
+
 export class VfxView3D {
   public readonly group = new THREE.Group();
   private readonly effects: Effect[] = [];
+  private readonly particles = new ParticlePool();
+
+  constructor() {
+    this.group.add(this.particles.points);
+  }
 
   public update(dt: number): void {
+    this.particles.update(dt);
     for (let i = this.effects.length - 1; i >= 0; i--) {
       if (!this.effects[i].update(dt)) {
         this.effects.splice(i, 1);
@@ -65,6 +157,7 @@ export class VfxView3D {
       (mesh.material as THREE.MeshBasicMaterial).opacity = 0.95 * (1 - t);
       mesh.rotation.y += 0.3;
     }, mesh);
+    this.particles.burst(x, 42, y, 10, 0xfde68a, 170, 90, 320, 0.4);
   }
 
   public impactBurst(x: number, y: number): void {
@@ -79,6 +172,15 @@ export class VfxView3D {
       flash.scale.setScalar(1 + t * 1.6);
       (flash.material as THREE.MeshBasicMaterial).opacity = 0.8 * (1 - t);
     }, flash);
+    this.particles.burst(x, 34, y, 24, 0xf97316, 260, 150, 380, 0.55);
+  }
+
+  /** Phase 6F: gate/core destruction — the biggest moment on the map. */
+  public destroyBurst(x: number, y: number): void {
+    this.expandingRing(x, y, 30, 240, 0xf97316, 0.5);
+    this.expandingRing(x, y, 10, 150, 0xffffff, 0.35);
+    this.particles.burst(x, 50, y, 60, 0xfbbf24, 420, 260, 340, 0.9);
+    this.particles.burst(x, 40, y, 30, 0x9ca3af, 300, 200, 300, 1.1);
   }
 
   /** AoE zone marker: radius ring + soft disc, green for heals. */
@@ -124,6 +226,8 @@ export class VfxView3D {
       ring.scale.setScalar(1 - t * 0.35);
       (ring.material as THREE.MeshBasicMaterial).opacity = 0.9 * (1 - t);
     }, ring);
+    // Gentle rising sparkles (negative gravity = float upward).
+    this.particles.burst(x, 20, y, 12, 0x4ade80, 55, 60, -50, 0.8);
   }
 
   // --- helpers ---------------------------------------------------------------
@@ -181,9 +285,18 @@ export class VfxView3D {
     this.group.add(mesh);
 
     const ttl = Math.max(0.05, (range - 30) / BOLT_SPEED);
+    let trailAccum = 0;
+    let lastT = 0;
     this.timed(ttl, (t) => {
       const dist = 30 + (range - 30) * t;
       mesh.position.set(x + dirX * dist, 46, y + dirY * dist);
+      // Faint trail: a particle every ~28 units of travel.
+      trailAccum += (t - lastT) * (range - 30);
+      lastT = t;
+      if (trailAccum >= 28) {
+        trailAccum = 0;
+        this.particles.burst(mesh.position.x, 46, mesh.position.z, 1, color, 12, 8, 0, 0.3);
+      }
     }, mesh);
   }
 

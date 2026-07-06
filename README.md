@@ -7,13 +7,14 @@ Browser-based 2D top-down siege arena (MVP). Built with **Vite + TypeScript + Ph
 
 See [docs/phase-4a-map-visual-runtime-foundation.md](docs/phase-4a-map-visual-runtime-foundation.md).
 
-> **Phase 6E: the Three.js 3D renderer is now the default.** A full match
-> plays start-to-finish in 3D — gates/cores, capture points, siege buff,
-> match timer, and win/lose/draw with a result overlay. `?class=` picks your
-> hero, `?botClass=` / `?encounter=` pick the enemies; the legacy Phaser 2D
-> game remains at `?renderer=2d` until Phase 6F.
+> **Phase 6F: a full 3D game on Three.js — Phaser has been removed.** Animated
+> GLTF characters (base model: RobotExpressive, CC0 by Tomás Laulhé, glTF
+> conversion by Don McCurdy) with class props and team tints, particle combat
+> VFX, and a dressed battlefield. A match plays start-to-finish — gates/cores,
+> capture points, siege buff, timer, win/lose/draw. `?class=` picks your hero,
+> `?botClass=` / `?encounter=` pick the enemies.
 > Plan: [docs/phase-6-3d-threejs-upgrade-plan.md](docs/phase-6-3d-threejs-upgrade-plan.md),
-> current slice: [docs/phase-6e-match-loop-3d.md](docs/phase-6e-match-loop-3d.md).
+> current slice: [docs/phase-6f-visual-upgrade.md](docs/phase-6f-visual-upgrade.md).
 
 ## Run
 

@@ -5,6 +5,7 @@ import { isBotEncounterId, isBotPlayableClass } from '../game/data/bot-player-co
 import type { HeroClassId, InputState } from '../game/types';
 import { BotView3D } from '../render3d/BotView3D';
 import { CameraRig } from '../render3d/CameraRig';
+import { createCharacter, loadCharacterBase } from '../render3d/CharacterModel';
 import { CombatTextLayer } from '../render3d/CombatTextLayer';
 import { DummyView } from '../render3d/DummyView';
 import { buildMap } from '../render3d/MapBuilder';
@@ -60,6 +61,15 @@ export function boot3d(): void {
   const objectiveView = new ObjectiveView3D(combatText, mapView.structures);
   renderer.scene.add(objectiveView.group);
 
+  // Phase 6F: swap capsules for animated GLTF characters once the CC0 model
+  // resolves. On failure the capsule fallback stays — game remains playable.
+  loadCharacterBase()
+    .then((base) => {
+      playerView.attachCharacter(createCharacter(base, 0x60a5fa, heroClass));
+      botView.setCharacterBase(base);
+    })
+    .catch((err) => console.warn('Character model failed to load; using capsule fallback', err));
+
   const captureView = new CaptureView3D(combatText);
   renderer.scene.add(captureView.group);
 
@@ -86,12 +96,14 @@ export function boot3d(): void {
     switch (ev.type) {
       case 'attackSwing':
         vfx.attackSwing(ev.x, ev.y, ev.facing, ev.range, ev.bolt);
+        playerView.onAttack();
         break;
       case 'slash':
         vfx.slash(ev.x, ev.y, ev.facing);
         break;
       case 'castFlash':
         vfx.castFlash(ev.x, ev.y);
+        playerView.onCast();
         break;
       case 'dummyHit':
         vfx.hitSpark(ev.x, ev.y);
@@ -140,7 +152,7 @@ export function boot3d(): void {
         combatText.damageNumber(ev.x, ev.y, ev.amount);
         break;
       case 'objectiveDestroyed':
-        vfx.impactBurst(ev.x, ev.y);
+        vfx.destroyBurst(ev.x, ev.y);
         break;
       case 'objectiveFeedback':
       case 'captureFeedback':
@@ -159,6 +171,7 @@ export function boot3d(): void {
         break;
       case 'matchOver':
         matchHud.showMatchOver(ev.resolution);
+        if (ev.resolution.outcome === 'victory') playerView.onVictory();
         break;
       case 'dummyKilled':
       case 'dummyReset':

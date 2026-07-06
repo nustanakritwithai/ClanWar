@@ -1,6 +1,9 @@
 import type { BotGoal } from '../ai/BotBrain';
 import type { BotPerception } from '../ai/BotPerception';
-import type { NormalAttackProjectileKind } from '../ui/CombatVfx';
+
+/** Ranged normal-attack bolt kinds (lived in ui/CombatVfx until the Phaser
+ * runtime was removed in Phase 6F — values unchanged). */
+export type NormalAttackProjectileKind = 'arrow' | 'magic_bolt' | 'holy_bolt';
 
 /**
  * Phase 5A-4 / 5A-5 — BotPlayerController.

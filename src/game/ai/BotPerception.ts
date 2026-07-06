@@ -1,4 +1,4 @@
-import type { BotState } from '../entities/BotPlayer';
+import type { BotState } from '../types';
 
 /**
  * Phase 5A-3 — BotPerception.

@@ -1,6 +1,5 @@
 import type { ActionKey, HeroClassId, SkillDefinition, SkillSlot, SkillUseResult } from '../types';
 import { SKILLS } from '../data/skills';
-import type { Player } from '../entities/Player';
 
 const SKILL_ACTIONS: ActionKey[] = ['skill1', 'skill2', 'skill3', 'ultimate'];
 
@@ -43,34 +42,10 @@ export class SkillRuntimeSystem {
     return currentMana >= skill.manaCost;
   }
 
-  public tryUseSkill(action: ActionKey, player: Player): SkillUseResult {
-    const skill = this.getSkillForAction(action);
-    if (!skill) {
-      this.lastResult = 'fail: no-skill';
-      return { ok: false, reason: 'no-skill' };
-    }
-
-    if (this.getCooldownRemaining(action) > 0) {
-      this.lastResult = 'fail: cooldown';
-      return { ok: false, reason: 'cooldown', skillName: skill.name };
-    }
-
-    if (!player.canSpendMana(skill.manaCost)) {
-      this.lastResult = 'fail: mana';
-      return { ok: false, reason: 'mana', skillName: skill.name };
-    }
-
-    this.cooldownRemaining.set(action, skill.cooldown);
-    this.lastResult = `used: ${skill.name}`;
-    return { ok: true, skillName: skill.name, cooldown: skill.cooldown };
-  }
-
   /**
-   * Phase 5A-7: caster-agnostic cast for non-`Player` casters (the BotPlayer).
-   * Mirrors {@link tryUseSkill}'s gating but takes a plain mana value instead of a
-   * `Player`, so the AI-controlled bot reuses the *same* skill source, cooldown
-   * table, and mana gating the human uses — only the caster differs. Purely
-   * additive: {@link tryUseSkill} (the human path) is untouched.
+   * Phase 5A-7: caster-agnostic cast — takes a plain mana value, so the player
+   * sim and AI bots reuse the *same* skill source, cooldown table, and mana
+   * gating; only the caster differs.
    */
   public tryUseSkillForCaster(action: ActionKey, currentMana: number): SkillUseResult {
     const skill = this.getSkillForAction(action);

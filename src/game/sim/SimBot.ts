@@ -19,8 +19,9 @@ import {
   type MultiBotSeparationConfig,
   type RangedSpacingProfile,
 } from '../data/bot-player-config';
-import type { BotState } from '../entities/BotPlayer';
-import type { ActionKey, DamageResult, HeroClassId, HeroStats, SkillDefinition, WallRect } from '../types';
+import type { ActionKey, BotState, DamageResult, HeroClassId, HeroStats, SkillDefinition, WallRect } from '../types';
+
+export type { BotState };
 import { stepCircleMovement, type WorldBounds } from './MovementSim';
 
 // Phase 6D: headless port of systems/BotUnit for the 3D renderer path.

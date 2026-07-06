@@ -59,6 +59,7 @@ export function buildMap(map: MapDefinition): MapView {
   group.add(buildWalls(map));
   group.add(buildRouteExtras());
   group.add(buildProps(map));
+  group.add(buildAtmosphere(updatables));
   for (const marker of map.markers) {
     const structure = buildStructure(marker, updatables);
     structures.set(marker.id, structure);
@@ -231,6 +232,58 @@ function isPropSpotFree(map: MapDefinition, x: number, y: number, allowNeutral: 
     if (dx * dx + dy * dy < keep * keep) return false;
   }
   return true;
+}
+
+/** Phase 6F: life on the battlefield — team banners at each base and lamp
+ * posts along the main route. Lamps glow via emissive only (no PointLights —
+ * mobile budget); banners wave with a light vertex-free sway. */
+function buildAtmosphere(updatables: Updatable[]): THREE.Group {
+  const group = new THREE.Group();
+
+  const poleMat = new THREE.MeshStandardMaterial({ color: 0x4b5563, flatShading: true, roughness: 0.9 });
+  const poleGeo = new THREE.CylinderGeometry(4, 5, 150, 6);
+  const flagGeo = new THREE.PlaneGeometry(56, 34);
+
+  const banner = (x: number, y: number, color: number): void => {
+    const pole = new THREE.Mesh(poleGeo, poleMat);
+    pole.position.set(x, 75, y);
+    group.add(pole);
+    const flag = new THREE.Mesh(
+      flagGeo,
+      new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.8, side: THREE.DoubleSide }),
+    );
+    flag.position.set(x + 30, 128, y);
+    group.add(flag);
+    let t = Math.random() * 10;
+    updatables.push((dt) => {
+      t += dt;
+      flag.rotation.y = Math.sin(t * 2.1) * 0.22;
+      flag.position.y = 128 + Math.sin(t * 3.3) * 1.5;
+    });
+  };
+  // Two banners flanking each base entrance.
+  banner(1350, 3320, COLORS.blue);
+  banner(1650, 3320, COLORS.blue);
+  banner(1350, 880, COLORS.red);
+  banner(1650, 880, COLORS.red);
+
+  // Lamp posts along the main route edges (emissive glow, no real lights).
+  const lampPoleGeo = new THREE.CylinderGeometry(3, 4, 92, 5);
+  const lampOrbGeo = new THREE.IcosahedronGeometry(9);
+  const lampOrbMat = new THREE.MeshStandardMaterial({
+    color: 0xfde68a, emissive: 0xf59e0b, emissiveIntensity: 0.9, flatShading: true,
+  });
+  for (const y of [1300, 1800, 2400, 2900]) {
+    for (const x of [ROUTES.main.left - 26, ROUTES.main.right + 26]) {
+      const pole = new THREE.Mesh(lampPoleGeo, poleMat);
+      pole.position.set(x, 46, y);
+      const orb = new THREE.Mesh(lampOrbGeo, lampOrbMat);
+      orb.position.set(x, 98, y);
+      group.add(pole, orb);
+    }
+  }
+
+  return group;
 }
 
 /** Instanced trees + rocks scattered on the grass strips between routes. */

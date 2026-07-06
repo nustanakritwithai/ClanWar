@@ -7,6 +7,10 @@ import type { BotEncounterId } from './data/bot-player-config';
 
 export type TeamId = 'blue' | 'red';
 
+/** Bot combat/locomotion state (lived in entities/BotPlayer until the Phaser
+ * runtime was removed in Phase 6F — values unchanged). */
+export type BotState = 'idle' | 'chase' | 'windup' | 'attack' | 'recovery' | 'dead';
+
 export type ObjectiveType =
   | 'spawn'
   | 'core'
