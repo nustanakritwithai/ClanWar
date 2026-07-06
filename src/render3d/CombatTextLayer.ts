@@ -62,8 +62,13 @@ export class CombatTextLayer {
     });
   }
 
-  /** Persistent label that follows a world position (dummy HP readout). */
-  public createLabel(x: number, y: number, height: number): { set(text: string): void; setPosition(x: number, y: number): void } {
+  /** Persistent label that follows a world position (dummy / bot readout). */
+  public createLabel(
+    x: number,
+    y: number,
+    height: number,
+    style?: Partial<CSSStyleDeclaration>,
+  ): { set(text: string): void; setPosition(x: number, y: number): void; remove(): void } {
     const div = document.createElement('div');
     Object.assign(div.style, {
       color: '#e6edf3',
@@ -72,13 +77,14 @@ export class CombatTextLayer {
       borderRadius: '3px',
       font: '700 11px ui-monospace, monospace',
       whiteSpace: 'nowrap',
-    });
+    } as Partial<CSSStyleDeclaration>, style);
     const obj = new CSS2DObject(div);
     obj.position.set(x, height, y);
     this.scene.add(obj);
     return {
       set: (text: string) => { div.textContent = text; },
       setPosition: (px: number, py: number) => { obj.position.set(px, height, py); },
+      remove: () => { this.scene.remove(obj); div.remove(); },
     };
   }
 

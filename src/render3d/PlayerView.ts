@@ -13,7 +13,9 @@ export class PlayerView {
   public readonly group: THREE.Group;
 
   private readonly bob: THREE.Group;
+  private readonly bodyMat: THREE.MeshStandardMaterial;
   private walkPhase = 0;
+  private hurtRemaining = 0;
 
   constructor() {
     this.group = new THREE.Group();
@@ -25,6 +27,7 @@ export class PlayerView {
       flatShading: true,
       roughness: 0.65,
     });
+    this.bodyMat = bodyMat;
     const body = new THREE.Mesh(new THREE.CapsuleGeometry(PLAYER_RADIUS, BODY_LENGTH, 3, 10), bodyMat);
     body.position.y = BODY_CENTER_Y;
     this.bob.add(body);
@@ -47,11 +50,24 @@ export class PlayerView {
     this.group.add(ring);
   }
 
+  /** Brief red flash when the player takes a hit. */
+  public hurtFlash(): void {
+    this.hurtRemaining = 0.14;
+  }
+
   /**
    * Place the view at the interpolated sim position. `alpha` blends between
    * the previous and current fixed tick; `dt` drives the walk bob.
    */
   public sync(p: PlayerSimState, alpha: number, dt: number): void {
+    if (this.hurtRemaining > 0) {
+      this.hurtRemaining -= dt;
+      this.bodyMat.emissive.set(0xef4444);
+      this.bodyMat.emissiveIntensity = 0.6;
+    } else {
+      this.bodyMat.emissiveIntensity = 0;
+    }
+
     const x = p.prevX + (p.x - p.prevX) * alpha;
     const y = p.prevY + (p.y - p.prevY) * alpha;
     this.group.position.set(x, 0, y);

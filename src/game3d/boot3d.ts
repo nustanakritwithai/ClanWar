@@ -1,7 +1,9 @@
 import { smallTwinFortress } from '../game/data/map-small-twin-fortress';
 import { HEROES } from '../game/data/heroes';
-import { MatchSim, SIM_TICK_SECONDS, type SimEvent } from '../game/sim/MatchSim';
+import { MatchSim, SIM_TICK_SECONDS, type MatchSimOptions, type SimEvent } from '../game/sim/MatchSim';
+import { isBotEncounterId, isBotPlayableClass } from '../game/data/bot-player-config';
 import type { HeroClassId, InputState } from '../game/types';
+import { BotView3D } from '../render3d/BotView3D';
 import { CameraRig } from '../render3d/CameraRig';
 import { CombatTextLayer } from '../render3d/CombatTextLayer';
 import { DummyView } from '../render3d/DummyView';
@@ -30,7 +32,7 @@ export function boot3d(): void {
   const heroClass = resolveHeroClass();
   const map = smallTwinFortress;
 
-  const sim = new MatchSim(map, heroClass);
+  const sim = new MatchSim(map, heroClass, resolveMatchOptions());
   const renderer = new Renderer3D(container);
   const mapView = buildMap(map);
   renderer.scene.add(mapView.group);
@@ -49,6 +51,9 @@ export function boot3d(): void {
 
   const combatText = new CombatTextLayer(container, renderer.scene);
   const dummyLabel = combatText.createLabel(sim.dummy.x, sim.dummy.y, 138);
+
+  const botView = new BotView3D(combatText);
+  renderer.scene.add(botView.group);
 
   const cameraRig = new CameraRig(container.clientWidth / container.clientHeight);
   cameraRig.snapTo(sim.player.x, sim.player.y);
@@ -99,6 +104,27 @@ export function boot3d(): void {
       case 'denied':
         combatText.denied(sim.player.x, sim.player.y, ev.reason);
         break;
+      // Phase 6D: bot-side events.
+      case 'hitSpark':
+        vfx.hitSpark(ev.x, ev.y);
+        break;
+      case 'botCastFlash':
+        vfx.castFlash(ev.x, ev.y);
+        break;
+      case 'botSlash':
+        vfx.slash(ev.x, ev.y, ev.facing);
+        break;
+      case 'botBolt':
+        vfx.botBolt(ev.x, ev.y, ev.facing, ev.travel, ev.kind);
+        break;
+      case 'botHeal':
+        vfx.heal(ev.x, ev.y);
+        break;
+      case 'playerHurt':
+        vfx.hitSpark(ev.x, ev.y);
+        playerView.hurtFlash();
+        combatText.damageNumber(ev.x, ev.y, ev.amount);
+        break;
       case 'dummyKilled':
       case 'dummyReset':
         break;
@@ -145,6 +171,7 @@ export function boot3d(): void {
     mapView.update(dt);
     playerView.sync(sim.player, alpha, dt);
     dummyView.sync(sim.dummy, dt);
+    botView.sync(sim.getBots(), alpha, dt);
     projectileView.sync(sim.getProjectiles(), alpha);
     vfx.update(dt);
     hud.update(sim);
@@ -160,10 +187,11 @@ export function boot3d(): void {
       fps = Math.round((frames * 1000) / (now - fpsWindowStart));
       frames = 0;
       fpsWindowStart = now;
+      const aliveBots = sim.bots.filter((b) => !b.dead).length;
       debugHud.set(
-        `3D · Phase 6C · ${HEROES[heroClass].name}\n` +
-          `fps ${fps} · pos ${Math.round(p.x)},${Math.round(p.y)}\n` +
-          `input ${input.state.inputMode} · ${sim.lastCombatResult}`,
+        `3D · Phase 6D · ${HEROES[heroClass].name}\n` +
+          `fps ${fps} · pos ${Math.round(p.x)},${Math.round(p.y)} · hp ${Math.ceil(p.currentHp)}\n` +
+          `bots ${aliveBots}/${sim.bots.length} · ${sim.lastCombatResult}`,
       );
     }
 
@@ -176,4 +204,15 @@ export function boot3d(): void {
 function resolveHeroClass(): HeroClassId {
   const raw = new URLSearchParams(window.location.search).get('class');
   return raw && raw in HEROES ? (raw as HeroClassId) : 'warrior';
+}
+
+/** ?encounter=<preset> spawns a multi-bot mix; ?botClass=<class> a single bot;
+ * neither → one Warrior bot (bare-match parity). Mirrors MatchSceneData. */
+function resolveMatchOptions(): MatchSimOptions {
+  const params = new URLSearchParams(window.location.search);
+  const encounter = params.get('encounter');
+  if (isBotEncounterId(encounter)) return { encounter };
+  const botClass = params.get('botClass');
+  if (isBotPlayableClass(botClass)) return { botClass };
+  return {};
 }

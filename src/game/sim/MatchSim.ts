@@ -5,8 +5,18 @@ import { getSkillRuntimeType } from '../combat/SkillRuntimeType';
 import { isVisualOnlyAoe } from '../combat/SkillPlaceholder';
 import { CombatSystem } from '../systems/CombatSystem';
 import { SkillRuntimeSystem } from '../systems/SkillRuntimeSystem';
+import {
+  BOT_PLAYER,
+  DEFAULT_BOT_DIFFICULTY,
+  MULTI_BOT_SEPARATION,
+  resolveBotEncounter,
+  type BotDifficulty,
+  type BotEncounterId,
+  type BotPlayerConfig,
+} from '../data/bot-player-config';
 import type { ActionKey, HeroClassId, InputState, MapDefinition, SkillDefinition } from '../types';
 import { stepCircleMovement } from './MovementSim';
+import { SimBot, type BotEmit, type BotSnapshot, type SimBotHooks } from './SimBot';
 
 // Phase 6A/6C: headless match simulation for the 3D renderer path.
 //
@@ -103,7 +113,22 @@ export type SimEvent =
   | { type: 'heal'; x: number; y: number; amount: number }
   | { type: 'denied'; reason: 'mana' | 'cooldown' }
   | { type: 'dummyKilled' }
-  | { type: 'dummyReset' };
+  | { type: 'dummyReset' }
+  // Phase 6D: bot-side events (bots hit the player, player hits bots).
+  | { type: 'playerHurt'; x: number; y: number; amount: number }
+  | BotEmit;
+
+/** Phase 6D: match setup — which bots to spawn (mirrors MatchSceneData). */
+export interface MatchSimOptions {
+  /** Multi-bot encounter preset id. Overrides `botClass` when set. */
+  encounter?: BotEncounterId;
+  /** Single-bot class when no encounter is given (defaults to warrior). */
+  botClass?: HeroClassId;
+  /** Bot difficulty (default normal). */
+  difficulty?: BotDifficulty;
+}
+
+const DELTA_MS = SIM_TICK_SECONDS * 1000;
 
 export class MatchSim {
   public readonly map: MapDefinition;
@@ -120,7 +145,12 @@ export class MatchSim {
   private projectiles: ProjectileSimState[] = [];
   private nextProjectileId = 1;
 
-  constructor(map: MapDefinition, heroClass: HeroClassId = 'warrior') {
+  /** Phase 6D: AI-controlled enemy bots. */
+  public readonly bots: SimBot[] = [];
+  /** Sim clock in ms (monotonic) — the bot AI's time source. */
+  public clockMs = 0;
+
+  constructor(map: MapDefinition, heroClass: HeroClassId = 'warrior', options: MatchSimOptions = {}) {
     this.map = map;
     const hero = HEROES[heroClass];
     this.player = {
@@ -154,6 +184,43 @@ export class MatchSim {
       resetRemaining: 0,
     };
     this.skillRuntime = new SkillRuntimeSystem(heroClass);
+    this.spawnBots(options);
+  }
+
+  /** Build the bot roster from the encounter preset or a single class. */
+  private spawnBots(options: MatchSimOptions): void {
+    const difficulty = options.difficulty ?? DEFAULT_BOT_DIFFICULTY;
+    const hooks: SimBotHooks = {
+      damagePlayer: (raw) => this.damagePlayer(raw),
+      emit: (e: BotEmit) => this.events.push(e),
+      now: () => this.clockMs,
+    };
+
+    let configs: BotPlayerConfig[];
+    if (options.encounter) {
+      configs = resolveBotEncounter(options.encounter).map((m) => ({
+        ...BOT_PLAYER,
+        classId: m.classId,
+        spawn: { x: BOT_PLAYER.spawn.x + m.spawnOffset.x, y: BOT_PLAYER.spawn.y + m.spawnOffset.y },
+      }));
+    } else {
+      configs = [{ ...BOT_PLAYER, classId: options.botClass ?? 'warrior' }];
+    }
+
+    configs.forEach((cfg, i) => {
+      this.bots.push(new SimBot(cfg, hooks, difficulty, `bot-${i}`));
+    });
+  }
+
+  /** Bot landed a hit — apply shared-formula damage to the player. */
+  private damagePlayer(rawDamage: number): void {
+    const result = CombatSystem.applyDamage(this.player, rawDamage);
+    this.events.push({ type: 'playerHurt', x: this.player.x, y: this.player.y, amount: result.finalDamage });
+    this.lastCombatResult = `Enemy hit you ${result.finalDamage}`;
+  }
+
+  public getBots(): BotSnapshot[] {
+    return this.bots.map((b) => b.snapshot());
   }
 
   public getProjectiles(): readonly ProjectileSimState[] {
@@ -166,6 +233,7 @@ export class MatchSim {
 
   /** Advance the world by exactly one fixed tick. */
   public tick(input: InputState): void {
+    this.clockMs += DELTA_MS;
     const p = this.player;
     p.prevX = p.x;
     p.prevY = p.y;
@@ -191,9 +259,51 @@ export class MatchSim {
     if (input.skill3Pressed) this.handleSkill('skill3');
     if (input.ultimatePressed) this.handleSkill('ultimate');
 
+    this.updateBots();
     this.updateProjectiles();
 
     this.tickCount += 1;
+  }
+
+  /**
+   * Drive every bot for this tick in the 2D manager's order: each thinks + sets
+   * its desired velocity, then separation post-processes, then all integrate.
+   */
+  private updateBots(): void {
+    if (this.bots.length === 0) return;
+    for (const bot of this.bots) bot.think(DELTA_MS, this.player);
+
+    if (MULTI_BOT_SEPARATION.enabled && this.bots.length > 1) {
+      const samples = this.bots.map((b) => b.separationSample());
+      this.bots.forEach((b, i) => b.applySeparation(i, samples, MULTI_BOT_SEPARATION));
+    }
+
+    for (const bot of this.bots) bot.integrate(SIM_TICK_SECONDS, this.map.walls, this.map);
+  }
+
+  /** Test a player hit shape against all live bots; emits numbers + updates result. */
+  private damageBotsInArc(cx: number, cy: number, facing: number, range: number, arcDeg: number, raw: number): boolean {
+    let any = false;
+    for (const bot of this.bots) {
+      const res = bot.tryPlayerHit(cx, cy, facing, range, arcDeg, raw);
+      if (!res) continue;
+      any = true;
+      this.events.push({ type: 'damageNumber', x: bot.x, y: bot.y, amount: res.finalDamage });
+      this.lastCombatResult = res.killed ? `Enemy down (${res.finalDamage})` : `Hit ${res.finalDamage}`;
+    }
+    return any;
+  }
+
+  private damageBotsInCircle(cx: number, cy: number, radius: number, raw: number): boolean {
+    let any = false;
+    for (const bot of this.bots) {
+      const res = bot.tryPlayerCircleHit(cx, cy, radius, raw);
+      if (!res) continue;
+      any = true;
+      this.events.push({ type: 'damageNumber', x: bot.x, y: bot.y, amount: res.finalDamage });
+      this.lastCombatResult = res.killed ? `Enemy down (${res.finalDamage})` : `Hit ${res.finalDamage}`;
+    }
+    return any;
   }
 
   // --- normal attack (MatchScene.handleAttack minus objectives/bots) -------
@@ -215,12 +325,14 @@ export class MatchSim {
       p.attackRange, DEFAULT_MELEE_ARC_DEGREES,
     );
 
+    let hit = false;
     if (arc.hit && !this.dummy.dead) {
       const result = this.applyDamageToDummy(p.attack);
       this.lastCombatResult = `Attack hit ${result}`;
-    } else {
-      this.lastCombatResult = 'Attack missed';
+      hit = true;
     }
+    if (this.damageBotsInArc(p.x, p.y, p.facingAngle, p.attackRange, DEFAULT_MELEE_ARC_DEGREES, p.attack)) hit = true;
+    if (!hit) this.lastCombatResult = 'Attack missed';
   }
 
   // --- skills (MatchScene.handleSkill/applySkillCombatEffect port) ---------
@@ -266,12 +378,14 @@ export class MatchSim {
       this.dummy.x, this.dummy.y, this.dummy.radius,
       range, arcDegrees,
     );
+    let hit = false;
     if (arc.hit && !this.dummy.dead) {
       const dealt = this.applyDamageToDummy(skill.damage);
       this.lastCombatResult = `${skill.name} hit ${dealt}`;
-    } else {
-      this.lastCombatResult = `${skill.name} missed`;
+      hit = true;
     }
+    if (this.damageBotsInArc(p.x, p.y, p.facingAngle, range, arcDegrees, skill.damage)) hit = true;
+    if (!hit) this.lastCombatResult = `${skill.name} missed`;
   }
 
   private applyProjectileSkill(skill: SkillDefinition): void {
@@ -333,13 +447,18 @@ export class MatchSim {
     }
 
     const circle = testAoeCircle(center.x, center.y, radius, this.dummy.x, this.dummy.y, this.dummy.radius);
+    let hit = false;
     if (circle.hit && !this.dummy.dead) {
       this.events.push({ type: 'impactBurst', x: center.x, y: center.y });
       const dealt = this.applyDamageToDummy(rawDamage);
       this.lastCombatResult = `${skill.name} hit ${dealt}`;
-    } else {
-      this.lastCombatResult = `${skill.name} missed`;
+      hit = true;
     }
+    if (this.damageBotsInCircle(center.x, center.y, radius, rawDamage)) {
+      if (!hit) this.events.push({ type: 'impactBurst', x: center.x, y: center.y });
+      hit = true;
+    }
+    if (!hit) this.lastCombatResult = `${skill.name} missed`;
   }
 
   private applyHealSkill(skill: SkillDefinition): void {
@@ -355,12 +474,15 @@ export class MatchSim {
     if (skill.damage !== undefined) {
       const range = skill.range ?? 160;
       const dist = Math.hypot(this.dummy.x - this.player.x, this.dummy.y - this.player.y);
+      let hit = false;
       if (!this.dummy.dead && dist <= range + this.dummy.radius) {
         const dealt = this.applyDamageToDummy(skill.damage);
         this.lastCombatResult = `${skill.name} hit ${dealt}`;
-      } else {
-        this.lastCombatResult = `${skill.name} missed`;
+        hit = true;
       }
+      // Legacy range check vs bots: circle centred on the player.
+      if (this.damageBotsInCircle(this.player.x, this.player.y, range, skill.damage)) hit = true;
+      if (!hit) this.lastCombatResult = `${skill.name} missed`;
       return;
     }
     if (skill.heal !== undefined) {
@@ -446,6 +568,25 @@ export class MatchSim {
             this.lastCombatResult = `${proj.skillName} hit ${dealt}`;
           }
           destroyed = true;
+        }
+      }
+
+      // Bots: swept segment vs each live bot. First bot struck consumes the
+      // projectile; an impact-AoE projectile also splashes bots in radius.
+      if (!destroyed) {
+        for (const bot of this.bots) {
+          if (!bot.hitRadiusOverlaps(proj.prevX, proj.prevY, proj.x, proj.y, proj.hitRadius)) continue;
+          this.events.push({ type: 'hitSpark', x: proj.x, y: proj.y });
+          if (proj.impactAoeRadius !== undefined && proj.impactAoeRadius > 0) {
+            this.events.push({ type: 'impactBurst', x: proj.x, y: proj.y });
+            this.damageBotsInCircle(proj.x, proj.y, proj.impactAoeRadius, proj.damage);
+          } else {
+            const res = bot.applyDamage(proj.damage);
+            this.events.push({ type: 'damageNumber', x: bot.x, y: bot.y, amount: res.finalDamage });
+            this.lastCombatResult = res.killed ? `Enemy down (${res.finalDamage})` : `${proj.skillName} hit ${res.finalDamage}`;
+          }
+          destroyed = true;
+          break;
         }
       }
 

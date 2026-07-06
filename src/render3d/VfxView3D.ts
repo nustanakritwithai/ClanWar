@@ -44,6 +44,11 @@ export class VfxView3D {
     this.sector(x, y, facing, 26, 96, (100 * Math.PI) / 180, 0xfbbf24, 0.4, 0.22);
   }
 
+  /** Enemy bot bolt (visual only) — flies a fixed distance then vanishes. */
+  public botBolt(x: number, y: number, facing: number, travel: number, kind: NormalAttackBoltKind): void {
+    this.spawnBolt(x, y, facing, Math.max(travel, 40), kind);
+  }
+
   public castFlash(x: number, y: number): void {
     this.expandingRing(x, y, 26, 54, 0xffffff, 0.2);
   }
