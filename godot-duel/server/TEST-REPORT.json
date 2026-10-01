@@ -1,0 +1,98 @@
+{
+  "suite": "authoritative-pvp-real-websocket",
+  "tests": [
+    {
+      "name": "join_and_replication",
+      "status": "passed",
+      "details": "Two simultaneous real clients; equal stats; 3s countdown; exact same-tick snapshots; no token leakage"
+    },
+    {
+      "name": "two_player_capacity",
+      "status": "passed",
+      "details": "A third player is rejected with arena_full"
+    },
+    {
+      "name": "authoritative_movement_and_forgery",
+      "status": "passed",
+      "details": "Movement obeys 4.5m/s (1.575m sampled); forged HP/wins/damage ignored; remote movement matches"
+    },
+    {
+      "name": "malformed_and_finite_validation",
+      "status": "passed",
+      "details": "Non-numeric/null/bool/infinite coordinates, malformed JSON and binary frames rejected; session survives"
+    },
+    {
+      "name": "melee_and_cooldown",
+      "status": "passed",
+      "details": "Range-gated 14 damage replicated to both clients; rapid second strike rejected; mutual combat works"
+    },
+    {
+      "name": "telegraph_and_projectile",
+      "status": "passed",
+      "details": "0.4s readable telegraph precedes travelling bolt; 24 damage shared; forged damage ignored; 3s cooldown enforced"
+    },
+    {
+      "name": "dash_distance_and_cooldown",
+      "status": "passed",
+      "details": "Server performs exactly 3m burst in 0.18s; dashing state replicated; immediate second dash rejected"
+    },
+    {
+      "name": "arena_bounds",
+      "status": "passed",
+      "details": "Oversized finite destination clamps to (+10,+7); no teleport or escape"
+    },
+    {
+      "name": "knockout_exactly_once",
+      "status": "passed",
+      "details": "Lethal hit ends round once; winner replicated; wins increments exactly once; post-round attacks rejected"
+    },
+    {
+      "name": "mutual_ready_rematch",
+      "status": "passed",
+      "details": "One ready does not restart; both ready resets HP/cooldowns; ends swap for fairness; round increments"
+    },
+    {
+      "name": "dash_invulnerability",
+      "status": "passed",
+      "details": "An in-range melee strike during a replicated dash is dodged; HP unchanged"
+    },
+    {
+      "name": "disconnect_pause_and_reconnect",
+      "status": "passed",
+      "details": "Disconnect freezes combat/movement; same in-memory token resumes slot and round within 6s; identity and score retained"
+    },
+    {
+      "name": "connected_token_protection",
+      "status": "passed",
+      "details": "An active player cannot be replaced by a second connection using its token"
+    },
+    {
+      "name": "disconnect_forfeit_and_score_resume",
+      "status": "passed",
+      "details": "6s disconnect forfeits exactly once; reconnect retains finished round and accumulated score"
+    },
+    {
+      "name": "packet_size_limit",
+      "status": "passed",
+      "details": "A >1024-byte JSON packet is rejected and closed"
+    },
+    {
+      "name": "bounded_message_rate",
+      "status": "passed",
+      "details": "100-message flood is disconnected by queue/rate bounds; existing arena stays responsive"
+    },
+    {
+      "name": "simulation_and_snapshot_cadence",
+      "status": "passed",
+      "details": "Measured 20.02 simulation ticks/s and one public snapshot per 2 ticks (~10Hz)"
+    }
+  ],
+  "status": "passed",
+  "engine": "Godot 4.6.3",
+  "port": 46113,
+  "server_script": "scripts/server.gd",
+  "transport": "real loopback WebSocket",
+  "started_utc": "2026-10-01T18:12:00Z",
+  "duration_seconds": 31.097,
+  "passed_count": 17
+}
