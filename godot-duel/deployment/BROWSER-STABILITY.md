@@ -11,7 +11,7 @@ node --test deployment/test-browser-duel.cjs
 ```
 
 The offline Node tests validate the harness, sanitization, real TCP proxy, camera
-basis handling, and assertion failure modes (10 checks). They do **not** replace the hosted
+basis handling, and assertion failure modes (15 checks). They do **not** replace the hosted
 real-browser run. This cloud container's Chromium process-singleton restriction
 prevents a local browser pass from being claimed.
 
@@ -28,7 +28,7 @@ prevents a local browser pass from being claimed.
 5. **Ten consecutive fights and ten completed two-click rematches**. Both browsers
    press E concurrently and must move, strike, and take opposing damage. One
    player then right-clicks the floor to disengage; the expected winner alternates.
-   Each fight requires same-tick shared knockout state, the correct win increment,
+   Each fight requires exactly converged public knockout state, the correct win increment,
    and rendered opposite VICTORY / ROUND LOST titles, individually OCR-checked
 6. Every rematch proves a single ready is insufficient, both actual visible
    buttons restart countdown, HP and ready flags reset, win totals persist, round
@@ -55,6 +55,33 @@ The required cycle count is a constant, not an environment-variable override.
 Future camera fitting changes are supported through the read-only numeric
 `window.__duelProjection` basis published by the client. This only selects physical
 cursor coordinates; it cannot issue game commands or mutate the camera.
+
+## Exact-state proof under independently sampled ticks
+
+Snapshot ACK backpressure is negotiated separately by each real browser. Healthy
+renderers can therefore observe permanently disjoint server ticks. The gate first
+checks every overlapping tick relevant to the requested phase/round/freshness fence;
+any same-tick disagreement is a hard failure, even if a different pair converges or
+an outcome predicate would exclude the contradictory observation. Unrelated older
+phases are not used as evidence for the current phase.
+
+A fresh same-tick pair is preferred whenever available. Otherwise both browser
+observations must exceed the requested tick fence, be no more than **20 simulation
+ticks** behind the latest tick observed by either browser, and be within 20 ticks of
+each other. Every retained public payload field must match exactly except `tick`.
+There is no tolerance for health, positions, cooldowns, effects, rounds, ordering,
+or value types. Both observations must independently satisfy the requested outcome
+predicate. Stale observations cannot prove convergence.
+
+Each returned proof contains `comparison.mode` (`same_tick` or
+`fresh_exact_state`), both actual `comparison.observed_ticks`, the latest observed
+tick and freshness limits. The snapshot's own `tick` remains Client A's actual tick;
+it is never presented as a synthetic shared tick. Every comparison also records
+this evidence in the report's `public_state_compared` timeline entry. This changes
+sampling correctness only; input, outcome, OCR, queue, and error gates are unchanged.
+
+The ten bidirectional melee/rematch cycles run before Q/Space checks. The complete
+ability checks then use the full-HP round produced by the tenth actual rematch.
 
 ## Transport and security boundaries
 

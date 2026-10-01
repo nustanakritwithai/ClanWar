@@ -233,7 +233,9 @@ func _hello(connection: Dictionary, message: Dictionary) -> void:
 	elif phase == "waiting" and _both_connected_and_ready():
 		_start_round()
 	_event("join", "%s %s" % [players[pid].name, "reconnected." if resumed else "entered the arena."], {"player": pid})
-	_send(connection, _snapshot())
+	# The next global 10Hz broadcast supplies initial/resumed state (<100ms).
+	# Never construct a second state for the same tick between broadcasts:
+	# all recipients of a given authoritative tick must receive identical data.
 
 func _ack_snapshot(connection: Dictionary, message: Dictionary) -> void:
 	var value: Variant = message.get("tick")

@@ -1,7 +1,7 @@
 {
   "server_version": "0.1.1",
   "godot": "4.6.3",
-  "server_sha256": "32f905d9e0a0d34587813c1468976f775146f1bf4e5fd91efaba158a198b5092",
+  "server_sha256": "c3852183978453cef11192849009465ac1e5a34acd93f5a1ad6f8401aec8f61a",
   "status": "passed",
   "authority": {
     "suite": "authoritative-pvp-real-websocket",
@@ -19,7 +19,7 @@
       {
         "name": "authoritative_movement_and_forgery",
         "status": "passed",
-        "details": "Movement obeys 4.5m/s (1.350m sampled); forged HP/wins/damage ignored; remote movement matches"
+        "details": "Movement obeys 4.5m/s (1.575m sampled); forged HP/wins/damage ignored; remote movement matches"
       },
       {
         "name": "malformed_and_finite_validation",
@@ -89,16 +89,16 @@
       {
         "name": "simulation_and_snapshot_cadence",
         "status": "passed",
-        "details": "Measured 20.02 simulation ticks/s and one public snapshot per 2 ticks (~10Hz)"
+        "details": "Measured 20.00 simulation ticks/s and one public snapshot per 2 ticks (~10Hz)"
       }
     ],
     "status": "passed",
     "engine": "Godot 4.6.3",
-    "port": 59461,
+    "port": 33985,
     "server_script": "scripts/server.gd",
     "transport": "real loopback WebSocket",
-    "started_utc": "2026-10-01T21:24:24Z",
-    "duration_seconds": 31.213,
+    "started_utc": "2026-10-01T21:50:50Z",
+    "duration_seconds": 30.764,
     "passed_count": 17
   },
   "stability": {
@@ -109,64 +109,64 @@
       {
         "name": "legacy_snapshot_backlog_control",
         "status": "passed",
-        "details": "No recv/commands for 14.002s produced 139 queued snapshots, exceeding the 128-packet browser limit",
-        "stall_seconds": 14.002,
-        "queued_snapshots": 139,
+        "details": "No recv/commands for 14.001s produced 140 queued snapshots, exceeding the 128-packet browser limit",
+        "stall_seconds": 14.001,
+        "queued_snapshots": 140,
         "browser_packet_limit": 128,
         "first_tick": 6,
-        "last_tick": 282
+        "last_tick": 284
       },
       {
         "name": "native_legacy_packet_queue_saturation",
         "status": "passed",
-        "details": "Native WebSocketPeer saturated its 128-packet queue during 14.005s and then replayed 140 snapshots; native transport remained open, so this is not the Web overflow error",
+        "details": "Native WebSocketPeer saturated its 128-packet queue during 14.007s and then replayed 140 snapshots; native transport remained open, so this is not the Web overflow error",
         "native_result": {
           "connection_remained_open": true,
           "drained_snapshots": 140,
-          "initial_tick": 36,
+          "initial_tick": 16,
           "max_queued_packets": 128,
           "mode": "legacy",
           "native_overflow_error_reproduced": false,
           "packet_limit": 128,
           "queued_tick": -1,
           "reason": "Native queue saturated and replayed stale snapshots",
-          "stall_seconds": 14.005,
+          "stall_seconds": 14.007,
           "status": "passed"
         },
-        "legacy_control_log": "/tmp/clanwar-stability-final/stability-native-legacy-saturation-control-client.log"
+        "legacy_control_log": "/workspace/shared/clanwar-phase1-recovered/godot-duel/qa/stability-native-legacy-saturation-control-client.log"
       },
       {
         "name": "native_ack_queue_stall_recovery",
         "status": "passed",
-        "details": "Native WebSocketPeer with max_queued_packets=128 held exactly one packet for 32.005s, then recovered 640 ticks forward",
+        "details": "Native WebSocketPeer with max_queued_packets=128 held exactly one packet for 32.007s, then recovered 640 ticks forward",
         "native_result": {
-          "initial_tick": 35,
+          "initial_tick": 14,
           "max_queued_packets": 1,
           "mode": "ack",
           "packet_limit": 128,
-          "queued_tick": 36,
+          "queued_tick": 16,
           "reason": "ACK queue remained bounded and resumed at current state",
-          "recovery_latency_seconds": 0.0260000000000034,
-          "recovery_state_seconds": 31.991,
+          "recovery_latency_seconds": 0.0910000000000011,
+          "recovery_state_seconds": 31.999,
           "recovery_tick_jump": 640,
-          "stall_seconds": 32.005,
+          "stall_seconds": 32.007,
           "status": "passed"
         },
-        "client_log": "/tmp/clanwar-stability-final/stability-native-ack-client.log"
+        "client_log": "/workspace/shared/clanwar-phase1-recovered/godot-duel/qa/stability-native-ack-client.log"
       },
       {
         "name": "negotiated_snapshot_backpressure",
         "status": "passed",
-        "details": "32.001s without recv/commands queued exactly one snapshot; consuming without ACK kept gate closed; ACK jumped 648 ticks to current state in 0.092s",
+        "details": "32.001s without recv/commands queued exactly one snapshot; consuming without ACK kept gate closed; ACK jumped 648 ticks to current state in 0.035s",
         "server_version": "0.1.1",
         "stall_seconds": 32.001,
         "queued_snapshots": 1,
         "snapshots_after_drain_without_ack": 0,
         "drained_bytes": 1376,
-        "simulation_ticks_per_second": 19.937,
+        "simulation_ticks_per_second": 20.0,
         "recovery_tick_jump": 648,
-        "recovery_state_seconds": 32.463,
-        "recovery_latency_seconds": 0.092
+        "recovery_state_seconds": 32.4,
+        "recovery_latency_seconds": 0.035
       },
       {
         "name": "invalid_ack_cannot_unlock_or_corrupt",
@@ -200,18 +200,18 @@
       {
         "name": "real_sixty_second_session_expiry",
         "status": "passed",
-        "details": "Slot remained reserved at 58s and expired after 60.080s; old token rejected, new ID/token admitted with 100 HP/0 wins, survivor score retained and next round started",
+        "details": "Slot remained reserved at 58s and expired after 60.103s; old token rejected, new ID/token admitted with 100 HP/0 wins, survivor score retained and next round started",
         "configured_ttl_seconds": 60.0,
-        "measured_expiry_seconds": 60.08,
+        "measured_expiry_seconds": 60.103,
         "reservation_check_seconds": 58,
         "expired_player_id": "p1",
         "replacement_player_id": "p3"
       }
     ],
     "status": "passed",
-    "started_utc": "2026-10-01T21:22:38Z",
-    "server_script": "/workspace/shared/clanwar-phase1/scripts/server.gd",
-    "legacy_control_script": "/workspace/shared/clanwar-phase1/scripts/server.gd",
+    "started_utc": "2026-10-01T21:50:50Z",
+    "server_script": "/workspace/shared/clanwar-phase1-recovered/godot-duel/scripts/server.gd",
+    "legacy_control_script": "/workspace/shared/clanwar-phase1-recovered/godot-duel/scripts/server.gd",
     "selected_cases": [
       "legacy",
       "flow",
@@ -220,7 +220,7 @@
       "native-ack"
     ],
     "passed_count": 7,
-    "duration_seconds": 68.125
+    "duration_seconds": 67.245
   },
   "browser_gate": "Required on exact commit before rollout; separate CI artifact"
 }

@@ -91,7 +91,9 @@ Error reasons: `invalid_json`, `invalid_type`, `text_required`, `packet_too_larg
 New clients negotiate `"snapshot_ack":true` on hello. Welcome echoes the flag
 and `"server_version":"0.1.1"`. After consuming a snapshot the client sends
 `{"type":"snapshot_ack","tick":123}` with that exact snapshot's tick.
-Only one snapshot is in flight per negotiated connection. While it is awaiting
+Initial and resumed state arrive on the next normal broadcast (within 100 ms);
+only that global broadcast constructs snapshots, so a tick names one identical
+state for all recipients. Only one snapshot is in flight per negotiated connection. While it is awaiting
 acknowledgement, the server does not enqueue more snapshots or cosmetic events.
 It retains no backlog: the next normal simulation broadcast after a valid ack
 sends the newest complete state. HP, position, attack counters, cooldowns,

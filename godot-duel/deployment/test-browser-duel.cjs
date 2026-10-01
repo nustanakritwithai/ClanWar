@@ -114,6 +114,75 @@ test('shared snapshot proof rejects mismatches and old observations after reconn
   assert.throws(() => commonSnapshot([a], [a], 'playing', 1, 9, s => s.players[0].hp < 100), /No common/);
 });
 
+test('disjoint fresh ticks prove exact full-state convergence and disclose both actual observations', () => {
+  const result = commonSnapshot([snapshot(100)], [snapshot(101)], 'playing', 1, 99);
+  assert.equal(result.tick, 100);
+  assert.deepEqual(result.comparison, {
+    mode: 'fresh_exact_state', observed_ticks: { client_a: 100, client_b: 101 },
+    latest_observed_tick: 101, min_tick_exclusive: 99, max_tick_skew: 20,
+  });
+  assert.equal(commonSnapshot([snapshot(100)], [snapshot(120)], 'playing', 1, 99).comparison.mode, 'fresh_exact_state');
+});
+
+test('fresh same-tick evidence remains preferred over a newer disjoint equal state', () => {
+  const result = commonSnapshot([snapshot(100), snapshot(102)], [snapshot(100), snapshot(103)], 'playing', 1, 99);
+  assert.equal(result.comparison.mode, 'same_tick');
+  assert.deepEqual(result.comparison.observed_ticks, { client_a: 100, client_b: 100 });
+});
+
+test('same-tick disagreement cannot fall back, disappear behind a predicate, or hide in duplicate entries', () => {
+  const divergent = snapshot(100);
+  divergent.players[0].hp = 99;
+  const equalA = snapshot(102);
+  const equalB = snapshot(103);
+  for (const predicate of [() => true, s => s.tick > 100]) {
+    assert.throws(() => commonSnapshot([snapshot(100), equalA], [divergent, equalB], 'playing', 1, 99, predicate), /disagree on the same server tick/);
+  }
+  assert.throws(() => commonSnapshot([snapshot(100), divergent, equalA], [snapshot(100), equalB], 'playing', 1, 99), /disagree on the same server tick/);
+  const wrongRound = snapshot(100);
+  wrongRound.round.number = 2;
+  assert.throws(() => commonSnapshot([snapshot(100), equalA], [wrongRound, equalB], 'playing', 1, 99), /disagree on the same server tick/);
+});
+
+test('independent samples must both cross the fence and remain within 20 ticks of the latest observation', () => {
+  assert.throws(() => commonSnapshot([snapshot(100)], [snapshot(101)], 'playing', 1, 100), /No common/);
+  assert.throws(() => commonSnapshot([snapshot(101)], [snapshot(100)], 'playing', 1, 100), /No common/);
+  assert.throws(() => commonSnapshot([snapshot(100)], [snapshot(121)], 'playing', 1, 99), /No common/);
+  const newer = snapshot(122);
+  newer.players[0].hp = 86;
+  assert.throws(() => commonSnapshot([snapshot(100), newer], [snapshot(101)], 'playing', 1, 99), /No common/);
+  const latestOtherRound = snapshot(122);
+  latestOtherRound.round.number = 2;
+  assert.throws(() => commonSnapshot([snapshot(100), latestOtherRound], [snapshot(101)], 'playing', 1, 99), /No common/);
+  assert.throws(() => commonSnapshot([snapshot(100)], [snapshot(101)], 'playing', 1, 99, s => s.tick > 100), /No common/);
+});
+
+test('disjoint ticks reject every public payload difference without HP, position, or cooldown tolerance', () => {
+  const mutations = [
+    s => { s.players[0].hp = 99; },
+    s => { s.players[0].x = -6 + 1e-12; },
+    s => { s.players[0].z = 1e-12; },
+    s => { s.players[0].skill_cd = 1e-12; },
+    s => { s.players[0].wins = 1; },
+    s => { s.players[0].ready = true; },
+    s => { s.players[0].connected = false; },
+    s => { s.players[0].hp = '100'; },
+    s => { s.round.phase = 'finished'; },
+    s => { s.round.number = 2; },
+    s => { s.round.winner = 'p1'; },
+    s => { s.round.reason = 'knockout'; },
+    s => { s.projectiles.push({ id: 'b1', owner: 'p1', x: 0, z: 0 }); },
+    s => { s.telegraphs.push({ id: 't1', owner: 'p1', remaining: .1 }); },
+    s => { s.players.reverse(); },
+    s => { s.unexpected_public_field = 1; },
+  ];
+  for (const mutate of mutations) {
+    const other = snapshot(101);
+    mutate(other);
+    assert.throws(() => commonSnapshot([snapshot(100)], [other], 'playing', 1, 99), /No common/);
+  }
+});
+
 test('rematch validates HP, ready, identities, wins, exact round, and swapped start positions', () => {
   const before = snapshot(1);
   before.players[0].wins = 4;

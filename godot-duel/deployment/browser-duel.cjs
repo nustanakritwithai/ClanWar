@@ -145,12 +145,52 @@ function observePublicSnapshots() {
 }
 
 function commonSnapshot(ah, bh, phase, roundNumber, minTick = -1, predicate = () => true) {
-  const other = new Map(bh.map(s => [s.tick, s]));
-  const common = ah.filter(s => s.tick > minTick && s.round.phase === phase && s.round.number === roundNumber && other.has(s.tick) && predicate(s));
-  assert(common.length, `No common ${phase} snapshot for round ${roundNumber} after tick ${minTick}`);
-  const snapshot = common.at(-1);
-  assert.deepEqual(snapshot, other.get(snapshot.tick), 'Two actual browser clients disagree on the same server tick');
-  return snapshot;
+  const { isDeepStrictEqual } = require('node:util');
+  const maxTickSkew = 20; // One second at the authoritative 20 Hz simulation rate.
+  const latestObservedTick = Math.max(-1, ...ah.map(s => s.tick), ...bh.map(s => s.tick));
+  const relevant = s => s.tick > minTick && s.round.phase === phase && s.round.number === roundNumber;
+  const fresh = s => latestObservedTick - s.tick <= maxTickSkew;
+  const aByTick = new Map();
+  const bByTick = new Map();
+  for (const [history, byTick] of [[ah, aByTick], [bh, bByTick]]) {
+    for (const snapshot of history) {
+      if (!byTick.has(snapshot.tick)) byTick.set(snapshot.tick, []);
+      byTick.get(snapshot.tick).push(snapshot);
+    }
+  }
+  // Never hide a contradictory same-tick observation behind a later converged
+  // pair or a predicate filter. Check every overlapping relevant observation,
+  // including duplicate-tick entries, before considering independent sampling.
+  for (const [tick, aSnapshots] of aByTick) {
+    for (const a of aSnapshots) for (const b of bByTick.get(tick) || []) {
+      if (relevant(a) || relevant(b)) assert.deepEqual(a, b, 'Two actual browser clients disagree on the same server tick');
+    }
+  }
+  const candidates = history => history.filter(s => relevant(s) && fresh(s) && predicate(s)).sort((a, b) => b.tick - a.tick);
+  const aCandidates = candidates(ah);
+  const bCandidates = candidates(bh);
+  const proof = (a, b, mode) => ({
+    ...a, // tick remains Client A's observed tick, never an invented shared tick.
+    comparison: {
+      mode, observed_ticks: { client_a: a.tick, client_b: b.tick },
+      latest_observed_tick: latestObservedTick, min_tick_exclusive: minTick, max_tick_skew: maxTickSkew,
+    },
+  });
+  // Prefer exact same-tick evidence whenever a fresh qualifying pair exists.
+  for (const a of aCandidates) {
+    const b = bCandidates.find(s => s.tick === a.tick);
+    if (b) return proof(a, b, 'same_tick');
+  }
+  // ACK-driven consumers can sample permanently disjoint ticks. Their complete
+  // public payload must still converge EXACTLY: omit tick only, retain every
+  // position, health, cooldown, effect, round field, array order, and value type.
+  for (const a of aCandidates) for (const b of bCandidates) {
+    if (Math.abs(a.tick - b.tick) > maxTickSkew) continue;
+    const { tick: aTick, ...aPayload } = a;
+    const { tick: bTick, ...bPayload } = b;
+    if (isDeepStrictEqual(aPayload, bPayload)) return proof(a, b, 'fresh_exact_state');
+  }
+  assert.fail(`No common or exactly converged fresh ${phase} snapshot for round ${roundNumber} after tick ${minTick}`);
 }
 
 function validateRematchSnapshot(snapshot, previous, ids) {
@@ -282,18 +322,20 @@ async function main() {
   }
 
   async function equalPublicSnapshot(phase, roundNumber, minTick = -1, predicate = () => true) {
-    // ACK backpressure can skip different ticks in each renderer. Wait for a
-    // real intersecting broadcast tick; never substitute independently timed
-    // latest snapshots or hide disagreement on an intersecting tick.
+    // Independent ACK schedules need not share a tick. Require strict fresh
+    // full-state convergence, while preserving hard same-tick disagreement.
     const deadline = Date.now() + 20_000;
     while (Date.now() < deadline) {
       const histories = await Promise.all(pages.map(p => p.evaluate(() => window.__duelQA.history)));
-      try { return commonSnapshot(...histories, phase, roundNumber, minTick, predicate); }
-      catch (error) { if (!error.message.startsWith('No common ')) throw error; }
+      try {
+        const snapshot = commonSnapshot(...histories, phase, roundNumber, minTick, predicate);
+        mark('public_state_compared', { phase, round: roundNumber, ...snapshot.comparison });
+        return snapshot;
+      } catch (error) { if (!error.message.startsWith('No common ')) throw error; }
       assertClean();
       await wait(100);
     }
-    throw new Error(`No common ${phase} snapshot for round ${roundNumber} after tick ${minTick} within 20 seconds`);
+    throw new Error(`No common or exactly converged fresh ${phase} snapshot for round ${roundNumber} after tick ${minTick} within 20 seconds`);
   }
 
   async function screenshot(page, label, clip) {
@@ -472,31 +514,6 @@ async function main() {
     await visualText(b, 'b-reconnected-round', 'ROUND 01');
     report.checks.push({ name: 'real_transport_pause_and_same_identity_reconnect', status: 'passed', elapsedMs: Date.now() - reconnectStarted, paused_tick: paused.tick, recovered_tick: current.tick, ids });
 
-    // Each actual player casts at the other through Q. Public effects must be
-    // observed by BOTH clients, and each visible HUD must show the 24 HP hit.
-    const spellStart = current;
-    mark('both_projectile_commands', { round: current.round.number });
-    await Promise.all(pages.map(async (page, i) => { const target = player(spellStart, ids[1 - i]); const point = await groundPoint(page, target.x, target.z); await page.mouse.move(point.x, point.y); await page.keyboard.press('KeyQ'); }));
-    for (const page of pages) {
-      for (const id of ids) {
-        await until(page, s => s.tick > spellStart.tick && s.telegraphs.some(t => t.owner === id), 'real Q telegraph from each player', 20_000, true);
-        await until(page, s => s.tick > spellStart.tick && s.projectiles.some(p => p.owner === id), 'real Q projectile from each player', 20_000, true);
-      }
-      await until(page, s => s.players.every(p => p.hp === 76), 'both projectiles damage the other real client');
-    }
-    current = await equalPublicSnapshot('playing', current.round.number, spellStart.tick, s => s.players.every(p => p.hp === 76));
-    for (const [i, page] of pages.entries()) {
-      await visualText(page, `${i ? 'b' : 'a'}-projectile-own-hp`, '76 / 100', { x: 390, y: 80, width: 235, height: 20 });
-      await screenshot(page, `${i ? 'b' : 'a'}-projectile-damage`);
-    }
-    const dashStart = current;
-    mark('both_dash_commands', { round: current.round.number });
-    await Promise.all(pages.map(async (page, i) => { const target = player(dashStart, ids[1 - i]); const point = await groundPoint(page, target.x, target.z); await page.mouse.move(point.x, point.y); await page.keyboard.press('Space'); }));
-    for (const page of pages) for (const id of ids) await until(page, s => s.tick > dashStart.tick && player(s, id).dashing, 'Space triggers real dash state on both clients', 20_000, true);
-    await Promise.all(pages.map(p => until(p, s => s.tick > dashStart.tick && s.players.every(v => !v.dashing && Math.hypot(v.x - player(dashStart, v.id).x, v.z - player(dashStart, v.id).z) >= 2.5), 'both dash positions replicate')));
-    current = await equalPublicSnapshot('playing', current.round.number, dashStart.tick, s => s.players.every(p => !p.dashing && Math.hypot(p.x - player(dashStart, p.id).x, p.z - player(dashStart, p.id).z) >= 2.5));
-    report.checks.push({ name: 'both_players_keyboard_projectiles_visible_damage_and_dash', status: 'passed', hp_after_projectiles: [76, 76], snapshot_after_dash: current });
-
     // Ten consecutive completed fights AND ten real two-click rematches. Both
     // players strike each round, then one visibly disengages so winners alternate.
     let roundStart = beforeReconnect;
@@ -535,6 +552,31 @@ async function main() {
       roundStart = next;
       mark('stability_cycle_passed', { cycle: index + 1, round });
     }
+
+    // Each actual player casts at the other through Q. Public effects must be
+    // observed by BOTH clients, and each visible HUD must show the 24 HP hit.
+    const spellStart = current;
+    mark('both_projectile_commands', { round: current.round.number });
+    await Promise.all(pages.map(async (page, i) => { const target = player(spellStart, ids[1 - i]); const point = await groundPoint(page, target.x, target.z); await page.mouse.move(point.x, point.y); await page.keyboard.press('KeyQ'); }));
+    for (const page of pages) {
+      for (const id of ids) {
+        await until(page, s => s.tick > spellStart.tick && s.telegraphs.some(t => t.owner === id), 'real Q telegraph from each player', 20_000, true);
+        await until(page, s => s.tick > spellStart.tick && s.projectiles.some(p => p.owner === id), 'real Q projectile from each player', 20_000, true);
+      }
+      await until(page, s => s.players.every(p => p.hp === 76), 'both projectiles damage the other real client');
+    }
+    current = await equalPublicSnapshot('playing', current.round.number, spellStart.tick, s => s.players.every(p => p.hp === 76));
+    for (const [i, page] of pages.entries()) {
+      await visualText(page, `${i ? 'b' : 'a'}-projectile-own-hp`, '76 / 100', { x: 390, y: 80, width: 235, height: 20 });
+      await screenshot(page, `${i ? 'b' : 'a'}-projectile-damage`);
+    }
+    const dashStart = current;
+    mark('both_dash_commands', { round: current.round.number });
+    await Promise.all(pages.map(async (page, i) => { const target = player(dashStart, ids[1 - i]); const point = await groundPoint(page, target.x, target.z); await page.mouse.move(point.x, point.y); await page.keyboard.press('Space'); }));
+    for (const page of pages) for (const id of ids) await until(page, s => s.tick > dashStart.tick && player(s, id).dashing, 'Space triggers real dash state on both clients', 20_000, true);
+    await Promise.all(pages.map(p => until(p, s => s.tick > dashStart.tick && s.players.every(v => !v.dashing && Math.hypot(v.x - player(dashStart, v.id).x, v.z - player(dashStart, v.id).z) >= 2.5), 'both dash positions replicate')));
+    current = await equalPublicSnapshot('playing', current.round.number, dashStart.tick, s => s.players.every(p => !p.dashing && Math.hypot(p.x - player(dashStart, p.id).x, p.z - player(dashStart, p.id).z) >= 2.5));
+    report.checks.push({ name: 'both_players_keyboard_projectiles_visible_damage_and_dash', status: 'passed', hp_after_projectiles: [76, 76], snapshot_after_dash: current });
 
     // A longer outage must forfeit. Reconnect before TTL expiry and prove BOTH
     // actual rendered clients show the same result, with opposite local titles.

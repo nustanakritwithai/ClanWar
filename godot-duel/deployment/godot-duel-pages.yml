@@ -54,6 +54,8 @@ jobs:
           python godot-duel/deployment/test-deployment.py
           node --test godot-duel/deployment/test-browser-duel.cjs
           python godot-duel/deployment/validate-web.py --project godot-duel
+          cmp godot-duel/scripts/server.gd godot-duel/server/scripts/server.gd
+          (cd godot-duel/server && sha256sum -c SHA256SUMS.txt)
 
       - name: Build existing Three.js site using its existing package scripts
         shell: bash
