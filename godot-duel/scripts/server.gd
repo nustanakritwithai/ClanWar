@@ -21,6 +21,8 @@ const SESSION_TTL: float = 60.0
 const MAX_MESSAGE_BYTES: int = 1024
 const MAX_CONNECTIONS: int = 16
 const MAX_PLAYERS: int = 2
+# One short cast and one dash can overlap for each of the two players.
+const MAX_CRITICAL_IN_FLIGHT: int = MAX_PLAYERS * 2
 
 var listener: TCPServer = TCPServer.new()
 var connections: Dictionary = {}
@@ -95,7 +97,7 @@ func _accept_connections() -> void:
 		peer.set_no_delay(true)
 		connections[next_connection] = {"peer": peer, "player_id": "", "created": _now(), "rate_time": _now(), "budget": 64.0, "closing": false,
 			"snapshot_ack": false, "pending_snapshot_tick": -1, "last_snapshot_ack": -1,
-			"critical_timeline": false, "critical_seq": 0, "pending_critical_seq": -1, "last_critical_ack": -1, "critical_dirty": false}
+			"critical_timeline": false, "critical_seq": 0, "pending_critical_seqs": [], "last_critical_ack": -1, "critical_dirty": false}
 		next_connection += 1
 
 func _poll_connections() -> void:
@@ -246,7 +248,7 @@ func _hello(connection: Dictionary, message: Dictionary) -> void:
 		_start_round()
 	_event("join", "%s %s" % [players[pid].name, "reconnected." if resumed else "entered the arena."], {"player": pid})
 	# A phase transition above may already have sent the same current timeline.
-	if int(connection.pending_critical_seq) < 0:
+	if connection.pending_critical_seqs.is_empty():
 		_send_critical(connection)
 	# The next global 10Hz broadcast supplies initial/resumed state (<100ms).
 	# Never construct a second state for the same tick between broadcasts:
@@ -271,14 +273,19 @@ func _ack_critical(connection: Dictionary, message: Dictionary) -> void:
 		_error(connection, "invalid_critical_ack")
 		return
 	var ack_seq := int(value)
-	if ack_seq == int(connection.pending_critical_seq):
+	var pending: Array = connection.pending_critical_seqs
+	var ack_index: int = pending.find(ack_seq)
+	if ack_index >= 0:
+		# WebSocket is ordered. An ACK naming an actually outstanding sequence
+		# cumulatively releases that packet and its predecessors, never newer ones.
+		for _index in range(ack_index + 1):
+			pending.pop_front()
 		connection.last_critical_ack = ack_seq
-		connection.pending_critical_seq = -1
 		if bool(connection.critical_dirty):
 			_send_critical(connection)
 	elif ack_seq != int(connection.last_critical_ack):
 		_error(connection, "invalid_critical_ack")
-	# Only this exact connection's outstanding sequence releases its credit.
+	# A duplicate last ACK is harmless; stale/future ACKs cannot unlock credit.
 
 func _critical_changed() -> void:
 	for cid in connections:
@@ -289,8 +296,8 @@ func _critical_changed() -> void:
 func _send_critical(connection: Dictionary) -> void:
 	if not bool(connection.critical_timeline):
 		return
-	if int(connection.pending_critical_seq) >= 0:
-		# One bit coalesces all changes; never store or replay a cue history.
+	if connection.pending_critical_seqs.size() >= MAX_CRITICAL_IN_FLIGHT:
+		# At capacity, one bit coalesces changes without storing cue history.
 		connection.critical_dirty = true
 		return
 	connection.critical_dirty = false
@@ -622,7 +629,7 @@ func _send(connection: Dictionary, message: Dictionary) -> void:
 	elif kind == "snapshot" and bool(connection.snapshot_ack):
 		connection.pending_snapshot_tick = int(message.tick)
 	elif kind == "critical_timeline" and bool(connection.critical_timeline):
-		connection.pending_critical_seq = int(message.seq)
+		connection.pending_critical_seqs.append(int(message.seq))
 
 func _error(connection: Dictionary, reason: String) -> void:
 	_send(connection, {"type": "error", "reason": reason})

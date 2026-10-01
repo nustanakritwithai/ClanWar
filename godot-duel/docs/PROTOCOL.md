@@ -131,13 +131,20 @@ be JSON booleans; omitting either retains that channel's legacy behavior.
 This is a complete, current critical state, not a reliable history of actions.
 Accepted cast/dash, countdown, play, pause, resume, round end, session reset,
 and natural cue expiry trigger an update independently of ordinary snapshot
-credit. Each connection has at most **one critical packet in flight plus one
-dirty bit**. Further changes set that bit, without storing packets or cues.
-The receiver sends `{"type":"critical_ack","seq":4}` after consuming the
-packet. Only the exact outstanding per-connection sequence releases its credit;
-if dirty, the server immediately builds the latest state. Expired cues are never
-replayed. A duplicate last ACK is harmless. Malformed, stale, future or
-unnegotiated ACKs return `invalid_critical_ack` and cannot release credit.
+credit. Each connection has a fixed window of at most **four critical packets
+in flight plus one dirty bit**. Four is `MAX_PLAYERS * 2`: one short cast and one
+dash per player, so both players' four simultaneous accepted starts can be sent
+without waiting for another frame's ACK when the window is initially clear.
+This is bounded application credit; the existing server 64/client 128 packet
+queue limits and all combat durations are unchanged. At capacity, further
+changes set the dirty bit without storing more packets or historical cues.
+The receiver sends `{"type":"critical_ack","seq":4}` after consuming a
+packet. Only an exact outstanding per-connection sequence is accepted; it
+cumulatively releases that packet and all earlier outstanding sequences, never
+newer ones. If dirty, the server immediately builds one latest current state
+using the available credit. Expired cues are never replayed. A duplicate last
+ACK is harmless. Malformed, stale, future or unnegotiated ACKs return
+`invalid_critical_ack` and cannot release credit.
 The sequence starts at 1 on each connection; `tick` remains the global
 simulation tick but is not a critical-event ID. Ordinary snapshot ticks still
 identify one globally constructed snapshot, regardless of critical updates.
@@ -166,9 +173,10 @@ frame that takes longer than the warning window physically render on time.
 This channel fixes a distinct omission in snapshot-only backpressure: an old
 unacknowledged snapshot can cover an entire 0.4 s cast, and the next snapshot
 contains only the launched projectile. The critical channel sends a currently
-active warning while that ordinary snapshot is still blocked. Holding critical
-credit may still coalesce an entire warning away; it deliberately never creates
-a backlog or a late fake warning to hide client stalls.
+active warning while that ordinary snapshot is still blocked. Phase and expiry
+updates also consume critical credit. Once all four credits are held, later
+changes can still coalesce an entire warning away; the window deliberately
+stays bounded and never creates a late fake warning to hide client stalls.
 
 ## Round and reconnection lifecycle
 
@@ -201,6 +209,6 @@ python tests/critical_timeline.py
 
 The test runner starts a **fresh native Godot server on an isolated ephemeral loopback port**, uses two real simultaneous Python WebSocket clients, and stops only its own process. It does not reset the visual UI server. Results: `qa/server-test-report.json`; server output: `qa/server-test.log`. Uses Python package `websockets`.
 
-The critical-timeline suite uses fresh isolated real-WebSocket servers to compare snapshot-only omission with independent on-time critical delivery, validate coalescing/ACK bounds, pause/resume/expiry, and confirm input/clock validation. It is protocol evidence, not proof of actual browser frames. Results: `qa/critical-timeline-report.json`.
+The critical-timeline suite uses fresh isolated real-WebSocket servers to compare snapshot-only omission with independent on-time critical delivery, verify four simultaneous cast/dash starts before expiry without critical ACKs, cumulative ACK/window bounds, pause/resume/expiry, and confirm input/clock validation. It is protocol evidence, not proof of actual browser frames. Results: `qa/critical-timeline-report.json`.
 
 Godot APIs: [Time](https://docs.godotengine.org/en/stable/classes/class_time.html), [WebSocketPeer](https://docs.godotengine.org/en/stable/classes/class_websocketpeer.html), [TCPServer](https://docs.godotengine.org/en/stable/classes/class_tcpserver.html).

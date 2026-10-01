@@ -11,7 +11,7 @@ node --test deployment/test-browser-duel.cjs
 ```
 
 The offline Node tests validate the harness, sanitization, real TCP proxy, camera
-basis handling, and assertion failure modes (20 checks). They do **not** replace the hosted
+basis handling, and assertion failure modes (22 checks). They do **not** replace the hosted
 real-browser run. This cloud container's Chromium process-singleton restriction
 prevents a local browser pass from being claimed.
 
@@ -114,6 +114,23 @@ received cue's remaining lifetime, it is explicitly flagged
 `hardware_render_block`; this remains a failed visual gate, including for a
 0.18-second dash. An expired-cue counter alone never proves a particular owner
 was rendered or explains its failure without the retained evidence.
+
+The client also exposes at most 64 sanitized `expired` records, with kind,
+owner/ID/sequence, first-observed stage (`received`, `render_update`, or
+`draw_completed`), conservative server-time upper bound, authoritative expiry,
+submission-time upper bound when available, and renderer frame. Per-owner failure
+diagnostics match these records to the delivered cue and report `first_expired`,
+including `upper_clock_margin_ms` and `submitted_upper_clock_margin_ms` (expiry
+minus the respective upper bound). Positive submission margin followed by a
+non-positive completion margin is labeled current-on-submit but without a valid
+completed-draw proof. Expiry reported at receive is explicitly upper-bound expiry
+on receive, not proof that the physical packet arrived after the real deadline.
+
+These records are diagnostic only: a conservative upper-bound expiry does not
+prove physical hardware failure, and a current-on-submit record does not prove
+a completed draw. The existing full-lifetime measured RAF-gap rule remains the
+only basis for `hardware_render_block`; all visual pass criteria are unchanged.
+
 
 The full command/window record lives in `ci-duel-report.json` under `cast_windows`.
 Final per-client diagnostics also include sanitized critical and renderer state.

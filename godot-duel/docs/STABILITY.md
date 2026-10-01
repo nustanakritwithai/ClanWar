@@ -85,9 +85,10 @@ changes, extra public endpoints, or reboot/crash supervision in this phase.
 
 A latest-state snapshot stream can miss an entire short cast between samples.
 The controlled tests reproduce this with an old snapshot still awaiting ACK.
-Critical cast/dash timelines now have independent sequence/ACK credit: one
-packet in flight and one dirty flag, rebuilt from current active state when
-released. No historical event queue accumulates. Pause/end clear active cues;
+Critical cast/dash timelines have independent sequence/ACK credit, bounded
+to two players x two short actions (four packets). At capacity, one dirty flag
+rebuilds current active state when credit is released. This covers simultaneous
+starts without making a rival cue wait for the first cue acknowledgement. No historical event queue accumulates. Pause/end clear active cues;
 resume rebuilds deadlines from frozen remaining durations.
 
 The client uses the server timestamp paired with its own hello/ping send time

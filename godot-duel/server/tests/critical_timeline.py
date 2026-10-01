@@ -5,6 +5,9 @@ No combat duration or clock is mocked. The snapshot-only control deliberately
 holds an old snapshot's ACK for an entire real 0.4s cast. The negotiated case
 holds the same credit but receives the current warning independently. This
 proves protocol delivery before expiry, not whether a browser actually draws.
+A simultaneous two-cast/two-dash burst is delivered with NO critical ACKs and
+held ordinary snapshot credit; the fixed four-entry window then coalesces
+expiries into one fresh state rather than keeping historical action packets.
 Run: python tests/critical_timeline.py --godot /path/to/godot
 """
 from __future__ import annotations
@@ -166,51 +169,85 @@ async def independent_delivery(url):
 async def coalescing_and_ack_validation(url):
     a, b, _ = await playing_pair(url)
     try:
-        # Hold a real cast packet, then cause three additional accepted changes.
-        await b.send(type="skill", x=6, z=7)
-        first = await a.timeline(lambda m: bool(m["telegraphs"]))
-        await b.send(type="dash", x=6, z=7)
-        await a.send(type="skill", x=-6, z=7)
-        await a.send(type="dash", x=-6, z=7)
-        await asyncio.sleep(.03)
-        drained, _ = await a.drain_to_pong()
-        assert not any(m.get("type") == "critical_timeline" for m in drained), drained
-        await a.critical_ack(first)
-        combined = await a.timeline(lambda m: len(m["telegraphs"]) == 2 and len(m["dashes"]) == 2)
-        assert combined["seq"] == first["seq"] + 1, (first, combined)
+        # playing_pair consumes/ACKs all initial phase timelines and its ping
+        # barrier proves those ACKs were processed before the burst. Hold the
+        # ordinary snapshot and send NO critical ACK until all four starts are
+        # consumed, so a one-credit implementation deterministically fails.
+        initial_seq = a.critical["seq"]
+        sent = time.monotonic()
+        await asyncio.gather(
+            b.send(type="skill", x=6, z=7), b.send(type="dash", x=6, z=7),
+            a.send(type="skill", x=-6, z=7), a.send(type="dash", x=-6, z=7),
+        )
+        frames = []
+        delivery_remaining = []
+        while len(frames) < 4:
+            message = await a.receive()
+            assert message.get("type") != "snapshot", message
+            if message.get("type") == "critical_timeline":
+                elapsed = time.monotonic() - sent
+                frames.append(message)
+                remaining = [cue["expires_at"] - message["server_time"] - elapsed
+                             for cue in message["telegraphs"] + message["dashes"]]
+                assert remaining and min(remaining) > 0, (elapsed, message)
+                delivery_remaining.append(min(remaining))
+        combined = frames[-1]
+        assert [m["seq"] for m in frames] == list(range(initial_seq + 1, initial_seq + 5)), frames
+        assert [len(m["telegraphs"]) + len(m["dashes"]) for m in frames] == [1, 2, 3, 4], frames
         assert {cue["owner"] for cue in combined["telegraphs"]} == {a.id, b.id}
         assert {cue["owner"] for cue in combined["dashes"]} == {a.id, b.id}
         assert all(0 < cue["expires_at"] - combined["server_time"] <= .4 + 1e-8 for cue in combined["telegraphs"])
         assert all(0 < cue["expires_at"] - combined["server_time"] <= .18 + 1e-8 for cue in combined["dashes"])
-        record("one_inflight_one_dirty_current_state", "Three changes behind one outstanding critical packet coalesced into one sequence advance containing only the current two telegraphs and two dashes",
-               first_seq=first["seq"], coalesced_seq=combined["seq"], telegraphs=2, dashes=2)
+        record("four_start_window_without_critical_acks", "Both players' simultaneous cast/dash starts produced four ordered active timelines before expiry with no critical ACK and an old snapshot still blocked",
+               initial_phase_ack_seq=initial_seq, delivered_sequences=[m["seq"] for m in frames],
+               max_pending_critical_frames=4, telegraphs=2, dashes=2,
+               minimum_conservative_remaining_seconds=round(min(delivery_remaining), 4))
 
+        # Natural expiry generates changes, but the full window cannot enqueue
+        # a fifth packet. Only one dirty bit is retained until valid credit.
         await asyncio.sleep(.55)
+        messages, _ = await a.drain_to_pong()
+        assert not any(m.get("type") == "critical_timeline" for m in messages), messages
         malformed = [({}, "missing"), ({"seq": None}, "null"), ({"seq": True}, "boolean"),
                      ({"seq": str(combined["seq"])}, "string"), ({"seq": []}, "array"),
                      ({"seq": {}}, "object"), ({"seq": combined["seq"] + .5}, "fractional"),
                      ({"seq": -1}, "negative"), ({"seq": 0}, "zero"), ({"seq": 1e30}, "huge"),
-                     ({"seq": combined["seq"] + 1}, "future"), ({"seq": first["seq"] - 1}, "stale"),
+                     ({"seq": combined["seq"] + 1}, "future"), ({"seq": initial_seq - 1}, "stale"),
                      ({"seq": float("nan")}, "nonfinite")]
         for payload, label in malformed:
             await a.send(type="critical_ack", **payload)
             messages, _ = await a.drain_to_pong()
             assert not any(m.get("type") == "critical_timeline" for m in messages), (label, messages)
             assert any(m.get("reason") in {"invalid_critical_ack", "invalid_json"} for m in messages), (label, messages)
-        # Repeated last accepted ACK is allowed, but cannot release the newer one.
-        await a.critical_ack(first)
+        # Repeating the last phase ACK does not release any newer action packet.
+        await a.send(type="critical_ack", seq=initial_seq)
         messages, _ = await a.drain_to_pong()
         assert not any(m.get("type") in {"critical_timeline", "error"} for m in messages), messages
-        await a.critical_ack(combined)
+        # A valid third packet's ACK cumulatively releases the first three;
+        # the fourth remains outstanding and exactly one dirty state is sent.
+        await a.critical_ack(frames[2])
         latest = await a.timeline()
         assert latest["seq"] == combined["seq"] + 1
         assert not latest["telegraphs"] and not latest["dashes"], latest
         assert latest["server_time"] > max(cue["expires_at"] for cue in combined["telegraphs"])
+        await a.critical_ack(frames[2])
+        messages, _ = await a.drain_to_pong()
+        assert not any(m.get("type") in {"critical_timeline", "error"} for m in messages), messages
+        # These formerly outstanding values must now be stale, proving the
+        # cumulative release actually removed predecessors as well as packet3.
+        for old in frames[:2]:
+            await a.critical_ack(old)
+            messages, _ = await a.drain_to_pong()
+            assert any(m.get("reason") == "invalid_critical_ack" for m in messages), messages
+            assert not any(m.get("type") == "critical_timeline" for m in messages), messages
+        await a.critical_ack(combined)
         await a.critical_ack(latest)
         await a.critical_ack(latest)
         messages, _ = await a.drain_to_pong()
         assert not any(m.get("type") in {"critical_timeline", "error"} for m in messages), messages
-        record("invalid_ack_and_expired_dirty_coalescing", "13 malformed/stale/future variants and duplicate prior ACK could not release newer credit; exact ACK rebuilt one empty current timeline, never replaying expired cues", invalid_variants=[label for _, label in malformed])
+        record("invalid_ack_and_expired_dirty_coalescing", "Full four-packet window queued nothing on expiry; 13 invalid ACK variants and a duplicate phase ACK could not unlock it; exact outstanding ACK cumulatively released predecessors and rebuilt one empty current state",
+               invalid_variants=[label for _, label in malformed],
+               cumulative_ack_seq=frames[2]["seq"], rebuilt_seq=latest["seq"], expired_cues_replayed=0)
 
         # Gameplay fields, client expiry and event sequence have no authority.
         await a.send(type="skill", x=True, z=0, expires_at=1e20, seq=99999)
@@ -256,7 +293,7 @@ async def pause_resume_end(url):
         await a.critical_ack(resumed)
         expired = await a.timeline(lambda m: not m["telegraphs"])
         await a.critical_ack(expired)
-        record("pause_resume_rebases_active_windows", "Pause cleared wall-clock cues; after waiting beyond the original deadline, resume rebuilt the frozen cast deadline and the rejoined connection started with sequence1 current state",
+        record("pause_resume_rebases_active_windows", "Pause cleared wall-clock cues; after waiting beyond the original deadline, resume rebuilt the frozen cast deadline and the rejoined connection started with sequence 1 current state",
                original_expiry=cast["telegraphs"][0]["expires_at"], resumed_expiry=resumed["telegraphs"][0]["expires_at"])
 
         await resumed_b.close()
@@ -278,7 +315,7 @@ async def pause_resume_end(url):
         playing = await a.timeline(lambda m: m["phase"] == "playing")
         assert playing["round_number"] == 2
         assert not playing["telegraphs"] and not playing["dashes"]
-        record("forfeit_rejoin_and_rematch_phase_updates", "With the original ordinary snapshot still blocked, critical phase covered pause, six-second forfeit, finished-state rejoin, round2 countdown and play")
+        record("forfeit_rejoin_and_rematch_phase_updates", "With the original ordinary snapshot still blocked, critical phase covered pause, six-second forfeit, finished-state rejoin, round 2 countdown and play")
     finally:
         await close_all(clients)
 
@@ -319,7 +356,7 @@ async def negotiation_and_clock(url):
         await asyncio.sleep(.25)
         messages, _ = await independent.drain_to_pong()
         assert len([m for m in messages if m.get("type") == "snapshot"]) >= 2
-        record("critical_negotiation_independent_of_snapshot_ack", "Critical channel negotiates independently while ordinary legacy snapshots continue at10Hz")
+        record("critical_negotiation_independent_of_snapshot_ack", "Critical channel negotiates independently while ordinary legacy snapshots continue at 10 Hz")
     finally:
         await close_all(clients)
 

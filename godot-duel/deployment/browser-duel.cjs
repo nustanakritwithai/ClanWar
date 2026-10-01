@@ -174,6 +174,13 @@ function readCriticalDiagnostics() {
     negotiated: qa?.criticalTimelineNegotiated === true,
     timelines: qa?.criticalTimelines || [],
     visual: { telegraphs: records('telegraphs', true), dashes: records('dashes', false),
+      expired: (Array.isArray(source?.expired) ? source.expired : []).slice(-64).map(c => ({
+        kind: ['telegraphs', 'dashes'].includes(c.kind) ? c.kind : null,
+        id: typeof c.id === 'string' ? c.id : null, owner: typeof c.owner === 'string' ? c.owner : null,
+        seq: numeric(c.seq), stage: ['received', 'render_update', 'draw_completed'].includes(c.stage) ? c.stage : null,
+        server_time_upper: numeric(c.server_time_upper), expires_at: numeric(c.expires_at),
+        submitted_at_server_time_upper: numeric(c.submitted_at_server_time_upper), frame: numeric(c.frame),
+      })),
       expired_cues_skipped: numeric(source?.expired_cues_skipped), server_time_upper: numeric(source?.server_time_upper) },
     frameHistory: qa?.frameHistory || [], longTasks: qa?.longTasks || [],
   };
@@ -203,8 +210,31 @@ function criticalCueEvidence(kind, owner, state, fence) {
   const missedFrame = delivered.find(cue => cue.expires_at > cue.server_time && state.frameHistory.some(frame =>
     frame.at - frame.durationMs <= cue.received_at && frame.at >= cue.received_at + 1000 * (cue.expires_at - cue.server_time)));
   const expired = delivered.every(cue => Number.isFinite(state.visual.server_time_upper) && state.visual.server_time_upper >= cue.expires_at);
+  // Diagnostics only: a conservative clock bound cannot establish that the
+  // physical renderer/hardware missed a real deadline. Keep it distinct from
+  // the independently measured full-lifetime frame-gap criterion above.
+  const expiredRecords = (state.visual.expired || []).filter(record => record.kind === kind && record.owner === owner &&
+    Number.isInteger(record.frame) && record.frame > fence.frame && ['received', 'render_update', 'draw_completed'].includes(record.stage) &&
+    delivered.some(cue => record.seq === cue.seq && record.expires_at === cue.expires_at && (kind !== 'telegraphs' || record.id === cue.id)))
+    .sort((a, b) => a.frame - b.frame);
+  let firstExpired = null;
+  if (expiredRecords.length) {
+    const first = expiredRecords[0];
+    const knownUpper = Number.isFinite(first.server_time_upper) && first.server_time_upper >= 0;
+    const knownSubmission = Number.isFinite(first.submitted_at_server_time_upper) && first.submitted_at_server_time_upper >= 0;
+    const currentOnSubmit = knownSubmission ? first.submitted_at_server_time_upper < first.expires_at : null;
+    firstExpired = { ...first,
+      upper_clock_margin_ms: knownUpper ? 1000 * (first.expires_at - first.server_time_upper) : null,
+      submitted_upper_clock_margin_ms: knownSubmission ? 1000 * (first.expires_at - first.submitted_at_server_time_upper) : null,
+      submission_current_by_upper_clock: currentOnSubmit,
+      interpretation: first.stage === 'received' ? 'upper_bound_expired_on_receive' :
+        first.stage === 'draw_completed' && currentOnSubmit ? 'current_on_submit_but_no_valid_completed_draw' :
+        first.stage === 'draw_completed' ? 'upper_bound_expired_at_draw_completion' : 'upper_bound_expired_at_render_update',
+      clock_is_conservative_upper_bound: true,
+    };
+  }
   return { owner, status: missedFrame ? 'frame_gap_covers_cue_lifetime' : expired ? 'expired_without_postdraw_proof' : 'delivered_without_valid_postdraw_proof',
-    hardware_render_block: Boolean(missedFrame), delivered, rendered,
+    hardware_render_block: Boolean(missedFrame), delivered, rendered, first_expired: firstExpired, expired_records: expiredRecords,
     expired_cues_skipped_delta: Math.max(0, (state.visual.expired_cues_skipped || 0) - fence.expired_cues_skipped) };
 }
 

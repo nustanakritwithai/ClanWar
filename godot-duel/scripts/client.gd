@@ -20,7 +20,7 @@ var clock_upper_offset := 0.0
 var clock_synced := false
 var clock_sync_in := 0.0
 var clock_ping := -1.0
-var visual_evidence := {"telegraphs":[],"dashes":[],"expired_cues_skipped":0}
+var visual_evidence := {"telegraphs":[],"dashes":[],"expired":[],"expired_cues_skipped":0}
 var visual_pending: Dictionary = {}
 var visual_recorded: Array[String] = []
 var network_generation := 0
@@ -268,8 +268,21 @@ func _critical_playing() -> bool:
 func _critical_dash(id: String) -> Dictionary:
 	if not _critical_playing(): return {}
 	for cue in critical_state.get("dashes",[]):
-		if str(cue.get("owner","")) == id and _cue_current(cue): return cue
+		if str(cue.get("owner","")) == id:
+			if _cue_current(cue): return cue
+			_record_expired_cue("dashes",cue,"render_update")
 	return {}
+
+func _record_expired_cue(kind: String, cue: Dictionary, stage: String, submitted_at: float = -1.0, sequence: int = -1) -> void:
+	if sequence < 0: sequence = critical_sequence
+	var key := str(network_generation)+":expired:"+kind+":"+str(cue.get("id",cue.get("owner","")))+":"+str(sequence)+":"+stage
+	if visual_recorded.has(key): return
+	visual_recorded.append(key)
+	if visual_recorded.size() > 128: visual_recorded.pop_front()
+	visual_evidence.expired_cues_skipped += 1
+	visual_evidence.expired.append({"kind":kind,"id":str(cue.get("id","")),"owner":str(cue.get("owner","")),"seq":sequence,"stage":stage,"server_time_upper":_server_time_upper(),"expires_at":float(cue.get("expires_at",0)),"submitted_at_server_time_upper":submitted_at,"frame":Engine.get_process_frames()})
+	if visual_evidence.expired.size() > 64: visual_evidence.expired.pop_front()
+	_publish_visual_evidence()
 
 func _record_visible_cue(kind: String, cue: Dictionary, node: Node3D) -> void:
 	var key := str(network_generation)+":"+kind+":"+str(cue.get("id",cue.get("owner","")))+":"+str(critical_sequence)
@@ -278,14 +291,14 @@ func _record_visible_cue(kind: String, cue: Dictionary, node: Node3D) -> void:
 	var sequence := critical_sequence
 	var generation := network_generation
 	var round_id := int(critical_state.get("round_number",0))
+	var submitted_at := _server_time_upper()
 	# Record only an actual completed draw, not receipt of a network packet.
 	await RenderingServer.frame_post_draw
 	visual_pending.erase(key)
 	if generation != network_generation or not _critical_playing(): return
 	if not is_instance_valid(node) or not node.is_visible_in_tree(): return
 	if not _cue_current(cue):
-		visual_evidence.expired_cues_skipped += 1
-		_publish_visual_evidence()
+		_record_expired_cue(kind,cue,"draw_completed",submitted_at,sequence)
 		return
 	var record := {"id":str(cue.get("id","")),"owner":str(cue.get("owner","")),"seq":sequence,"round_number":round_id,"server_time_upper":_server_time_upper(),"expires_at":float(cue.expires_at),"frame":Engine.get_process_frames()}
 	visual_evidence[kind].append(record)
@@ -329,7 +342,7 @@ func _packet(packet: Dictionary) -> void:
 				aim_mode = ""
 			for key in ["telegraphs","dashes"]:
 				for cue in packet.get(key,[]):
-					if not _cue_current(cue): visual_evidence.expired_cues_skipped += 1
+					if not _cue_current(cue): _record_expired_cue(key,cue,"received")
 			_publish_visual_evidence()
 		"snapshot":
 			var packet_tick := int(packet.get("tick",-1))
@@ -530,7 +543,9 @@ func _render_effects() -> void:
 	var present: Array[String] = []
 	var telegraphs: Array = critical_state.get("telegraphs",[]) if critical_timeline_enabled and _critical_playing() else ([] if critical_timeline_enabled else snap.get("telegraphs",[]))
 	for tele in telegraphs:
-		if critical_timeline_enabled and not _cue_current(tele): continue
+		if critical_timeline_enabled and not _cue_current(tele):
+			_record_expired_cue("telegraphs",tele,"render_update")
+			continue
 		var id := "t"+str(tele.id)
 		present.append(id)
 		if not effects.has(id):

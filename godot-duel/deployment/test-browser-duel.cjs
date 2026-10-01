@@ -119,16 +119,23 @@ test('critical packet observer retains only bounded authoritative cue metadata a
 
 test('post-draw diagnostics are read-only, allow-listed and bounded independently of packet history', () => {
   const cue = { id: 't1', owner: 'p1', seq: 1, round_number: 11, server_time_upper: 10.1, expires_at: 10.4, frame: 42, token: 'do-not-retain' };
-  const source = { telegraphs: Array.from({ length: 100 }, () => ({ ...cue })), dashes: [{ ...cue }], expired_cues_skipped: 2, server_time_upper: 10.2, token: 'do-not-retain' };
+  const expired = { kind: 'telegraphs', id: 't1', owner: 'p1', seq: 1, stage: 'draw_completed', server_time_upper: 10.5,
+    expires_at: 10.4, submitted_at_server_time_upper: 10.2, frame: 43, token: 'do-not-retain' };
+  const source = { telegraphs: Array.from({ length: 100 }, () => ({ ...cue })), dashes: [{ ...cue }],
+    expired: Array.from({ length: 100 }, () => ({ ...expired })), expired_cues_skipped: 2, server_time_upper: 10.2, token: 'do-not-retain' };
   const context = { window: { __duelQA: { criticalTimelineNegotiated: true, criticalTimelines: [], frameHistory: [], longTasks: [] }, __duelVisualDiagnostics: source } };
   vm.createContext(context);
   const result = vm.runInContext(`(${readCriticalDiagnostics.toString()})()`, context);
   assert.equal(result.visual.telegraphs.length, 64);
+  assert.equal(result.visual.expired.length, 64);
+  assert.equal(result.visual.expired[0].stage, 'draw_completed');
+  assert.equal(result.visual.expired[0].submitted_at_server_time_upper, 10.2);
   assert.equal(result.visual.expired_cues_skipped, 2);
   assert.equal(result.visual.server_time_upper, 10.2);
   assert.equal(result.visual.dashes[0].id, undefined);
   assert(!JSON.stringify(result).includes('do-not-retain'));
   assert.equal(source.telegraphs.length, 100, 'Reading must not mutate renderer evidence');
+  assert.equal(source.expired.length, 100, 'Reading must not mutate expiry records');
 });
 
 function cueFixture(kind = 'telegraphs') {
@@ -200,6 +207,50 @@ test('failed cue diagnostics separate missing network, expired render, and a fra
   assert.equal(blocked.hardware_render_block, true);
   state.frameHistory = [{ at: 1100, durationMs: 20 }];
   assert.equal(criticalCueEvidence('dashes', 'p1', state, fence).hardware_render_block, false);
+});
+
+test('expiry diagnostics preserve the first matching stage and conservative clock margins without claiming hardware failure', () => {
+  const { state, fence } = cueFixture();
+  state.visual.telegraphs = [];
+  state.visual.server_time_upper = 10.7;
+  const received = { kind: 'telegraphs', id: 't1', owner: 'p1', seq: 8, stage: 'received',
+    server_time_upper: 10.5, expires_at: 10.4, submitted_at_server_time_upper: -1, frame: 51 };
+  state.visual.expired = [
+    { ...received, owner: 'p2', frame: 50 },
+    { ...received, seq: 7, frame: 51 },
+    { ...received, id: 't2', frame: 51 },
+    { ...received, expires_at: 11, frame: 51 },
+    { ...received, stage: 'render_update', frame: 52, server_time_upper: 10.6 },
+    received,
+  ];
+  const result = criticalCueEvidence('telegraphs', 'p1', state, fence);
+  assert.equal(result.status, 'expired_without_postdraw_proof');
+  assert.equal(result.first_expired.stage, 'received');
+  assert.equal(result.expired_records.length, 2);
+  assert(Math.abs(result.first_expired.upper_clock_margin_ms + 100) < 1e-8);
+  assert.equal(result.first_expired.submitted_upper_clock_margin_ms, null);
+  assert.equal(result.first_expired.submission_current_by_upper_clock, null);
+  assert.equal(result.first_expired.interpretation, 'upper_bound_expired_on_receive');
+  assert.equal(result.first_expired.clock_is_conservative_upper_bound, true);
+  assert.equal(result.hardware_render_block, false);
+});
+
+test('current-on-submit but late upper-bound draw completion remains unproven and cannot change the pass criteria', () => {
+  const { state, fence } = cueFixture('dashes');
+  state.visual.dashes = [];
+  state.visual.server_time_upper = 10.3;
+  state.visual.expired = [{ kind: 'dashes', id: '', owner: 'p1', seq: 8, stage: 'draw_completed',
+    server_time_upper: 10.2, expires_at: 10.18, submitted_at_server_time_upper: 10.1, frame: 52 }];
+  const result = criticalCueEvidence('dashes', 'p1', state, fence);
+  assert.notEqual(result.status, 'passed');
+  assert.equal(result.first_expired.stage, 'draw_completed');
+  assert.equal(result.first_expired.submission_current_by_upper_clock, true);
+  assert(Math.abs(result.first_expired.submitted_upper_clock_margin_ms - 80) < 1e-8);
+  assert(Math.abs(result.first_expired.upper_clock_margin_ms + 20) < 1e-8);
+  assert.equal(result.first_expired.interpretation, 'current_on_submit_but_no_valid_completed_draw');
+  assert.equal(result.hardware_render_block, false);
+  state.visual.dashes = cueFixture('dashes').state.visual.dashes;
+  assert.equal(criticalCueEvidence('dashes', 'p1', state, fence).status, 'passed', 'Diagnostic expiry records must not replace valid post-draw proof');
 });
 
 test('shared snapshot proof rejects mismatches and old observations after reconnect', () => {
