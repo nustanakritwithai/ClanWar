@@ -7,6 +7,8 @@ func _run() -> void:
 	var scene = load("res://scenes/main.tscn").instantiate()
 	root.add_child(scene)
 	await process_frame
+	# Logic-only test: avoid audio mixing during immediate headless teardown.
+	scene.sound_on = false
 	scene.self_id = "p1"
 	var players := [{"id":"p1","hp":100,"x":0,"z":0},{"id":"p2","hp":100,"x":1,"z":0}]
 	scene._packet({"type":"snapshot","players":players,"round":{"phase":"finished"}})
