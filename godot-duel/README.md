@@ -45,8 +45,8 @@ slot. A monitoring client must not send `hello` because that uses a player slot.
 
 The Web export is single-threaded Compatibility and does not require
 cross-origin-isolation headers. The workflow builds the unchanged legacy site
-at the Pages root and places this client at `godot-duel/`. It deploys only on
-an explicit manual dispatch from the default branch, after its checks pass.
+at the Pages root and places this client at `godot-duel/`. It deploys only after an explicit manual dispatch or publish-marked commit
+on the default branch, after all its checks pass.
 See `deployment/README.md` for the workflow and release gates.
 
 HTTPS pages require a trusted `wss://` endpoint. Pass the endpoint via

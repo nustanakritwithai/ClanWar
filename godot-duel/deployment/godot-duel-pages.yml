@@ -1,5 +1,5 @@
 # Copy this file to REPOSITORY ROOT .github/workflows/godot-duel-pages.yml.
-# CI builds on pushes/PRs. Only a manual dispatch with deploy=true publishes.
+# CI always runs first. Publish is opt-in: deploy=true or explicit commit marker.
 name: ClanWar legacy and Godot duel Pages
 
 on:
@@ -156,14 +156,14 @@ jobs:
           retention-days: 7
 
       - name: Upload only the generated combined static site
-        if: github.event_name == 'workflow_dispatch' && inputs.deploy && github.ref == 'refs/heads/claude/game-file-analysis-a20xup'
+        if: github.ref == 'refs/heads/claude/game-file-analysis-a20xup' && ((github.event_name == 'workflow_dispatch' && inputs.deploy) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-clanwar-duel]')))
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
           path: ${{ runner.temp }}/clanwar-pages
           retention-days: 1
 
   deploy:
-    if: github.event_name == 'workflow_dispatch' && inputs.deploy && github.ref == 'refs/heads/claude/game-file-analysis-a20xup'
+    if: github.ref == 'refs/heads/claude/game-file-analysis-a20xup' && ((github.event_name == 'workflow_dispatch' && inputs.deploy) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-clanwar-duel]')))
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 10
