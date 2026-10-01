@@ -71,10 +71,17 @@ async function startWebServer() {
 // It neither calls send nor changes messages, transport behavior, or game state.
 function observePublicSnapshots() {
   const NativeWebSocket = window.WebSocket;
-  window.__duelQA = { snapshot: null, history: [], phases: [] };
+  window.__duelQA = { snapshot: null, history: [], phases: [], transport: [], maxRafGapMs: 0, maxLongTaskMs: 0 };
+  let lastFrame = performance.now();
+  function frame(now) { window.__duelQA.maxRafGapMs = Math.max(window.__duelQA.maxRafGapMs, now - lastFrame); lastFrame = now; requestAnimationFrame(frame); }
+  requestAnimationFrame(frame);
+  new PerformanceObserver(list => { for (const e of list.getEntries()) window.__duelQA.maxLongTaskMs = Math.max(window.__duelQA.maxLongTaskMs, e.duration); }).observe({ type: 'longtask', buffered: true });
   window.WebSocket = class extends NativeWebSocket {
     constructor(...args) {
       super(...args);
+      this.addEventListener('open', () => window.__duelQA.transport.push({ event: 'open', at: Date.now() }));
+      this.addEventListener('close', e => window.__duelQA.transport.push({ event: 'close', code: e.code, reason: /token|resume|welcome/i.test(e.reason) ? '[omitted]' : e.reason, at: Date.now() }));
+      this.addEventListener('error', () => window.__duelQA.transport.push({ event: 'error', at: Date.now() }));
       this.addEventListener('message', event => {
         if (typeof event.data !== 'string') return;
         let packet;
@@ -83,7 +90,7 @@ function observePublicSnapshots() {
         const snap = {
           tick: packet.tick,
           round: { phase: packet.round.phase, number: packet.round.number, winner: packet.round.winner, reason: packet.round.reason },
-          players: packet.players.map(p => ({ id: p.id, name: p.name, hp: p.hp, max_hp: p.max_hp, x: p.x, z: p.z, wins: p.wins, ready: p.ready })),
+          players: packet.players.map(p => ({ id: p.id, name: p.name, hp: p.hp, max_hp: p.max_hp, x: p.x, z: p.z, wins: p.wins, ready: p.ready, connected: p.connected })),
         };
         const qa = window.__duelQA;
         qa.snapshot = snap;
@@ -152,12 +159,24 @@ async function resultTitle(page, label, expected) {
     await page.waitForFunction(() => !document.getElementById('status'), undefined, { timeout: 60_000 });
     await wait(500);
     await screenshot(page, `${name}-join`);
-    // Actual canvas JOIN center measured from the 1280x800 Godot scene.
+  }
+  // Prepare both rendering engines before occupying the live duel slots.
+  const [a, b] = pages;
+  for (const [index, page] of pages.entries()) {
+    const name = index ? 'ClientB' : 'ClientA';
     await page.mouse.click(640, 471);
     await until(page, s => s.players.some(p => p.name === name), `${name} joins through visible JOIN button`);
+    if (!index) await wait(2500); // Let the first avatar shader warm while no round is running.
   }
-  const [a, b] = pages;
-  await Promise.all(pages.map(p => until(p, s => s.players.length === 2 && s.round.phase === 'countdown', 'two clients enter countdown')));
+  // Countdown is a short-lived state; prove it from observed frame history,
+  // rather than requiring a polling call to land inside its three-second window.
+  for (const page of pages) {
+    await page.waitForFunction(() => window.__duelQA.history.some(s => s.players.length === 2 && s.round.phase === 'countdown'), undefined, { timeout: 20_000 });
+  }
+  for (const page of pages) {
+    const state = await page.evaluate(() => window.__duelQA.snapshot);
+    assert.notEqual(state.round.phase, 'finished', `Unexpected early round end: ${state.round.reason}`);
+  }
   const initial = await until(a, s => s.round.phase === 'playing', 'round one starts');
   await until(b, s => s.round.phase === 'playing', 'second client enters play');
   const playerA = initial.players.find(p => p.name === 'ClientA');
@@ -213,6 +232,10 @@ async function resultTitle(page, label, expected) {
 })().catch(async error => {
   report.status = 'failed';
   report.failure = safeLine(error.message);
+  report.diagnostics = [];
+  for (const page of pages) {
+    try { report.diagnostics.push(await page.evaluate(() => ({ snapshot: window.__duelQA?.snapshot, phases: window.__duelQA?.phases, transport: window.__duelQA?.transport, maxRafGapMs: window.__duelQA?.maxRafGapMs, maxLongTaskMs: window.__duelQA?.maxLongTaskMs }))); } catch { /* unavailable renderer */ }
+  }
   console.error(report.failure);
   for (let i = 0; i < pages.length; i++) {
     try { await screenshot(pages[i], `${i ? 'b' : 'a'}-failure`); } catch { /* browser may have failed */ }

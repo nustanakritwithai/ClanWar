@@ -20,7 +20,7 @@ permissions:
 
 concurrency:
   group: clanwar-pages-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -117,7 +117,13 @@ jobs:
         run: |
           set -euo pipefail
           npm install --prefix "$RUNNER_TEMP/clanwar-browser-qa" --no-audit --no-fund --package-lock=false 'playwright@1.57.0'
-          "$RUNNER_TEMP/clanwar-browser-qa/node_modules/.bin/playwright" install --with-deps chromium
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome --version
+            echo "PLAYWRIGHT_CHROMIUM_EXECUTABLE=$(command -v google-chrome)" >> "$GITHUB_ENV"
+            export PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(command -v google-chrome)"
+          else
+            "$RUNNER_TEMP/clanwar-browser-qa/node_modules/.bin/playwright" install --with-deps chromium
+          fi
           NODE_PATH="$RUNNER_TEMP/clanwar-browser-qa/node_modules" \
             node godot-duel/deployment/browser-startup.cjs \
               "$RUNNER_TEMP/clanwar-pages" godot-duel/qa

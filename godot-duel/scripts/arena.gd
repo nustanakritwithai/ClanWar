@@ -67,7 +67,7 @@ func _ready() -> void:
 	sun.rotation_degrees = Vector3(-55,-35,0)
 	sun.light_color = Color("ffe4b1")
 	sun.light_energy = 0.72
-	sun.shadow_enabled = true
+	sun.shadow_enabled = not OS.has_feature("web")
 	sun.directional_shadow_max_distance = 60
 	add_child(sun)
 	# Floating foundation with a terraced, authored stone battle floor.

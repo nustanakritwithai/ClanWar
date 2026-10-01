@@ -49,6 +49,7 @@ var audio_players: Dictionary = {}
 var sound_on := true
 
 func _ready() -> void:
+	if OS.has_feature("web"): Engine.max_fps = 30
 	arena = Arena.new()
 	add_child(arena)
 	camera = Camera3D.new()
@@ -511,6 +512,9 @@ func _label(text: String, font_size: int, color: String = "eee6ce") -> Label:
 func _button(text: String, minsize: Vector2 = Vector2(140,56)) -> Button:
 	var b := Button.new()
 	b.text = text
+	# Space belongs to dash; a previously clicked HUD button must not consume
+	# it as the built-in ui_accept shortcut. Text fields remain focusable.
+	b.focus_mode = Control.FOCUS_NONE
 	b.custom_minimum_size = minsize
 	b.add_theme_font_size_override("font_size",18)
 	b.add_theme_color_override("font_color",Color("fff0cf"))
@@ -660,22 +664,32 @@ func _build_connect_panel() -> void:
 	col.add_child(info)
 
 func _resize() -> void:
+	var window := get_window()
+	var narrow := float(window.size.x)/maxf(float(window.size.y),1.0) < 1.35
+	var design_size := Vector2i(640,960) if narrow else Vector2i(1280,800)
+	if window.content_scale_size != design_size:
+		# Changing the logical size emits size_changed. Defer it so the next
+		# resize lays out the updated viewport without entering this call again.
+		window.set_deferred("content_scale_size",design_size)
+		return
 	var s := get_viewport().get_visible_rect().size
 	# CanvasLayer has no parent Control rect. Place the HUD in canvas coordinates.
 	ui.position = Vector2.ZERO
 	ui.size = s
-	var narrow := s.x/s.y < 1.35
 	camera.size = 31 if narrow else 25
 	status_label.position = Vector2(s.x-355,26)
 	ui.get_node("ServerButton").position = Vector2(s.x-124,58)
 	ui.get_node("SoundButton").position = Vector2(s.x-238,58)
 	ui.get_node("Score").position = Vector2(s.x/2-247,116 if narrow else 26)
 	labels.phase.position = Vector2(s.x/2-250,212 if narrow else 113)
-	labels.hint.position = Vector2(s.x/2-350,247 if narrow else 148)
+	labels.hint.size.x = minf(700,s.x-40)
+	labels.hint.position = Vector2((s.x-labels.hint.size.x)/2,247 if narrow else 148)
 	labels.controls.text = "Tap floor to move · Tap rival to strike\nSkill / Dash → tap a direction" if narrow else "Tap floor to move · Tap rival to strike\nWASD move · Q cast toward cursor · Space dash"
 	labels.controls.position = Vector2(30,s.y-(154 if narrow else 81))
-	notice.position = Vector2(s.x/2-500,s.y-152)
-	ready_button.position = Vector2(s.x/2-130,s.y-220)
+	notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if narrow else TextServer.AUTOWRAP_OFF
+	notice.size = Vector2(minf(1000,s.x-40),60 if narrow else 35)
+	notice.position = Vector2((s.x-notice.size.x)/2,s.y-(232 if narrow else 152))
+	ready_button.position = Vector2(s.x/2-130,s.y-(304 if narrow else 220))
 	connect_panel.position = Vector2(s.x/2-238,s.y/2-192)
 	ui.get_node("Actions").position = Vector2(s.x/2-241,s.y-104) if narrow else Vector2(s.x-518,s.y-104)
 

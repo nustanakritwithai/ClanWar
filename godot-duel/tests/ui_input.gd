@@ -7,6 +7,8 @@ func run():
 	await process_frame
 	await process_frame
 	var b = scene.ui.get_node("ServerButton")
+	for control in [b,scene.attack_button,scene.skill_button,scene.dash_button,scene.ready_button]:
+		assert(control.focus_mode == Control.FOCUS_NONE,"HUD must not consume Space as ui_accept")
 	b.pressed.connect(func(): b.set_meta("clicked",true))
 	print("root ",root.size," view ",root.get_visible_rect()," button ",b.get_global_rect()," ui ",scene.ui.get_global_rect())
 	var p = b.get_global_rect().get_center()
