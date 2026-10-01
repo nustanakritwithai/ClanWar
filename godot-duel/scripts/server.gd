@@ -64,7 +64,7 @@ func _initialize() -> void:
 		push_error("Could not listen on %s:%d (error %d)" % [bind_address, port, result])
 		quit(2)
 		return
-	print("LANTERN_ARENA_READY ws://%s:%d | simulation 20Hz | snapshots 10Hz" % [bind_address, port])
+	print("LANTERN_ARENA_READY ws://%s:%d | simulation 20Hz | snapshots up to 10Hz | server 0.1.1" % [bind_address, port])
 
 func _process(delta: float) -> bool:
 	_accept_connections()
@@ -93,7 +93,8 @@ func _accept_connections() -> void:
 			stream.disconnect_from_host()
 			continue
 		peer.set_no_delay(true)
-		connections[next_connection] = {"peer": peer, "player_id": "", "created": _now(), "rate_time": _now(), "budget": 64.0, "closing": false}
+		connections[next_connection] = {"peer": peer, "player_id": "", "created": _now(), "rate_time": _now(), "budget": 64.0, "closing": false,
+			"snapshot_ack": false, "pending_snapshot_tick": -1, "last_snapshot_ack": -1}
 		next_connection += 1
 
 func _poll_connections() -> void:
@@ -150,6 +151,9 @@ func _handle(connection: Dictionary, message: Dictionary) -> void:
 	if pid.is_empty() or not players.has(pid):
 		_error(connection, "hello_required")
 		return
+	if action == "snapshot_ack":
+		_ack_snapshot(connection, message)
+		return
 	if action == "ping":
 		_send(connection, {"type": "pong", "tick": tick, "server_time": _now()})
 		return
@@ -184,7 +188,7 @@ func _hello(connection: Dictionary, message: Dictionary) -> void:
 	if not String(connection.player_id).is_empty():
 		_error(connection, "already_joined")
 		return
-	if not message.get("name", "") is String or not message.get("resume_token", "") is String:
+	if not message.get("name", "") is String or not message.get("resume_token", "") is String or not message.get("snapshot_ack", false) is bool:
 		_error(connection, "invalid_hello")
 		return
 	var resume_token: String = message.get("resume_token", "")
@@ -219,9 +223,10 @@ func _hello(connection: Dictionary, message: Dictionary) -> void:
 			"dash_remaining": 0.0, "dash_dir": Vector2.ZERO,
 			"connected": true, "ready": true, "token": crypto.generate_random_bytes(24).hex_encode(), "disconnected_at": 0.0}
 	connection.player_id = pid
+	connection.snapshot_ack = bool(message.get("snapshot_ack", false))
 	players[pid].connected = true
 	players[pid].disconnected_at = 0.0
-	_send(connection, {"type": "welcome", "id": pid, "token": players[pid].token, "resumed": resumed, "tick_rate": 20, "snapshot_rate": 10})
+	_send(connection, {"type": "welcome", "id": pid, "token": players[pid].token, "resumed": resumed, "tick_rate": 20, "snapshot_rate": 10, "snapshot_ack": connection.snapshot_ack, "server_version": "0.1.1"})
 	if phase == "paused" and _all_connected():
 		phase = paused_phase
 		_event("resume", "Both duelists are back. The round resumes.")
@@ -229,6 +234,19 @@ func _hello(connection: Dictionary, message: Dictionary) -> void:
 		_start_round()
 	_event("join", "%s %s" % [players[pid].name, "reconnected." if resumed else "entered the arena."], {"player": pid})
 	_send(connection, _snapshot())
+
+func _ack_snapshot(connection: Dictionary, message: Dictionary) -> void:
+	var value: Variant = message.get("tick")
+	if not bool(connection.snapshot_ack) or not (value is int or value is float) or not is_finite(float(value)) or float(value) != floorf(float(value)) or float(value) < 0 or float(value) > tick:
+		_error(connection, "invalid_snapshot_ack")
+		return
+	var ack_tick := int(value)
+	if ack_tick == int(connection.pending_snapshot_tick):
+		connection.last_snapshot_ack = ack_tick
+		connection.pending_snapshot_tick = -1
+	elif ack_tick != int(connection.last_snapshot_ack):
+		_error(connection, "invalid_snapshot_ack")
+	# Duplicate acks are harmless. Never let an old/future ack unlock newer state.
 
 func _attack(connection: Dictionary, player: Dictionary, message: Dictionary) -> void:
 	if not message.get("target") is String:
@@ -507,10 +525,21 @@ func _send(connection: Dictionary, message: Dictionary) -> void:
 	var peer: WebSocketPeer = connection.peer
 	if peer.get_ready_state() != WebSocketPeer.STATE_OPEN or bool(connection.closing):
 		return
+	var kind := String(message.get("type", ""))
+	if bool(connection.snapshot_ack) and int(connection.pending_snapshot_tick) >= 0:
+		# Rendering/hidden tabs may stop consuming for seconds. Keep only one
+		# authoritative state in flight; the next tick generates fresh state
+		# after acknowledgement. Cosmetic events are dispensable and cannot
+		# create a second, unbounded queue while that state is outstanding.
+		if kind in ["snapshot", "event"]: return
 	if peer.get_current_outbound_buffered_amount() > 49152:
 		_close(connection, "slow_consumer", 1008)
 		return
-	peer.send_text(JSON.stringify(message))
+	var result := peer.send_text(JSON.stringify(message))
+	if result != OK:
+		_close(connection, "send_failed", 1011)
+	elif kind == "snapshot" and bool(connection.snapshot_ack):
+		connection.pending_snapshot_tick = int(message.tick)
 
 func _error(connection: Dictionary, reason: String) -> void:
 	_send(connection, {"type": "error", "reason": reason})

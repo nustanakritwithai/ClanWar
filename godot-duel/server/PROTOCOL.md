@@ -1,4 +1,4 @@
-# Lantern Vale Duel wire protocol (v1)
+# Lantern Vale Duel wire protocol (v1, server 0.1.1)
 
 A local-first, server-authoritative **two-player PvP prototype**. Both players have the same 100 HP, movement speed and three actions. There are no NPCs, loot, levels, paid advantages or client-authored damage values.
 
@@ -16,11 +16,11 @@ godot --headless --path . --script scripts/server.gd -- --port=9080 --bind=127.0
 
 The XDG variables keep test/runtime data in writable locations; omit them on an ordinary installation with writable user-data directories. Connect with `ws://127.0.0.1:9080`. Only loopback bindings are accepted. No public deployment, authentication, TLS termination, persistence, matchmaking or account security is provided. Resume tokens are temporary bearer capabilities for this running process, not accounts; do not share them.
 
-Simulation is fixed 20 Hz. Public snapshots are sent at 10 Hz. Inputs can arrive between ticks. All coordinates are world X/Z in meters; increasing Z is the second ground-plane coordinate. Bounds are X −10…10 and Z −7…7. There are no obstacles. Starting positions are (−6,0) and (+6,0); ends swap each rematch.
+Simulation is fixed 20 Hz. Public snapshots are offered at up to 10 Hz. Inputs can arrive between ticks. All coordinates are world X/Z in meters; increasing Z is the second ground-plane coordinate. Bounds are X −10…10 and Z −7…7. There are no obstacles. Starting positions are (−6,0) and (+6,0); ends swap each rematch.
 
 ## Client messages
 
-Each message is one UTF-8 JSON **text** WebSocket frame containing an object. Additional fields have no authority and are ignored. Actions are processed only when the phase is `playing`, except `hello`, `ping` and `ready`.
+Each message is one UTF-8 JSON **text** WebSocket frame containing an object. Additional fields have no authority and are ignored. Actions are processed only when the phase is `playing`, except `hello`, `ping`, `ready` and `snapshot_ack`.
 
 | Action | Example | Meaning |
 |---|---|---|
@@ -85,6 +85,29 @@ Clients should render/interpolate these snapshots and send intentions. They neve
 Event kinds: `join`, `countdown`, `round_start`, `attack`, `cast`, `dash`, `dodge`, `hit`, `pause`, `resume`, `round_end`. Text is suitable for a local event feed. Optional event fields vary; only `type`, `kind`, `text` and `tick` are common.
 
 Error reasons: `invalid_json`, `invalid_type`, `text_required`, `packet_too_large`, `rate_limit`, `hello_timeout`, `hello_required`, `invalid_hello`, `already_joined`, `invalid_resume_token`, `token_in_use`, `arena_full`, `unknown_type`, `round_not_playing`, `round_not_finished`, `invalid_coordinates`, `invalid_direction`, `invalid_target`, `out_of_range`, `attack_cooldown`, `skill_cooldown`, `dash_cooldown`, `slow_consumer`.
+
+## Bounded delivery (0.1.1, backward compatible)
+
+New clients negotiate `"snapshot_ack":true` on hello. Welcome echoes the flag
+and `"server_version":"0.1.1"`. After consuming a snapshot the client sends
+`{"type":"snapshot_ack","tick":123}` with that exact snapshot's tick.
+Only one snapshot is in flight per negotiated connection. While it is awaiting
+acknowledgement, the server does not enqueue more snapshots or cosmetic events.
+It retains no backlog: the next normal simulation broadcast after a valid ack
+sends the newest complete state. HP, position, attack counters, cooldowns,
+projectiles and round outcomes are authoritative in that snapshot. Events are
+best-effort presentation hints, not a reliable event log.
+
+A repeated last acknowledgement is harmless. A malformed, stale, or future tick
+cannot release a newer outstanding snapshot and returns `invalid_snapshot_ack`.
+Acknowledgements count toward the existing input-rate limit. Legacy clients that
+do not negotiate this flag retain the original 10 Hz behavior; new clients still
+accept older servers that omit the welcome capability. Deploy the new server
+before publishing the new client to gain the bound for Web clients.
+
+This fixes producer/consumer imbalance when a browser's main thread is stalled:
+10 Hz for 32 seconds used to produce over 300 messages for a 128-packet queue.
+It does not claim to improve slow-device rendering speed or eliminate frame stalls.
 
 ## Round and reconnection lifecycle
 

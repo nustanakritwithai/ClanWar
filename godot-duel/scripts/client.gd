@@ -1,9 +1,17 @@
 extends Node3D
 ## Presentation + input only. All authoritative state comes from the WebSocket server.
 const Arena = preload("res://scripts/arena.gd")
+const CameraFit = preload("res://scripts/camera_fit.gd")
 const HERO = preload("res://assets/duelist.svg")
 var socket := WebSocketPeer.new()
 var hello_sent := false
+var snapshot_ack := false
+var last_snapshot_tick := -1
+var max_receive_queue := 0
+var reconnect_started := 0.0
+var reconnect_count := 0
+var session_ready := false
+var diagnostics_timer := 0.0
 var self_id := ""
 var token := ""
 var endpoint := "wss://157.85.96.139/clanwar/ws"
@@ -55,7 +63,6 @@ func _ready() -> void:
 	camera = Camera3D.new()
 	add_child(camera)
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 26
 	camera.position = Vector3(16,24,21)
 	camera.look_at(Vector3(0,0,0))
 	camera.current = true
@@ -127,21 +134,38 @@ func _poll_network(delta: float) -> void:
 	if state == WebSocketPeer.STATE_OPEN:
 		if not hello_sent:
 			hello_sent = true
-			_send({"type":"hello","name":nickname,"resume_token":token})
+			_send({"type":"hello","name":nickname,"resume_token":token,"snapshot_ack":true})
+		max_receive_queue = maxi(max_receive_queue,socket.get_available_packet_count())
 		while socket.get_available_packet_count() > 0:
 			var packet = JSON.parse_string(socket.get_packet().get_string_from_utf8())
 			if packet is Dictionary: _packet(packet)
-		if time_since_snapshot > 5:
-			status_label.text = "CONNECTION DELAYED"
+		if time_since_snapshot > 10:
+			# An apparently open transport can be half-dead. Reconnect with the
+			# existing token, and never send stale combat intent during recovery.
+			target_id = ""
+			aim_mode = ""
+			socket.close(1000,"snapshot_timeout")
+	elif state == WebSocketPeer.STATE_CONNECTING:
+		if _network_now()-reconnect_started > 10:
+			socket.close()
 	elif state == WebSocketPeer.STATE_CLOSED:
 		if not retrying:
+			session_ready = false
+			reconnect_count += 1
 			retrying = true
 			reconnect_in = retry_delay
 			retry_delay = minf(retry_delay*1.7,8)
 			target_id = ""
+			aim_mode = ""
 			_show_notice("Connection lost. Reconnecting to the arena…",3)
 		reconnect_in -= delta
 		if reconnect_in <= 0: _connect_socket()
+	diagnostics_timer -= delta
+	if OS.has_feature("web") and diagnostics_timer <= 0:
+		diagnostics_timer = 1.0
+		# Read-only bounded counters; no names, URLs, or resume tokens.
+		JavaScriptBridge.eval("window.__duelClientDiagnostics="+JSON.stringify({"max_receive_queue":max_receive_queue,"last_snapshot_tick":last_snapshot_tick,"time_since_snapshot":time_since_snapshot,"reconnect_count":reconnect_count,"snapshot_ack":int(snapshot_ack)}))
+		_publish_projection()
 
 func _connect_socket() -> void:
 	socket = WebSocketPeer.new()
@@ -149,7 +173,11 @@ func _connect_socket() -> void:
 	socket.outbound_buffer_size = 65536
 	socket.max_queued_packets = 128
 	var err := socket.connect_to_url(endpoint)
+	reconnect_started = _network_now()
 	hello_sent = false
+	session_ready = false
+	snapshot_ack = false
+	last_snapshot_tick = -1
 	retrying = false
 	time_since_snapshot = 0
 	if err != OK:
@@ -178,16 +206,32 @@ func _join() -> void:
 
 func _send(packet: Dictionary) -> void:
 	if socket.get_ready_state() == WebSocketPeer.STATE_OPEN:
-		socket.send_text(JSON.stringify(packet))
+		# Do not accumulate stale inputs behind a congested transport.
+		if socket.get_current_outbound_buffered_amount() > 8192:
+			target_id = ""
+			aim_mode = ""
+			socket.close(1000,"client_backpressure")
+			return
+		if socket.send_text(JSON.stringify(packet)) != OK:
+			socket.close(1000,"send_failed")
+
+func _network_now() -> float:
+	return float(Time.get_ticks_msec())/1000.0
 
 func _packet(packet: Dictionary) -> void:
 	match str(packet.get("type","")):
 		"welcome":
+			session_ready = true
 			self_id = str(packet.get("id",""))
 			token = str(packet.get("token",""))
 			retry_delay = 1
+			snapshot_ack = bool(packet.get("snapshot_ack",false))
 			_show_notice("Rejoined the duel" if packet.get("resumed",false) else "Connected. Waiting for your rival",3)
 		"snapshot":
+			var packet_tick := int(packet.get("tick",-1))
+			if snapshot_ack: _send({"type":"snapshot_ack","tick":packet_tick})
+			if packet_tick >= 0 and packet_tick <= last_snapshot_tick: return
+			last_snapshot_tick = packet_tick
 			snap = packet
 			time_since_snapshot = 0
 			var phase := str(snap.get("round",{}).get("phase","waiting"))
@@ -210,7 +254,14 @@ func _packet(packet: Dictionary) -> void:
 				_show_notice(reason.replace("_"," ").capitalize(),3)
 			if reason in ["server_full","arena_full"]:
 				active_connection = false
+				session_ready = false
+				socket.close()
+				socket = WebSocketPeer.new()
 				connect_panel.show()
+			if reason == "token_in_use":
+				# A previous connection may take a moment to close at the server.
+				# Keep the token and retry instead of remaining open but unjoined.
+				socket.close()
 			if reason == "invalid_resume_token":
 				token = ""
 				if socket.get_ready_state() == WebSocketPeer.STATE_OPEN: socket.close()
@@ -227,7 +278,7 @@ func _opponent() -> Dictionary:
 	return {}
 
 func _playing() -> bool:
-	return str(snap.get("round",{}).get("phase","")) == "playing" and time_since_snapshot < 2 and not retrying
+	return session_ready and str(snap.get("round",{}).get("phase","")) == "playing" and time_since_snapshot < 2 and not retrying and (not active_connection or socket.get_ready_state() == WebSocketPeer.STATE_OPEN)
 
 func _make_avatar(id: String, own: bool) -> Node3D:
 	var root := Node3D.new()
@@ -676,7 +727,18 @@ func _resize() -> void:
 	# CanvasLayer has no parent Control rect. Place the HUD in canvas coordinates.
 	ui.position = Vector2.ZERO
 	ui.size = s
-	camera.size = 31 if narrow else 25
+	# Expanded canvas coordinates can shrink landscape-phone targets below a
+	# finger's size. Keep combat, join and rematch at least 44 actual pixels tall.
+	var pixel_scale := minf(float(window.size.x)/s.x,float(window.size.y)/s.y)
+	var action_height := maxf(76,ceilf(44/maxf(pixel_scale,0.01)))
+	var menu_height := maxf(56,ceilf(44/maxf(pixel_scale,0.01)))
+	var bottom_shift := action_height-76
+	for button in [attack_button,skill_button,dash_button]:
+		button.custom_minimum_size.y = action_height
+		button.size.y = action_height
+	for button in [connect_button,ready_button]:
+		button.custom_minimum_size.y = menu_height
+		button.size.y = menu_height
 	status_label.position = Vector2(s.x-355,26)
 	ui.get_node("ServerButton").position = Vector2(s.x-124,58)
 	ui.get_node("SoundButton").position = Vector2(s.x-238,58)
@@ -688,10 +750,47 @@ func _resize() -> void:
 	labels.controls.position = Vector2(30,s.y-(154 if narrow else 81))
 	notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if narrow else TextServer.AUTOWRAP_OFF
 	notice.size = Vector2(minf(1000,s.x-40),60 if narrow else 35)
-	notice.position = Vector2((s.x-notice.size.x)/2,s.y-(232 if narrow else 152))
-	ready_button.position = Vector2(s.x/2-130,s.y-(304 if narrow else 220))
-	connect_panel.position = Vector2(s.x/2-238,s.y/2-192)
-	ui.get_node("Actions").position = Vector2(s.x/2-241,s.y-104) if narrow else Vector2(s.x-518,s.y-104)
+	notice.position = Vector2((s.x-notice.size.x)/2,s.y-(232 if narrow else 152)-bottom_shift)
+	ready_button.position = Vector2(s.x/2-130,s.y-(304 if narrow else 220)-(menu_height-56)-bottom_shift)
+	connect_panel.position = Vector2(s.x/2-238,s.y/2-192-(menu_height-56)*0.5)
+	# Containers grow with their children but do not automatically shrink again
+	# after rotating back from a smaller screen. Recompute once layout settles.
+	connect_panel.reset_size.call_deferred()
+	var actions: HBoxContainer = ui.get_node("Actions")
+	# "TAP A DIRECTION" is wider than the idle captions. Let that growth move
+	# left on desktop (symmetrically on portrait), never past the screen edge.
+	actions.grow_horizontal = Control.GROW_DIRECTION_BOTH if narrow else Control.GROW_DIRECTION_BEGIN
+	actions.size = Vector2(0,action_height)
+	actions.position = Vector2((s.x-actions.size.x)/2 if narrow else s.x-28-actions.size.x,s.y-28-action_height)
+	# Reserve both HUD bands, including the rematch row, so phase changes never
+	# zoom the arena and the same edge positions remain tappable throughout.
+	var safe_top: float = labels.hint.position.y + labels.hint.size.y + 12
+	var safe_bottom: float = ready_button.position.y - 12
+	CameraFit.fit(camera, s, Rect2(Vector2(16,safe_top), Vector2(s.x-32,safe_bottom-safe_top)))
+	if OS.has_feature("web"):
+		_publish_projection.call_deferred()
+
+func _publish_projection() -> void:
+	if not OS.has_feature("web"): return
+	# Wait for nested containers and deferred design-size changes before exposing
+	# coordinates. Network diagnostics also refresh these after caption changes.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var s := get_viewport().get_visible_rect().size
+	# Numeric, read-only projection for browser QA; no input or session data.
+	var origin := camera.unproject_position(Vector3(0,0.2,0))
+	var unit_x := camera.unproject_position(Vector3(1,0.2,0))-origin
+	var unit_z := camera.unproject_position(Vector3(0,0.2,1))-origin
+	var unit_up := camera.unproject_position(Vector3(0,1.2,0))-origin
+	var projection := {"ground_origin_x":origin.x,"ground_origin_y":origin.y,"ground_unit_x_x":unit_x.x,"ground_unit_x_y":unit_x.y,"ground_unit_z_x":unit_z.x,"ground_unit_z_y":unit_z.y,"avatar_up_x":unit_up.x,"avatar_up_y":unit_up.y}
+	var buttons := {"strike":attack_button,"skill":skill_button,"dash":dash_button,"join":connect_button,"ready":ready_button}
+	for key in buttons:
+		var center: Vector2 = buttons[key].get_global_rect().get_center()
+		projection[key+"_x"] = center.x
+		projection[key+"_y"] = center.y
+	# Use the canvas CSS bounds so high-DPI browsers produce the same click
+	# coordinates as ordinary screens. Values are relative to the canvas.
+	JavaScriptBridge.eval("(()=>{const c=document.getElementById('canvas');if(!c)return;const r=c.getBoundingClientRect();const p="+JSON.stringify(projection)+";for(const k in p)p[k]*=k.endsWith('_x')?r.width/"+str(s.x)+":r.height/"+str(s.y)+";p.canvas_left=r.left;p.canvas_top=r.top;p.window_width=r.width;p.window_height=r.height;window.__duelProjection=p;})()")
 
 func _update_ui(_delta: float) -> void:
 	var me := _player(self_id)

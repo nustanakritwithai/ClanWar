@@ -10,6 +10,7 @@ func _run() -> void:
 	# Logic-only test: avoid audio mixing during immediate headless teardown.
 	scene.sound_on = false
 	scene.self_id = "p1"
+	scene.session_ready = true # Simulated welcome; no socket in this logic-only test.
 	var players := [{"id":"p1","hp":100,"x":0,"z":0},{"id":"p2","hp":100,"x":1,"z":0}]
 	scene._packet({"type":"snapshot","players":players,"round":{"phase":"finished"}})
 	scene._attack_nearest()
@@ -28,6 +29,14 @@ func _run() -> void:
 	scene._packet({"type":"error","reason":"invalid_resume_token"})
 	assert(scene.token.is_empty(),"Expired token must be cleared for reconnect")
 	print("PASS stale resume token recovery")
+	scene._packet({"type":"welcome","id":"p1","token":"test-only","snapshot_ack":true})
+	assert(scene.snapshot_ack and scene.session_ready)
+	scene._packet({"type":"snapshot","tick":50,"players":players,"round":{"phase":"playing"}})
+	scene._packet({"type":"snapshot","tick":49,"players":[],"round":{"phase":"finished"}})
+	assert(scene.last_snapshot_tick == 50 and scene.snap.round.phase == "playing","Stale state must not replace newer state")
+	scene._packet({"type":"welcome","id":"p1","token":"test-only"})
+	assert(not scene.snapshot_ack,"Old servers remain compatible")
+	print("PASS negotiated snapshot acknowledgements and stale-state rejection")
 	scene.queue_free()
 	await process_frame
 	await process_frame
