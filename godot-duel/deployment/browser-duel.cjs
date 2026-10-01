@@ -305,18 +305,20 @@ async function main() {
     return file;
   }
 
-  async function visualText(page, label, expected, clip = { x: 390, y: 108, width: 500, height: 50 }) {
+  async function visualText(page, label, expected, clip = { x: 390, y: 113, width: 500, height: 36 }) {
     const file = await screenshot(page, label, clip);
     // Async OCR avoids blocking proxy forwarding/server supervision in Node.
     const text = await new Promise((resolve, reject) => {
-      const child = spawn(process.env.TESSERACT_EXE || 'tesseract', [file, 'stdout', '--psm', '7'], { stdio: ['ignore', 'pipe', 'pipe'] });
+      // The title is a text block. A single-line mode can discard valid text
+      // when a crop contains even a few antialiased pixels of another line.
+      const child = spawn(process.env.TESSERACT_EXE || 'tesseract', [file, 'stdout', '--psm', '6'], { stdio: ['ignore', 'pipe', 'pipe'] });
       let output = '';
       let diagnostic = '';
       const timeout = setTimeout(() => { child.kill('SIGKILL'); reject(new Error('Tesseract timed out')); }, 15_000);
       child.stdout.on('data', data => { output += data.toString(); });
       child.stderr.on('data', data => { diagnostic += data.toString(); });
       child.once('error', error => { clearTimeout(timeout); reject(error); });
-      child.once('exit', code => { clearTimeout(timeout); code === 0 ? resolve(output) : reject(new Error(`Tesseract failed (${code}): ${safeLine(diagnostic)}`)); });
+      child.once('close', code => { clearTimeout(timeout); code === 0 ? resolve(output) : reject(new Error(`Tesseract failed (${code}): ${safeLine(diagnostic)}`)); });
     });
     const normalized = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
     assert(normalized.includes(expected.toUpperCase().replace(/[^A-Z0-9]/g, '')), `Visible text mismatch for ${label}; expected ${expected}: ${safeLine(text)}`);
