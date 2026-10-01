@@ -60,6 +60,15 @@ and shared HP, rather than only hitting an idle opponent.
 CI browser viewport tests are not a real-phone FPS measurement. Application
 flow control bounds queued state; it does not make a slow renderer fast.
 
+The first strengthened browser run completed all ten reciprocal fights and
+rematches without queue errors, then exposed a missed short telegraph on its
+software renderer. A one-time static arena merge reduces 250 material surfaces
+to 29 while preserving all 9,532 vertices and 9,584 triangles. The regression
+compares triangle winding, transformed positions, normals, tangents, UVs,
+material resources and render flags, including transformed parents. Later
+combat effects stay independent. Combat timings and transient-visibility
+assertions are unchanged; actual browser verification remains mandatory.
+
 ## Rollout and rollback
 
 Deploy only a tested exact server commit, then publish the matching web client.

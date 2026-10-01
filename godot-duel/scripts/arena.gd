@@ -1,6 +1,7 @@
 extends Node3D
 ## Original, project-scoped geometry. The render scene never owns game rules.
 var mats: Dictionary = {}
+var _static_batched := false
 
 func mat(hex: String, glow: float = 0.0) -> StandardMaterial3D:
 	var key := hex + str(glow)
@@ -114,6 +115,40 @@ func _ready() -> void:
 		var p := Vector3(sin(i*17.1)*24,-5.0+fmod(i*1.31,7),cos(i*9.3)*20)
 		if absf(p.x)>12 or absf(p.z)>9:
 			cylinder(p,0.035,0.09,"90b9ac",0.035,5)
+	_batch_static_geometry()
+
+func _batch_static_geometry() -> void:
+	# Only the authored geometry exists here. Later rings/boxes belong to combat
+	# effects and must keep their own transforms, visibility and lifetimes.
+	if _static_batched: return
+	_static_batched = true
+	var surfaces: Dictionary = {}
+	var sources: Array[MeshInstance3D] = []
+	for child in get_children():
+		if not child is MeshInstance3D: continue
+		var source := child as MeshInstance3D
+		sources.append(source)
+		for surface in range(source.mesh.get_surface_count()):
+			var material := source.get_active_material(surface)
+			if not surfaces.has(material):
+				var tool := SurfaceTool.new()
+				tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+				tool.set_material(material)
+				surfaces[material] = tool
+			# Authored primitives use translation/rotation only, with size baked
+			# into the mesh. append_from retains indices, normals, tangents and UVs.
+			# Stay in arena-local space so moving the arena still moves all its art.
+			surfaces[material].append_from(source.mesh,surface,source.transform)
+	for material in surfaces:
+		var batch := MeshInstance3D.new()
+		batch.name = "StaticBatch%d" % get_child_count()
+		batch.mesh = surfaces[material].commit()
+		add_child(batch)
+	# Remove the source instances immediately: there must be no overlapping
+	# unbatched geometry during the first rendered frame.
+	for source in sources:
+		remove_child(source)
+		source.queue_free()
 
 func _tower(p: Vector3, teal: bool) -> void:
 	box(p+Vector3(0,0.1,0),Vector3(1.9,0.3,1.9),"436b69")

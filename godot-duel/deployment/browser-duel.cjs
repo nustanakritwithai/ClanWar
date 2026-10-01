@@ -78,7 +78,7 @@ async function startTcpProxy(targetPort) {
 function observePublicSnapshots() {
   const NativeWebSocket = window.WebSocket;
   const qa = window.__duelQA = {
-    snapshot: null, history: [], phases: [], transport: [], events: [], frameGaps: [], longTasks: [],
+    snapshot: null, history: [], phases: [], transport: [], events: [], frameGaps: [], frameSamples: [], longTasks: [],
     maxRafGapMs: 0, maxLongTaskMs: 0, snapshotsReceived: 0, maxSnapshotGapMs: 0, snapshotAckNegotiated: false,
   };
   const keep = (list, value, limit) => { list.push(value); if (list.length > limit) list.splice(0, list.length - limit); };
@@ -87,6 +87,7 @@ function observePublicSnapshots() {
   function frame(now) {
     const gap = now - lastFrame;
     qa.maxRafGapMs = Math.max(qa.maxRafGapMs, gap);
+    keep(qa.frameSamples, gap, 600);
     if (gap > 250) keep(qa.frameGaps, { at: performance.timeOrigin + now, durationMs: gap }, 200);
     lastFrame = now;
     requestAnimationFrame(frame);
@@ -411,7 +412,7 @@ async function main() {
       }
       return { snapshot: qa?.snapshot, phases: qa?.phases, transport: qa?.transport, events: qa?.events,
         snapshotsReceived: qa?.snapshotsReceived, maxSnapshotGapMs: qa?.maxSnapshotGapMs, snapshotAckNegotiated: qa?.snapshotAckNegotiated,
-        maxRafGapMs: qa?.maxRafGapMs, maxLongTaskMs: qa?.maxLongTaskMs, frameGaps: qa?.frameGaps, longTasks: qa?.longTasks,
+        maxRafGapMs: qa?.maxRafGapMs, maxLongTaskMs: qa?.maxLongTaskMs, frameGaps: qa?.frameGaps, frameSamples: qa?.frameSamples, longTasks: qa?.longTasks,
         client: safeClient };
     });
   }
