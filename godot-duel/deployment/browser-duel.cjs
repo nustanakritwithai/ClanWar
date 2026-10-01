@@ -253,13 +253,14 @@ async function main() {
   const report = {
     status: 'running', scope: 'Two real exported Web clients; local HTTP + isolated Godot server; 10 bidirectional combat/rematch cycles and real transport interruption/session expiry',
     required_rounds: STABILITY_ROUNDS, completed_rounds: 0, checks: [], timeline: [], expected_transport_errors: [],
+    browser_topology: 'two independent concurrent Chromium processes', browser_versions: [],
   };
   const failures = [];
   const pages = [];
   const proxies = [];
   const expectedTransport = new Set();
   let serverProcess;
-  let browser;
+  const browsers = [];
   let webServer;
   let serverLog = '';
   const startedAt = Date.now();
@@ -431,8 +432,14 @@ async function main() {
     const { chromium } = require('playwright');
     const options = { headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] };
     if (process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE) options.executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
-    browser = await chromium.launch(options);
     for (const [index, name] of ['ClientA', 'ClientB'].entries()) {
+      // Model separate player devices: each retains its own browser/GPU process.
+      // Both stay alive and render throughout the entire simultaneous duel.
+      // This isolates a shared software-renderer startup bottleneck without
+      // changing game timing, startup deadlines, or any visual assertion.
+      const browser = await chromium.launch(options);
+      browsers.push(browser);
+      report.browser_versions.push(browser.version());
       const proxy = await startTcpProxy(targetPort);
       proxies.push(proxy);
       const context = await browser.newContext({ viewport: VIEWPORT, hasTouch: true });
@@ -662,6 +669,7 @@ async function main() {
     mark('mobile_touch_verified_desktop_restored', { client: 1 });
 
     assert.equal(report.completed_rounds, STABILITY_ROUNDS);
+    assert.equal(browsers.length, 2);
     assertClean();
     for (const page of pages) {
       const data = await diagnostics(page);
@@ -683,7 +691,7 @@ async function main() {
     for (const page of pages) { try { report.diagnostics.push(await diagnostics(page)); } catch { report.diagnostics.push({ unavailable: true }); } }
     report.transports = proxies.map(proxy => ({ ...proxy.metrics }));
     report.durationMs = Date.now() - startedAt;
-    if (browser) await browser.close().catch(() => {});
+    await Promise.all(browsers.map(browser => browser.close().catch(() => {})));
     for (const proxy of proxies) await proxy.close();
     if (webServer) await new Promise(resolve => webServer.close(resolve));
     if (serverProcess && serverProcess.exitCode === null) {
