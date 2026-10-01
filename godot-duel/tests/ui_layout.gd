@@ -22,4 +22,7 @@ func _run() -> void:
 				quit(1)
 				return
 		print("PASS layout ",dimensions)
+	scene.queue_free()
+	await process_frame
+	await process_frame
 	quit(0)

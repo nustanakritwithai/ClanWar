@@ -1,0 +1,177 @@
+# Copy this file to REPOSITORY ROOT .github/workflows/godot-duel-pages.yml.
+# CI builds on pushes/PRs. Only a manual dispatch with deploy=true publishes.
+name: ClanWar legacy and Godot duel Pages
+
+on:
+  push:
+    branches: [claude/game-file-analysis-a20xup]
+  pull_request:
+    branches: [claude/game-file-analysis-a20xup]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Publish the combined site to GitHub Pages
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clanwar-pages-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GODOT_SILENCE_ROOT_WARNING: '1'
+    steps:
+      - name: Check out this exact revision without persisting credentials
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node for the unchanged legacy Vite build
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Set up Python for deployment checks and existing integration tests
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+
+      - name: Check deployment tooling and Web settings
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p godot-duel/qa
+          bash -n godot-duel/deployment/install-godot.sh
+          python godot-duel/deployment/test-deployment.py
+          python godot-duel/deployment/validate-web.py --project godot-duel
+
+      - name: Build existing Three.js site using its existing package scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
+          test -s dist/index.html
+
+      - name: Install checksum-pinned Godot and matching official templates
+        shell: bash
+        run: bash godot-duel/deployment/install-godot.sh
+
+      - name: Import Godot resources and check every project script
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path godot-duel --editor --import 2>&1 | tee godot-duel/qa/ci-import.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' godot-duel/qa/ci-import.log; then exit 1; fi
+          while IFS= read -r -d '' script; do
+            godot --headless --path godot-duel --check-only --script "res://${script#godot-duel/}"
+          done < <(find godot-duel/scripts -name '*.gd' -type f -print0)
+
+      - name: Run headless UI layout and client behavior regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path godot-duel --script res://tests/ui_layout.gd 2>&1 | tee godot-duel/qa/ci-ui-layout.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' godot-duel/qa/ci-ui-layout.log; then exit 1; fi
+          godot --headless --path godot-duel --script res://tests/client_behavior.gd 2>&1 | tee godot-duel/qa/ci-client-behavior.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' godot-duel/qa/ci-client-behavior.log; then exit 1; fi
+          godot --headless --path godot-duel --script res://tests/ui_input.gd 2>&1 | tee godot-duel/qa/ci-ui-input.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' godot-duel/qa/ci-ui-input.log; then exit 1; fi
+
+      - name: Run authoritative duel integration tests on isolated loopback
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --only-binary=:all: 'websockets==16.0'
+          python godot-duel/tests/integration.py --godot "$(command -v godot)"
+
+      - name: Export and validate the single-thread Compatibility client
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/clanwar-godot-web"
+          godot --headless --path godot-duel --export-release Web "$RUNNER_TEMP/clanwar-godot-web/index.html" 2>&1 | tee godot-duel/qa/ci-export.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' godot-duel/qa/ci-export.log; then exit 1; fi
+          python godot-duel/deployment/validate-web.py --web "$RUNNER_TEMP/clanwar-godot-web"
+
+      - name: Stage the legacy root plus Godot subdirectory and verify byte preservation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python godot-duel/deployment/stage-pages.py \
+            --legacy dist --web "$RUNNER_TEMP/clanwar-godot-web" \
+            --destination "$RUNNER_TEMP/clanwar-pages" \
+            --report godot-duel/qa/ci-pages-manifest.json
+
+      - name: Check desktop and mobile-viewport startup without isolation headers
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/clanwar-browser-qa" --no-audit --no-fund --package-lock=false 'playwright@1.57.0'
+          "$RUNNER_TEMP/clanwar-browser-qa/node_modules/.bin/playwright" install --with-deps chromium
+          NODE_PATH="$RUNNER_TEMP/clanwar-browser-qa/node_modules" \
+            node godot-duel/deployment/browser-startup.cjs \
+              "$RUNNER_TEMP/clanwar-pages" godot-duel/qa
+
+      - name: Prove two actual Web clients can duel and rematch
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install --yes --no-install-recommends tesseract-ocr
+          NODE_PATH="$RUNNER_TEMP/clanwar-browser-qa/node_modules" \
+            node godot-duel/deployment/browser-duel.cjs \
+              "$RUNNER_TEMP/clanwar-pages" godot-duel godot-duel/qa
+
+      - name: Upload build reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: clanwar-build-reports-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            godot-duel/qa/ci-*.log
+            godot-duel/qa/ci-browser-*.png
+            godot-duel/qa/ci-browser-report.json
+            godot-duel/qa/ci-duel-*.png
+            godot-duel/qa/ci-duel-report.json
+            godot-duel/qa/ci-pages-manifest.json
+            godot-duel/qa/server-test-report.json
+            godot-duel/qa/server-test.log
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload only the generated combined static site
+        if: github.event_name == 'workflow_dispatch' && inputs.deploy && github.ref == 'refs/heads/claude/game-file-analysis-a20xup'
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: ${{ runner.temp }}/clanwar-pages
+          retention-days: 1
+
+  deploy:
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy && github.ref == 'refs/heads/claude/game-file-analysis-a20xup'
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Read existing Pages configuration without enabling or changing it
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+        with:
+          enablement: false
+      - name: Deploy the combined static artifact
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

@@ -23,4 +23,8 @@ func run():
 		root.push_input(e,true)
 		await process_frame
 	print("CLICKED ", b.get_meta("clicked",false)," hover ",root.gui_get_hovered_control())
-	quit(0 if b.get_meta("clicked",false) else 1)
+	var success = b.get_meta("clicked",false)
+	scene.queue_free()
+	await process_frame
+	await process_frame
+	quit(0 if success else 1)

@@ -26,4 +26,7 @@ func _run() -> void:
 	scene._packet({"type":"error","reason":"invalid_resume_token"})
 	assert(scene.token.is_empty(),"Expired token must be cleared for reconnect")
 	print("PASS stale resume token recovery")
+	scene.queue_free()
+	await process_frame
+	await process_frame
 	quit(0)
