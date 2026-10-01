@@ -1,5 +1,5 @@
 CLANWAR DUEL - HEADLESS SERVER SOURCE BUNDLE
-Version 0.1.0 | Godot 4.6.3 | Tested on official Linux 4.6.3 runtime
+Version 0.1.2 | Godot 4.6.3 | Tested on official Linux 4.6.3 runtime
 
 Contents: original authoritative 1v1 server, protocol, 17-check local test report.
 Windows runtime is NOT bundled. A fresh official portable Godot 4.6.3 Windows
@@ -28,4 +28,13 @@ The 17 test cases include two real clients, 20Hz/10Hz rates, movement replicatio
 input validation, anti-forgery, melee range/cooldown, telegraphed projectiles,
 dash bounds/invulnerability/cooldown, knockout-once, rematch and side swap,
 reconnect/forfeit, token protection, and packet/rate limits.
-Windows-specific runtime execution and public WSS are not yet tested in this bundle.
+This candidate requires exact-commit CI and coordinated VPS rollout before publication.
+New clients use negotiated one-in-flight snapshot acknowledgements to avoid
+receive-queue overflow during renderer stalls. Old clients remain compatible.
+Do not overwrite the 0.1.0 rollback artifact; retain its pinned Git commit.
+Run tests/stability.py for bounded-delivery, malformed-ACK and expiry checks.
+
+Version 0.1.2 adds an independent bounded critical-timeline channel for cast
+and dash cues. Critical credit is bounded to two players x two short actions (four packets); delayed consumers
+receive only fresh active windows after ACK, never an expired cue history.
+Run tests/critical_timeline.py for sequence, expiry, pause and clock checks.

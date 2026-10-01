@@ -1,6 +1,6 @@
 # ClanWar: combined GitHub Pages build
 
-Updated 2026-10-01. This directory contains the deployment tooling. The dedicated server is deployed; the web client remains gated by the exact-commit CI checks and Pages publication described below.
+Updated 2026-10-01. The initial release is live. This phase1 candidate adds bounded snapshot delivery, reconnect coverage, full-field camera fitting and a ten-round bidirectional browser gate; it must pass exact-commit CI before replacing that release. See ../docs/STABILITY.md and BROWSER-STABILITY.md.
 
 ## What to add
 
@@ -16,7 +16,7 @@ The default branch verified through GitHub is **`claude/game-file-analysis-a20xu
 - Pushes to the verified default branch and pull requests targeting it run CI. The workflow preserves the legacy command **`npm ci` then `npm run build`** and its `dist/` output. It does not change Vite's existing `base: './'` or Render configuration.
 - CI installs official Godot **4.6.3**, verifies pinned SHA256 digests before extraction, installs matching single-thread Web export templates, imports resources, checks scripts, runs the headless layout, client-behavior, and real GUI input regressions and real loopback WebSocket integration suite, then exports the `Web` preset.
 - The combined artifact copies the complete legacy `dist/` to the site root, then appends only `godot-duel/`. Every legacy byte is checked against a SHA256 manifest. A pre-existing `dist/godot-duel/`, symlink, hard link, or hidden file causes an explicit failure instead of silently overwriting or omitting content.
-- Portable Chromium gates check desktop/mobile-viewport startup without COOP/COEP, then launch two actual browser clients against an isolated loopback Godot server. The duel gate clicks JOIN, uses E for pursuit and melee, checks shared snapshots and knockout, OCRs opposite VICTORY/ROUND LOST titles, and clicks both rematch buttons to verify reset and swapped spawns. Screenshots and sanitized reports retain no welcome/resume tokens. This does not establish real-device mobile quality or public multiplayer readiness.
+- Portable Chromium gates check desktop/mobile-viewport startup without COOP/COEP, then launch two actual browser clients against an isolated loopback Godot server. The stability gate includes bidirectional melee and spells, a renderer stall, ten knockouts and rematches, short/long disconnects, real session expiry and mobile touch combat. It checks shared snapshots and visible result/HP text. Screenshots and sanitized reports retain no welcome/resume tokens. This does not establish real-device mobile quality or public multiplayer readiness.
 - **Ordinary pushes do not publish.** Deployment requires either a manual workflow dispatch with `deploy=true`, or an explicitly approved default-branch commit whose message contains `[publish-clanwar-duel]`. This opt-in commit path supports publication through Git when a manual Actions UI is unavailable. Both routes run all the same build and browser checks before the deploy job. The `github-pages` environment's protection rules also apply. Manual dispatch with `deploy=false` only validates.
 - Only the deploy job gets `pages: write` and `id-token: write`. No PAT, secret, third-party hosting account, repository write token, or paid service is required. Checkout does not persist its token. Existing Pages configuration is read without automatically enabling/changing settings.
 
@@ -29,7 +29,7 @@ For the normal project-site configuration, the expected URLs are:
 - Legacy: `https://nustanakritwithai.github.io/ClanWar/`
 - Godot: `https://nustanakritwithai.github.io/ClanWar/godot-duel/`
 
-These are **expected paths, not confirmed live URLs**. Use the actual `page_url` returned by a successful deployment if a custom domain/base URL differs.
+These paths were verified live for the initial 150855df release. Use the actual `page_url` returned by a successful deployment if a custom domain/base URL differs.
 
 The client accepts a server address in its join form and the URL's `server` query parameter. `wss://157.85.96.139/clanwar/ws` is the client default and was verified externally with normal TLS validation. This workflow never changes that setting; CI's duel test explicitly overrides it with an isolated loopback server. To prefill the public route explicitly, append:
 
@@ -41,7 +41,7 @@ An HTTPS client must use a working secure WebSocket route with a publicly truste
 
 ## Git-based VPS source staging
 
-The deployed server-only checkpoint is commit **`f7315ca8f0a12e13f9704710ba506c33fe13b689`**, branch `codex/godot-clanwar-duel`, Draft PR **71**, under `godot-duel/server/`. Full client additions may produce a later commit; keep server staging pinned to an exact approved commit rather than a moving branch.
+The deployed server-only checkpoint is commit **`f7315ca8f0a12e13f9704710ba506c33fe13b689`**, branch `codex/godot-clanwar-duel`, merged PR **71**, under `godot-duel/server/`. Full client additions may produce a later commit; keep server staging pinned to an exact approved commit rather than a moving branch.
 
 The plain-text server project can be obtained directly from that GitHub commit, without bundled binaries. Preserve the existing server project file, `scripts/server.gd`, protocol, and `run-server.cmd` byte-for-byte. If creating a new isolated server directory from the full source tree instead, use the unchanged `scripts/server.gd` and server `project.godot`; the existing `build/server-package/run-server.cmd` is a ready launcher that may be copied into the server project root as an addition. Do not use the client's scene-launching project settings to rewrite the server protocol.
 

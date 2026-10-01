@@ -52,7 +52,10 @@ jobs:
           mkdir -p godot-duel/qa
           bash -n godot-duel/deployment/install-godot.sh
           python godot-duel/deployment/test-deployment.py
+          node --test godot-duel/deployment/test-browser-duel.cjs
           python godot-duel/deployment/validate-web.py --project godot-duel
+          cmp godot-duel/scripts/server.gd godot-duel/server/scripts/server.gd
+          (cd godot-duel/server && sha256sum -c SHA256SUMS.txt)
 
       - name: Build existing Three.js site using its existing package scripts
         shell: bash
@@ -84,8 +87,14 @@ jobs:
           if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' godot-duel/qa/ci-ui-layout.log; then exit 1; fi
           godot --headless --path godot-duel --script res://tests/client_behavior.gd 2>&1 | tee godot-duel/qa/ci-client-behavior.log
           if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' godot-duel/qa/ci-client-behavior.log; then exit 1; fi
+          godot --headless --path godot-duel --script res://tests/client_critical.gd 2>&1 | tee godot-duel/qa/ci-client-critical.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' godot-duel/qa/ci-client-critical.log; then exit 1; fi
           godot --headless --path godot-duel --script res://tests/ui_input.gd 2>&1 | tee godot-duel/qa/ci-ui-input.log
           if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' godot-duel/qa/ci-ui-input.log; then exit 1; fi
+          godot --headless --path godot-duel --script res://tests/camera_fit.gd 2>&1 | tee godot-duel/qa/ci-camera-fit.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' godot-duel/qa/ci-camera-fit.log; then exit 1; fi
+          godot --headless --path godot-duel --script res://tests/arena_batch.gd 2>&1 | tee godot-duel/qa/ci-arena-batch.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' godot-duel/qa/ci-arena-batch.log; then exit 1; fi
 
       - name: Run authoritative duel integration tests on isolated loopback
         shell: bash
@@ -93,6 +102,8 @@ jobs:
           set -euo pipefail
           python -m pip install --disable-pip-version-check --only-binary=:all: 'websockets==16.0'
           python godot-duel/tests/integration.py --godot "$(command -v godot)"
+          python godot-duel/tests/stability.py --godot "$(command -v godot)" --report godot-duel/qa/stability-report.json
+          python godot-duel/tests/critical_timeline.py --godot "$(command -v godot)"
 
       - name: Export and validate the single-thread Compatibility client
         shell: bash
@@ -128,7 +139,7 @@ jobs:
             node godot-duel/deployment/browser-startup.cjs \
               "$RUNNER_TEMP/clanwar-pages" godot-duel/qa
 
-      - name: Prove two actual Web clients can duel and rematch
+      - name: Prove bidirectional combat, ten rematches and reconnect recovery
         shell: bash
         run: |
           set -euo pipefail
@@ -152,6 +163,10 @@ jobs:
             godot-duel/qa/ci-pages-manifest.json
             godot-duel/qa/server-test-report.json
             godot-duel/qa/server-test.log
+            godot-duel/qa/stability*.json
+            godot-duel/qa/stability*.log
+            godot-duel/qa/critical*.json
+            godot-duel/qa/critical*.log
           if-no-files-found: warn
           retention-days: 7
 

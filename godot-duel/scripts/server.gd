@@ -21,6 +21,8 @@ const SESSION_TTL: float = 60.0
 const MAX_MESSAGE_BYTES: int = 1024
 const MAX_CONNECTIONS: int = 16
 const MAX_PLAYERS: int = 2
+# One short cast and one dash can overlap for each of the two players.
+const MAX_CRITICAL_IN_FLIGHT: int = MAX_PLAYERS * 2
 
 var listener: TCPServer = TCPServer.new()
 var connections: Dictionary = {}
@@ -64,7 +66,7 @@ func _initialize() -> void:
 		push_error("Could not listen on %s:%d (error %d)" % [bind_address, port, result])
 		quit(2)
 		return
-	print("LANTERN_ARENA_READY ws://%s:%d | simulation 20Hz | snapshots 10Hz" % [bind_address, port])
+	print("LANTERN_ARENA_READY ws://%s:%d | simulation 20Hz | snapshots up to 10Hz | server 0.1.2" % [bind_address, port])
 
 func _process(delta: float) -> bool:
 	_accept_connections()
@@ -93,7 +95,9 @@ func _accept_connections() -> void:
 			stream.disconnect_from_host()
 			continue
 		peer.set_no_delay(true)
-		connections[next_connection] = {"peer": peer, "player_id": "", "created": _now(), "rate_time": _now(), "budget": 64.0, "closing": false}
+		connections[next_connection] = {"peer": peer, "player_id": "", "created": _now(), "rate_time": _now(), "budget": 64.0, "closing": false,
+			"snapshot_ack": false, "pending_snapshot_tick": -1, "last_snapshot_ack": -1,
+			"critical_timeline": false, "critical_seq": 0, "pending_critical_seqs": [], "last_critical_ack": -1, "critical_dirty": false}
 		next_connection += 1
 
 func _poll_connections() -> void:
@@ -150,8 +154,21 @@ func _handle(connection: Dictionary, message: Dictionary) -> void:
 	if pid.is_empty() or not players.has(pid):
 		_error(connection, "hello_required")
 		return
+	if action == "snapshot_ack":
+		_ack_snapshot(connection, message)
+		return
+	if action == "critical_ack":
+		_ack_critical(connection, message)
+		return
 	if action == "ping":
-		_send(connection, {"type": "pong", "tick": tick, "server_time": _now()})
+		var pong: Dictionary = {"type": "pong", "tick": tick, "server_time": _now()}
+		if message.has("clock"):
+			var clock: Variant = message.clock
+			if not (clock is int or clock is float) or not is_finite(float(clock)):
+				_error(connection, "invalid_clock")
+				return
+			pong.clock = clock
+		_send(connection, pong)
 		return
 	if action == "ready":
 		if phase != "finished" and phase != "waiting":
@@ -184,7 +201,7 @@ func _hello(connection: Dictionary, message: Dictionary) -> void:
 	if not String(connection.player_id).is_empty():
 		_error(connection, "already_joined")
 		return
-	if not message.get("name", "") is String or not message.get("resume_token", "") is String:
+	if not message.get("name", "") is String or not message.get("resume_token", "") is String or not message.get("snapshot_ack", false) is bool or not message.get("critical_timeline", false) is bool:
 		_error(connection, "invalid_hello")
 		return
 	var resume_token: String = message.get("resume_token", "")
@@ -219,16 +236,95 @@ func _hello(connection: Dictionary, message: Dictionary) -> void:
 			"dash_remaining": 0.0, "dash_dir": Vector2.ZERO,
 			"connected": true, "ready": true, "token": crypto.generate_random_bytes(24).hex_encode(), "disconnected_at": 0.0}
 	connection.player_id = pid
+	connection.snapshot_ack = bool(message.get("snapshot_ack", false))
+	connection.critical_timeline = bool(message.get("critical_timeline", false))
 	players[pid].connected = true
 	players[pid].disconnected_at = 0.0
-	_send(connection, {"type": "welcome", "id": pid, "token": players[pid].token, "resumed": resumed, "tick_rate": 20, "snapshot_rate": 10})
+	_send(connection, {"type": "welcome", "id": pid, "token": players[pid].token, "resumed": resumed, "tick_rate": 20, "snapshot_rate": 10, "snapshot_ack": connection.snapshot_ack, "critical_timeline": connection.critical_timeline, "server_version": "0.1.2", "server_time": _now()})
 	if phase == "paused" and _all_connected():
 		phase = paused_phase
 		_event("resume", "Both duelists are back. The round resumes.")
 	elif phase == "waiting" and _both_connected_and_ready():
 		_start_round()
 	_event("join", "%s %s" % [players[pid].name, "reconnected." if resumed else "entered the arena."], {"player": pid})
-	_send(connection, _snapshot())
+	# A phase transition above may already have sent the same current timeline.
+	if connection.pending_critical_seqs.is_empty():
+		_send_critical(connection)
+	# The next global 10Hz broadcast supplies initial/resumed state (<100ms).
+	# Never construct a second state for the same tick between broadcasts:
+	# all recipients of a given authoritative tick must receive identical data.
+
+func _ack_snapshot(connection: Dictionary, message: Dictionary) -> void:
+	var value: Variant = message.get("tick")
+	if not bool(connection.snapshot_ack) or not (value is int or value is float) or not is_finite(float(value)) or float(value) != floorf(float(value)) or float(value) < 0 or float(value) > tick:
+		_error(connection, "invalid_snapshot_ack")
+		return
+	var ack_tick := int(value)
+	if ack_tick == int(connection.pending_snapshot_tick):
+		connection.last_snapshot_ack = ack_tick
+		connection.pending_snapshot_tick = -1
+	elif ack_tick != int(connection.last_snapshot_ack):
+		_error(connection, "invalid_snapshot_ack")
+	# Duplicate acks are harmless. Never let an old/future ack unlock newer state.
+
+func _ack_critical(connection: Dictionary, message: Dictionary) -> void:
+	var value: Variant = message.get("seq")
+	if not bool(connection.critical_timeline) or not (value is int or value is float) or not is_finite(float(value)) or float(value) != floorf(float(value)) or float(value) < 1 or float(value) > int(connection.critical_seq):
+		_error(connection, "invalid_critical_ack")
+		return
+	var ack_seq := int(value)
+	var pending: Array = connection.pending_critical_seqs
+	var ack_index: int = pending.find(ack_seq)
+	if ack_index >= 0:
+		# WebSocket is ordered. An ACK naming an actually outstanding sequence
+		# cumulatively releases that packet and its predecessors, never newer ones.
+		for _index in range(ack_index + 1):
+			pending.pop_front()
+		connection.last_critical_ack = ack_seq
+		if bool(connection.critical_dirty):
+			_send_critical(connection)
+	elif ack_seq != int(connection.last_critical_ack):
+		_error(connection, "invalid_critical_ack")
+	# A duplicate last ACK is harmless; stale/future ACKs cannot unlock credit.
+
+func _critical_changed() -> void:
+	for cid in connections:
+		var connection: Dictionary = connections[cid]
+		if not String(connection.player_id).is_empty():
+			_send_critical(connection)
+
+func _send_critical(connection: Dictionary) -> void:
+	if not bool(connection.critical_timeline):
+		return
+	if connection.pending_critical_seqs.size() >= MAX_CRITICAL_IN_FLIGHT:
+		# At capacity, one bit coalesces changes without storing cue history.
+		connection.critical_dirty = true
+		return
+	connection.critical_dirty = false
+	connection.critical_seq = int(connection.critical_seq) + 1
+	var now: float = _now()
+	var active_telegraphs: Array = []
+	var active_dashes: Array = []
+	# Paused effects are frozen internally, not active wall-clock warnings.
+	# Resuming reconstructs their deadlines from the preserved remaining time.
+	if phase == "playing":
+		for eid in telegraphs:
+			var effect: Dictionary = telegraphs[eid]
+			if float(effect.remaining) > 0.00001:
+				active_telegraphs.append({"id": effect.id, "owner": effect.owner,
+					"x": Vector2(effect.pos).x, "z": Vector2(effect.pos).y,
+					"dx": Vector2(effect.dir).x, "dz": Vector2(effect.dir).y,
+					"expires_at": now + float(effect.remaining)})
+		for pid in players:
+			var player: Dictionary = players[pid]
+			if float(player.dash_remaining) > 0.0:
+				active_dashes.append({"owner": player.id,
+					"x": Vector2(player.pos).x, "z": Vector2(player.pos).y,
+					"dx": Vector2(player.dash_dir).x, "dz": Vector2(player.dash_dir).y,
+					"expires_at": now + float(player.dash_remaining)})
+	_send(connection, {"type": "critical_timeline", "seq": connection.critical_seq,
+		"tick": tick, "server_time": now, "round_number": round_number, "phase": phase,
+		"telegraphs": active_telegraphs, "dashes": active_dashes})
 
 func _attack(connection: Dictionary, player: Dictionary, message: Dictionary) -> void:
 	if not message.get("target") is String:
@@ -307,6 +403,7 @@ func _simulate(dt: float) -> void:
 	if phase != "playing":
 		return
 	game_time += dt
+	var critical_expired: bool = false
 	for pid in players:
 		var player: Dictionary = players[pid]
 		if not bool(player.connected):
@@ -315,6 +412,8 @@ func _simulate(dt: float) -> void:
 			var dash_step: float = minf(dt, float(player.dash_remaining))
 			player.pos = _clamp_point(Vector2(player.pos) + Vector2(player.dash_dir) * (DASH_DISTANCE / DASH_DURATION) * dash_step)
 			player.dash_remaining = maxf(0.0, float(player.dash_remaining) - dt)
+			if float(player.dash_remaining) <= 0.0:
+				critical_expired = true
 		else:
 			player.pos = Vector2(player.pos).move_toward(Vector2(player.target), SPEED * dt)
 	for eid in telegraphs.keys():
@@ -325,6 +424,7 @@ func _simulate(dt: float) -> void:
 			next_effect += 1
 			projectiles[projectile_id] = {"id": projectile_id, "owner": effect.owner, "pos": effect.pos, "dir": effect.dir, "life": 3.5}
 			telegraphs.erase(eid)
+			critical_expired = true
 	for eid in projectiles.keys():
 		if not projectiles.has(eid) or phase != "playing":
 			break
@@ -343,6 +443,9 @@ func _simulate(dt: float) -> void:
 				break
 		if hit or float(bolt.life) <= 0.0 or absf(Vector2(bolt.pos).x) > 11.0 or absf(Vector2(bolt.pos).y) > 8.0:
 			projectiles.erase(eid)
+
+	if critical_expired:
+		_critical_changed()
 
 func _damage(attacker: String, target_id: String, amount: int, source: String) -> void:
 	if phase != "playing" or not players.has(target_id):
@@ -429,6 +532,7 @@ func _purge_expired_sessions() -> void:
 		telegraphs.clear()
 		for pid in players:
 			players[pid].ready = true
+		_critical_changed()
 
 func _snapshot() -> Dictionary:
 	var public_players: Array = []
@@ -493,6 +597,8 @@ func _clean_name(value: String) -> String:
 	return "Duelist" if clean.is_empty() else clean
 
 func _event(kind: String, text: String, details: Dictionary = {}) -> void:
+	if kind in ["cast", "dash", "countdown", "round_start", "round_end", "pause", "resume"]:
+		_critical_changed()
 	var message: Dictionary = {"type": "event", "kind": kind, "text": text, "tick": tick}
 	message.merge(details)
 	_broadcast(message)
@@ -507,10 +613,23 @@ func _send(connection: Dictionary, message: Dictionary) -> void:
 	var peer: WebSocketPeer = connection.peer
 	if peer.get_ready_state() != WebSocketPeer.STATE_OPEN or bool(connection.closing):
 		return
+	var kind := String(message.get("type", ""))
+	if bool(connection.snapshot_ack) and int(connection.pending_snapshot_tick) >= 0:
+		# Rendering/hidden tabs may stop consuming for seconds. Keep only one
+		# authoritative state in flight; the next tick generates fresh state
+		# after acknowledgement. Cosmetic events are dispensable and cannot
+		# create a second, unbounded queue while that state is outstanding.
+		if kind in ["snapshot", "event"]: return
 	if peer.get_current_outbound_buffered_amount() > 49152:
 		_close(connection, "slow_consumer", 1008)
 		return
-	peer.send_text(JSON.stringify(message))
+	var result := peer.send_text(JSON.stringify(message))
+	if result != OK:
+		_close(connection, "send_failed", 1011)
+	elif kind == "snapshot" and bool(connection.snapshot_ack):
+		connection.pending_snapshot_tick = int(message.tick)
+	elif kind == "critical_timeline" and bool(connection.critical_timeline):
+		connection.pending_critical_seqs.append(int(message.seq))
 
 func _error(connection: Dictionary, reason: String) -> void:
 	_send(connection, {"type": "error", "reason": reason})

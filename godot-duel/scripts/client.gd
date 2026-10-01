@@ -1,9 +1,29 @@
 extends Node3D
 ## Presentation + input only. All authoritative state comes from the WebSocket server.
 const Arena = preload("res://scripts/arena.gd")
+const CameraFit = preload("res://scripts/camera_fit.gd")
 const HERO = preload("res://assets/duelist.svg")
 var socket := WebSocketPeer.new()
 var hello_sent := false
+var snapshot_ack := false
+var last_snapshot_tick := -1
+var max_receive_queue := 0
+var reconnect_started := 0.0
+var reconnect_count := 0
+var session_ready := false
+var diagnostics_timer := 0.0
+var critical_timeline_enabled := false
+var critical_sequence := -1
+var critical_state: Dictionary = {}
+var hello_sent_at := 0.0
+var clock_upper_offset := 0.0
+var clock_synced := false
+var clock_sync_in := 0.0
+var clock_ping := -1.0
+var visual_evidence := {"telegraphs":[],"dashes":[],"expired":[],"expired_cues_skipped":0}
+var visual_pending: Dictionary = {}
+var visual_recorded: Array[String] = []
+var network_generation := 0
 var self_id := ""
 var token := ""
 var endpoint := "wss://157.85.96.139/clanwar/ws"
@@ -55,7 +75,6 @@ func _ready() -> void:
 	camera = Camera3D.new()
 	add_child(camera)
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 26
 	camera.position = Vector3(16,24,21)
 	camera.look_at(Vector3(0,0,0))
 	camera.current = true
@@ -127,29 +146,63 @@ func _poll_network(delta: float) -> void:
 	if state == WebSocketPeer.STATE_OPEN:
 		if not hello_sent:
 			hello_sent = true
-			_send({"type":"hello","name":nickname,"resume_token":token})
+			hello_sent_at = _network_now()
+			_send({"type":"hello","name":nickname,"resume_token":token,"snapshot_ack":true,"critical_timeline":true})
+		max_receive_queue = maxi(max_receive_queue,socket.get_available_packet_count())
 		while socket.get_available_packet_count() > 0:
 			var packet = JSON.parse_string(socket.get_packet().get_string_from_utf8())
 			if packet is Dictionary: _packet(packet)
-		if time_since_snapshot > 5:
-			status_label.text = "CONNECTION DELAYED"
+		clock_sync_in -= delta
+		if critical_timeline_enabled and session_ready and clock_sync_in <= 0:
+			clock_sync_in = 2.0
+			clock_ping = _network_now()
+			_send({"type":"ping","clock":clock_ping})
+		if time_since_snapshot > 10:
+			# An apparently open transport can be half-dead. Reconnect with the
+			# existing token, and never send stale combat intent during recovery.
+			target_id = ""
+			aim_mode = ""
+			socket.close(1000,"snapshot_timeout")
+	elif state == WebSocketPeer.STATE_CONNECTING:
+		if _network_now()-reconnect_started > 10:
+			socket.close()
 	elif state == WebSocketPeer.STATE_CLOSED:
 		if not retrying:
+			session_ready = false
+			reconnect_count += 1
 			retrying = true
 			reconnect_in = retry_delay
 			retry_delay = minf(retry_delay*1.7,8)
 			target_id = ""
+			aim_mode = ""
 			_show_notice("Connection lost. Reconnecting to the arena…",3)
 		reconnect_in -= delta
 		if reconnect_in <= 0: _connect_socket()
+	diagnostics_timer -= delta
+	if OS.has_feature("web") and diagnostics_timer <= 0:
+		diagnostics_timer = 1.0
+		# Read-only bounded counters; no names, URLs, or resume tokens.
+		JavaScriptBridge.eval("window.__duelClientDiagnostics="+JSON.stringify({"max_receive_queue":max_receive_queue,"last_snapshot_tick":last_snapshot_tick,"time_since_snapshot":time_since_snapshot,"reconnect_count":reconnect_count,"snapshot_ack":int(snapshot_ack)}))
+		_publish_projection()
+		_publish_visual_evidence()
 
 func _connect_socket() -> void:
+	network_generation += 1
 	socket = WebSocketPeer.new()
 	socket.inbound_buffer_size = 1048576
 	socket.outbound_buffer_size = 65536
 	socket.max_queued_packets = 128
 	var err := socket.connect_to_url(endpoint)
+	reconnect_started = _network_now()
 	hello_sent = false
+	session_ready = false
+	snapshot_ack = false
+	last_snapshot_tick = -1
+	critical_timeline_enabled = false
+	critical_sequence = -1
+	critical_state = {}
+	clock_synced = false
+	clock_sync_in = 0
 	retrying = false
 	time_since_snapshot = 0
 	if err != OK:
@@ -178,16 +231,124 @@ func _join() -> void:
 
 func _send(packet: Dictionary) -> void:
 	if socket.get_ready_state() == WebSocketPeer.STATE_OPEN:
-		socket.send_text(JSON.stringify(packet))
+		# Do not accumulate stale inputs behind a congested transport.
+		if socket.get_current_outbound_buffered_amount() > 8192:
+			target_id = ""
+			aim_mode = ""
+			socket.close(1000,"client_backpressure")
+			return
+		if socket.send_text(JSON.stringify(packet)) != OK:
+			socket.close(1000,"send_failed")
+
+func _network_now() -> float:
+	return float(Time.get_ticks_msec())/1000.0
+
+func _server_time_upper() -> float:
+	return _network_now()+clock_upper_offset
+
+func _sync_clock(packet: Dictionary, sent_at: float) -> void:
+	var server_now: Variant = packet.get("server_time")
+	if sent_at < 0 or not (server_now is float or server_now is int) or not is_finite(float(server_now)): return
+	# server_now was measured AFTER our send. This includes upstream delay,
+	# so it is a conservative upper bound, not a guess at symmetric latency.
+	clock_upper_offset = float(server_now)-sent_at+0.05
+	clock_synced = true
+
+func _cue_current(cue: Dictionary) -> bool:
+	return clock_synced and _server_time_upper() < float(cue.get("expires_at",0))
+
+func _critical_playing() -> bool:
+	if str(critical_state.get("phase","")) != "playing": return false
+	if int(snap.get("tick",-1)) >= int(critical_state.get("tick",-1)):
+		var round_state: Dictionary = snap.get("round",{})
+		if int(round_state.get("number",0)) > int(critical_state.get("round_number",0)): return false
+		if str(round_state.get("phase","")) in ["paused","finished","waiting"]: return false
+	return true
+
+func _critical_dash(id: String) -> Dictionary:
+	if not _critical_playing(): return {}
+	for cue in critical_state.get("dashes",[]):
+		if str(cue.get("owner","")) == id:
+			if _cue_current(cue): return cue
+			_record_expired_cue("dashes",cue,"render_update")
+	return {}
+
+func _record_expired_cue(kind: String, cue: Dictionary, stage: String, submitted_at: float = -1.0, sequence: int = -1) -> void:
+	if sequence < 0: sequence = critical_sequence
+	var key := str(network_generation)+":expired:"+kind+":"+str(cue.get("id",cue.get("owner","")))+":"+str(sequence)+":"+stage
+	if visual_recorded.has(key): return
+	visual_recorded.append(key)
+	if visual_recorded.size() > 128: visual_recorded.pop_front()
+	visual_evidence.expired_cues_skipped += 1
+	visual_evidence.expired.append({"kind":kind,"id":str(cue.get("id","")),"owner":str(cue.get("owner","")),"seq":sequence,"stage":stage,"server_time_upper":_server_time_upper(),"expires_at":float(cue.get("expires_at",0)),"submitted_at_server_time_upper":submitted_at,"frame":Engine.get_process_frames()})
+	if visual_evidence.expired.size() > 64: visual_evidence.expired.pop_front()
+	_publish_visual_evidence()
+
+func _record_visible_cue(kind: String, cue: Dictionary, node: Node3D) -> void:
+	var key := str(network_generation)+":"+kind+":"+str(cue.get("id",cue.get("owner","")))+":"+str(critical_sequence)
+	if visual_pending.has(key) or visual_recorded.has(key): return
+	visual_pending[key] = true
+	var sequence := critical_sequence
+	var generation := network_generation
+	var round_id := int(critical_state.get("round_number",0))
+	var submitted_at := _server_time_upper()
+	# Record only an actual completed draw, not receipt of a network packet.
+	await RenderingServer.frame_post_draw
+	visual_pending.erase(key)
+	if generation != network_generation or not _critical_playing(): return
+	if not is_instance_valid(node) or not node.is_visible_in_tree(): return
+	if not _cue_current(cue):
+		_record_expired_cue(kind,cue,"draw_completed",submitted_at,sequence)
+		return
+	var record := {"id":str(cue.get("id","")),"owner":str(cue.get("owner","")),"seq":sequence,"round_number":round_id,"server_time_upper":_server_time_upper(),"expires_at":float(cue.expires_at),"frame":Engine.get_process_frames()}
+	visual_evidence[kind].append(record)
+	if visual_evidence[kind].size() > 64: visual_evidence[kind].pop_front()
+	visual_recorded.append(key)
+	if visual_recorded.size() > 128: visual_recorded.pop_front()
+	_publish_visual_evidence()
+
+func _publish_visual_evidence() -> void:
+	if OS.has_feature("web"):
+		visual_evidence["server_time_upper"] = _server_time_upper() if clock_synced else -1.0
+		JavaScriptBridge.eval("window.__duelVisualDiagnostics="+JSON.stringify(visual_evidence))
 
 func _packet(packet: Dictionary) -> void:
 	match str(packet.get("type","")):
 		"welcome":
+			session_ready = true
 			self_id = str(packet.get("id",""))
 			token = str(packet.get("token",""))
 			retry_delay = 1
+			snapshot_ack = bool(packet.get("snapshot_ack",false))
+			critical_timeline_enabled = bool(packet.get("critical_timeline",false))
+			if critical_timeline_enabled: _sync_clock(packet,hello_sent_at)
+			_publish_visual_evidence()
 			_show_notice("Rejoined the duel" if packet.get("resumed",false) else "Connected. Waiting for your rival",3)
+		"pong":
+			var echoed: Variant = packet.get("clock")
+			if (echoed is float or echoed is int) and absf(float(echoed)-clock_ping)<0.001:
+				_sync_clock(packet,clock_ping)
+		"critical_timeline":
+			if not critical_timeline_enabled: return
+			if not _valid_critical_packet(packet): return
+			var sequence := int(packet.get("seq",-1))
+			if sequence < 0: return
+			_send({"type":"critical_ack","seq":sequence})
+			if sequence <= critical_sequence: return
+			critical_sequence = sequence
+			critical_state = packet
+			if str(packet.get("phase","")) != "playing":
+				target_id = ""
+				aim_mode = ""
+			for key in ["telegraphs","dashes"]:
+				for cue in packet.get(key,[]):
+					if not _cue_current(cue): _record_expired_cue(key,cue,"received")
+			_publish_visual_evidence()
 		"snapshot":
+			var packet_tick := int(packet.get("tick",-1))
+			if snapshot_ack: _send({"type":"snapshot_ack","tick":packet_tick})
+			if packet_tick >= 0 and packet_tick <= last_snapshot_tick: return
+			last_snapshot_tick = packet_tick
 			snap = packet
 			time_since_snapshot = 0
 			var phase := str(snap.get("round",{}).get("phase","waiting"))
@@ -210,7 +371,14 @@ func _packet(packet: Dictionary) -> void:
 				_show_notice(reason.replace("_"," ").capitalize(),3)
 			if reason in ["server_full","arena_full"]:
 				active_connection = false
+				session_ready = false
+				socket.close()
+				socket = WebSocketPeer.new()
 				connect_panel.show()
+			if reason == "token_in_use":
+				# A previous connection may take a moment to close at the server.
+				# Keep the token and retry instead of remaining open but unjoined.
+				socket.close()
 			if reason == "invalid_resume_token":
 				token = ""
 				if socket.get_ready_state() == WebSocketPeer.STATE_OPEN: socket.close()
@@ -221,13 +389,28 @@ func _player(id: String) -> Dictionary:
 		if str(p.get("id","")) == id: return p
 	return {}
 
+func _valid_critical_packet(packet: Dictionary) -> bool:
+	var sequence: Variant = packet.get("seq")
+	if not (sequence is int or sequence is float) or not is_finite(float(sequence)) or float(sequence) < 0 or float(sequence) != floorf(float(sequence)): return false
+	if str(packet.get("phase","")) not in ["waiting","countdown","playing","paused","finished"]: return false
+	for key in ["telegraphs","dashes"]:
+		if not packet.get(key) is Array or packet[key].size() > 4: return false
+		for cue in packet[key]:
+			if not cue is Dictionary or not cue.get("owner") is String: return false
+			if key == "telegraphs" and not cue.get("id") is String: return false
+			for field in ["x","z","dx","dz","expires_at"]:
+				var value: Variant = cue.get(field)
+				if not (value is int or value is float) or not is_finite(float(value)): return false
+	return true
+
 func _opponent() -> Dictionary:
 	for p in snap.get("players",[]):
 		if str(p.get("id","")) != self_id: return p
 	return {}
 
 func _playing() -> bool:
-	return str(snap.get("round",{}).get("phase","")) == "playing" and time_since_snapshot < 2 and not retrying
+	if critical_timeline_enabled and not _critical_playing(): return false
+	return session_ready and str(snap.get("round",{}).get("phase","")) == "playing" and time_since_snapshot < 2 and not retrying and (not active_connection or socket.get_ready_state() == WebSocketPeer.STATE_OPEN)
 
 func _make_avatar(id: String, own: bool) -> Node3D:
 	var root := Node3D.new()
@@ -297,7 +480,9 @@ func _render_players(delta: float) -> void:
 		var a: Node3D = avatars[id]
 		var target := Vector3(float(p.x),0,float(p.z))
 		var moving := a.position.distance_to(target) > .04
-		var speed := 25.0 if p.get("dashing",false) else 13.0
+		var dash_cue := _critical_dash(id) if critical_timeline_enabled else {}
+		var dashing: bool = not dash_cue.is_empty() if critical_timeline_enabled else p.get("dashing",false)
+		var speed := 25.0 if dashing else 13.0
 		a.position = a.position.lerp(target,1-exp(-speed*delta))
 		var sprite: Sprite3D = a.get_node("Sprite")
 		var label: Label3D = a.get_node("Name")
@@ -315,7 +500,6 @@ func _render_players(delta: float) -> void:
 			a.set_meta("attack_seq",int(p.get("attack_seq",0)))
 			_sound("slash")
 			_slash(a.position)
-		var dashing: bool = p.get("dashing",false)
 		if dashing and not bool(a.get_meta("last_dash")): _sound("dash")
 		a.set_meta("last_dash",dashing)
 		var swing := maxf(0,float(a.get_meta("swing"))-delta)
@@ -325,6 +509,7 @@ func _render_players(delta: float) -> void:
 		sprite.position.y = 1.52 + (absf(sin(clock_time*13))*.09 if moving else sin(clock_time*2)*.018)
 		sprite.modulate = Color("ffffff") if flash>0 else (Color("8bcfdd") if id==self_id else Color("eda988"))
 		sprite.modulate.a = .5 if dashing else (1.0 if hp>0 else .42)
+		if dashing and critical_timeline_enabled: _record_visible_cue("dashes",dash_cue,sprite)
 		sprite.rotation.z = sin(swing*18)*.1
 		if absf(target.x-a.position.x)>.04: sprite.flip_h = target.x < a.position.x
 		a.get_node("Ring").scale = Vector3.ONE*(1.25 if id==target_id else 1)
@@ -356,7 +541,11 @@ func _slash(pos: Vector3) -> void:
 
 func _render_effects() -> void:
 	var present: Array[String] = []
-	for tele in snap.get("telegraphs",[]):
+	var telegraphs: Array = critical_state.get("telegraphs",[]) if critical_timeline_enabled and _critical_playing() else ([] if critical_timeline_enabled else snap.get("telegraphs",[]))
+	for tele in telegraphs:
+		if critical_timeline_enabled and not _cue_current(tele):
+			_record_expired_cue("telegraphs",tele,"render_update")
+			continue
 		var id := "t"+str(tele.id)
 		present.append(id)
 		if not effects.has(id):
@@ -367,7 +556,9 @@ func _render_effects() -> void:
 		node.position = Vector3(float(tele.x),.27,float(tele.z))+d*8
 		node.rotation.y = atan2(d.x,d.z)
 		node.scale.x = .65+sin(clock_time*40)*.35
-	for bolt in snap.get("projectiles",[]):
+		if critical_timeline_enabled: _record_visible_cue("telegraphs",tele,node)
+	var bolts: Array = [] if critical_timeline_enabled and not _critical_playing() else snap.get("projectiles",[])
+	for bolt in bolts:
 		var id := "b"+str(bolt.id)
 		present.append(id)
 		if not effects.has(id):
@@ -676,7 +867,18 @@ func _resize() -> void:
 	# CanvasLayer has no parent Control rect. Place the HUD in canvas coordinates.
 	ui.position = Vector2.ZERO
 	ui.size = s
-	camera.size = 31 if narrow else 25
+	# Expanded canvas coordinates can shrink landscape-phone targets below a
+	# finger's size. Keep combat, join and rematch at least 44 actual pixels tall.
+	var pixel_scale := minf(float(window.size.x)/s.x,float(window.size.y)/s.y)
+	var action_height := maxf(76,ceilf(44/maxf(pixel_scale,0.01)))
+	var menu_height := maxf(56,ceilf(44/maxf(pixel_scale,0.01)))
+	var bottom_shift := action_height-76
+	for button in [attack_button,skill_button,dash_button]:
+		button.custom_minimum_size.y = action_height
+		button.size.y = action_height
+	for button in [connect_button,ready_button]:
+		button.custom_minimum_size.y = menu_height
+		button.size.y = menu_height
 	status_label.position = Vector2(s.x-355,26)
 	ui.get_node("ServerButton").position = Vector2(s.x-124,58)
 	ui.get_node("SoundButton").position = Vector2(s.x-238,58)
@@ -688,10 +890,47 @@ func _resize() -> void:
 	labels.controls.position = Vector2(30,s.y-(154 if narrow else 81))
 	notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if narrow else TextServer.AUTOWRAP_OFF
 	notice.size = Vector2(minf(1000,s.x-40),60 if narrow else 35)
-	notice.position = Vector2((s.x-notice.size.x)/2,s.y-(232 if narrow else 152))
-	ready_button.position = Vector2(s.x/2-130,s.y-(304 if narrow else 220))
-	connect_panel.position = Vector2(s.x/2-238,s.y/2-192)
-	ui.get_node("Actions").position = Vector2(s.x/2-241,s.y-104) if narrow else Vector2(s.x-518,s.y-104)
+	notice.position = Vector2((s.x-notice.size.x)/2,s.y-(232 if narrow else 152)-bottom_shift)
+	ready_button.position = Vector2(s.x/2-130,s.y-(304 if narrow else 220)-(menu_height-56)-bottom_shift)
+	connect_panel.position = Vector2(s.x/2-238,s.y/2-192-(menu_height-56)*0.5)
+	# Containers grow with their children but do not automatically shrink again
+	# after rotating back from a smaller screen. Recompute once layout settles.
+	connect_panel.reset_size.call_deferred()
+	var actions: HBoxContainer = ui.get_node("Actions")
+	# "TAP A DIRECTION" is wider than the idle captions. Let that growth move
+	# left on desktop (symmetrically on portrait), never past the screen edge.
+	actions.grow_horizontal = Control.GROW_DIRECTION_BOTH if narrow else Control.GROW_DIRECTION_BEGIN
+	actions.size = Vector2(0,action_height)
+	actions.position = Vector2((s.x-actions.size.x)/2 if narrow else s.x-28-actions.size.x,s.y-28-action_height)
+	# Reserve both HUD bands, including the rematch row, so phase changes never
+	# zoom the arena and the same edge positions remain tappable throughout.
+	var safe_top: float = labels.hint.position.y + labels.hint.size.y + 12
+	var safe_bottom: float = ready_button.position.y - 12
+	CameraFit.fit(camera, s, Rect2(Vector2(16,safe_top), Vector2(s.x-32,safe_bottom-safe_top)))
+	if OS.has_feature("web"):
+		_publish_projection.call_deferred()
+
+func _publish_projection() -> void:
+	if not OS.has_feature("web"): return
+	# Wait for nested containers and deferred design-size changes before exposing
+	# coordinates. Network diagnostics also refresh these after caption changes.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var s := get_viewport().get_visible_rect().size
+	# Numeric, read-only projection for browser QA; no input or session data.
+	var origin := camera.unproject_position(Vector3(0,0.2,0))
+	var unit_x := camera.unproject_position(Vector3(1,0.2,0))-origin
+	var unit_z := camera.unproject_position(Vector3(0,0.2,1))-origin
+	var unit_up := camera.unproject_position(Vector3(0,1.2,0))-origin
+	var projection := {"ground_origin_x":origin.x,"ground_origin_y":origin.y,"ground_unit_x_x":unit_x.x,"ground_unit_x_y":unit_x.y,"ground_unit_z_x":unit_z.x,"ground_unit_z_y":unit_z.y,"avatar_up_x":unit_up.x,"avatar_up_y":unit_up.y}
+	var buttons := {"strike":attack_button,"skill":skill_button,"dash":dash_button,"join":connect_button,"ready":ready_button}
+	for key in buttons:
+		var center: Vector2 = buttons[key].get_global_rect().get_center()
+		projection[key+"_x"] = center.x
+		projection[key+"_y"] = center.y
+	# Use the canvas CSS bounds so high-DPI browsers produce the same click
+	# coordinates as ordinary screens. Values are relative to the canvas.
+	JavaScriptBridge.eval("(()=>{const c=document.getElementById('canvas');if(!c)return;const r=c.getBoundingClientRect();const p="+JSON.stringify(projection)+";for(const k in p)p[k]*=k.endsWith('_x')?r.width/"+str(s.x)+":r.height/"+str(s.y)+";p.canvas_left=r.left;p.canvas_top=r.top;p.window_width=r.width;p.window_height=r.height;window.__duelProjection=p;})()")
 
 func _update_ui(_delta: float) -> void:
 	var me := _player(self_id)

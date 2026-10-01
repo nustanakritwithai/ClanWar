@@ -1,98 +1,332 @@
 {
-  "suite": "authoritative-pvp-real-websocket",
-  "tests": [
-    {
-      "name": "join_and_replication",
-      "status": "passed",
-      "details": "Two simultaneous real clients; equal stats; 3s countdown; exact same-tick snapshots; no token leakage"
-    },
-    {
-      "name": "two_player_capacity",
-      "status": "passed",
-      "details": "A third player is rejected with arena_full"
-    },
-    {
-      "name": "authoritative_movement_and_forgery",
-      "status": "passed",
-      "details": "Movement obeys 4.5m/s (1.575m sampled); forged HP/wins/damage ignored; remote movement matches"
-    },
-    {
-      "name": "malformed_and_finite_validation",
-      "status": "passed",
-      "details": "Non-numeric/null/bool/infinite coordinates, malformed JSON and binary frames rejected; session survives"
-    },
-    {
-      "name": "melee_and_cooldown",
-      "status": "passed",
-      "details": "Range-gated 14 damage replicated to both clients; rapid second strike rejected; mutual combat works"
-    },
-    {
-      "name": "telegraph_and_projectile",
-      "status": "passed",
-      "details": "0.4s readable telegraph precedes travelling bolt; 24 damage shared; forged damage ignored; 3s cooldown enforced"
-    },
-    {
-      "name": "dash_distance_and_cooldown",
-      "status": "passed",
-      "details": "Server performs exactly 3m burst in 0.18s; dashing state replicated; immediate second dash rejected"
-    },
-    {
-      "name": "arena_bounds",
-      "status": "passed",
-      "details": "Oversized finite destination clamps to (+10,+7); no teleport or escape"
-    },
-    {
-      "name": "knockout_exactly_once",
-      "status": "passed",
-      "details": "Lethal hit ends round once; winner replicated; wins increments exactly once; post-round attacks rejected"
-    },
-    {
-      "name": "mutual_ready_rematch",
-      "status": "passed",
-      "details": "One ready does not restart; both ready resets HP/cooldowns; ends swap for fairness; round increments"
-    },
-    {
-      "name": "dash_invulnerability",
-      "status": "passed",
-      "details": "An in-range melee strike during a replicated dash is dodged; HP unchanged"
-    },
-    {
-      "name": "disconnect_pause_and_reconnect",
-      "status": "passed",
-      "details": "Disconnect freezes combat/movement; same in-memory token resumes slot and round within 6s; identity and score retained"
-    },
-    {
-      "name": "connected_token_protection",
-      "status": "passed",
-      "details": "An active player cannot be replaced by a second connection using its token"
-    },
-    {
-      "name": "disconnect_forfeit_and_score_resume",
-      "status": "passed",
-      "details": "6s disconnect forfeits exactly once; reconnect retains finished round and accumulated score"
-    },
-    {
-      "name": "packet_size_limit",
-      "status": "passed",
-      "details": "A >1024-byte JSON packet is rejected and closed"
-    },
-    {
-      "name": "bounded_message_rate",
-      "status": "passed",
-      "details": "100-message flood is disconnected by queue/rate bounds; existing arena stays responsive"
-    },
-    {
-      "name": "simulation_and_snapshot_cadence",
-      "status": "passed",
-      "details": "Measured 20.02 simulation ticks/s and one public snapshot per 2 ticks (~10Hz)"
-    }
-  ],
+  "server_version": "0.1.2",
+  "godot": "4.6.3",
+  "server_sha256": "76ce7dedf89daa35e538b0c165da8240bb5898672e9973bdb2088a7c53a55292",
   "status": "passed",
-  "engine": "Godot 4.6.3",
-  "port": 46113,
-  "server_script": "scripts/server.gd",
-  "transport": "real loopback WebSocket",
-  "started_utc": "2026-10-01T18:12:00Z",
-  "duration_seconds": 31.097,
-  "passed_count": 17
+  "authority": {
+    "suite": "authoritative-pvp-real-websocket",
+    "tests": [
+      {
+        "name": "join_and_replication",
+        "status": "passed",
+        "details": "Two simultaneous real clients; equal stats; 3s countdown; exact same-tick snapshots; no token leakage"
+      },
+      {
+        "name": "two_player_capacity",
+        "status": "passed",
+        "details": "A third player is rejected with arena_full"
+      },
+      {
+        "name": "authoritative_movement_and_forgery",
+        "status": "passed",
+        "details": "Movement obeys 4.5m/s (1.575m sampled); forged HP/wins/damage ignored; remote movement matches"
+      },
+      {
+        "name": "malformed_and_finite_validation",
+        "status": "passed",
+        "details": "Non-numeric/null/bool/infinite coordinates, malformed JSON and binary frames rejected; session survives"
+      },
+      {
+        "name": "melee_and_cooldown",
+        "status": "passed",
+        "details": "Range-gated 14 damage replicated to both clients; rapid second strike rejected; mutual combat works"
+      },
+      {
+        "name": "telegraph_and_projectile",
+        "status": "passed",
+        "details": "0.4s readable telegraph precedes travelling bolt; 24 damage shared; forged damage ignored; 3s cooldown enforced"
+      },
+      {
+        "name": "dash_distance_and_cooldown",
+        "status": "passed",
+        "details": "Server performs exactly 3m burst in 0.18s; dashing state replicated; immediate second dash rejected"
+      },
+      {
+        "name": "arena_bounds",
+        "status": "passed",
+        "details": "Oversized finite destination clamps to (+10,+7); no teleport or escape"
+      },
+      {
+        "name": "knockout_exactly_once",
+        "status": "passed",
+        "details": "Lethal hit ends round once; winner replicated; wins increments exactly once; post-round attacks rejected"
+      },
+      {
+        "name": "mutual_ready_rematch",
+        "status": "passed",
+        "details": "One ready does not restart; both ready resets HP/cooldowns; ends swap for fairness; round increments"
+      },
+      {
+        "name": "dash_invulnerability",
+        "status": "passed",
+        "details": "An in-range melee strike during a replicated dash is dodged; HP unchanged"
+      },
+      {
+        "name": "disconnect_pause_and_reconnect",
+        "status": "passed",
+        "details": "Disconnect freezes combat/movement; same in-memory token resumes slot and round within 6s; identity and score retained"
+      },
+      {
+        "name": "connected_token_protection",
+        "status": "passed",
+        "details": "An active player cannot be replaced by a second connection using its token"
+      },
+      {
+        "name": "disconnect_forfeit_and_score_resume",
+        "status": "passed",
+        "details": "6s disconnect forfeits exactly once; reconnect retains finished round and accumulated score"
+      },
+      {
+        "name": "packet_size_limit",
+        "status": "passed",
+        "details": "A >1024-byte JSON packet is rejected and closed"
+      },
+      {
+        "name": "bounded_message_rate",
+        "status": "passed",
+        "details": "100-message flood is disconnected by queue/rate bounds; existing arena stays responsive"
+      },
+      {
+        "name": "simulation_and_snapshot_cadence",
+        "status": "passed",
+        "details": "Measured 20.00 simulation ticks/s and one public snapshot per 2 ticks (~10Hz)"
+      }
+    ],
+    "status": "passed",
+    "engine": "Godot 4.6.3",
+    "port": 39437,
+    "server_script": "scripts/server.gd",
+    "transport": "real loopback WebSocket",
+    "started_utc": "2026-10-01T23:09:52Z",
+    "duration_seconds": 30.628,
+    "passed_count": 17
+  },
+  "stability": {
+    "suite": "real-websocket-stability",
+    "transport": "real loopback WebSocket",
+    "evidence_scope": "protocol and simulated application packet drain; not visual proof",
+    "tests": [
+      {
+        "name": "legacy_snapshot_backlog_control",
+        "status": "passed",
+        "details": "No recv/commands for 14.002s produced 139 queued snapshots, exceeding the 128-packet browser limit",
+        "stall_seconds": 14.002,
+        "queued_snapshots": 139,
+        "browser_packet_limit": 128,
+        "first_tick": 4,
+        "last_tick": 280
+      },
+      {
+        "name": "native_legacy_packet_queue_saturation",
+        "status": "passed",
+        "details": "Native WebSocketPeer saturated its 128-packet queue during 14.001s and then replayed 140 snapshots; native transport remained open, so this is not the Web overflow error",
+        "native_result": {
+          "connection_remained_open": true,
+          "drained_snapshots": 140,
+          "initial_tick": 14,
+          "max_queued_packets": 128,
+          "mode": "legacy",
+          "native_overflow_error_reproduced": false,
+          "packet_limit": 128,
+          "queued_tick": -1,
+          "reason": "Native queue saturated and replayed stale snapshots",
+          "stall_seconds": 14.001,
+          "status": "passed"
+        },
+        "legacy_control_log": "/tmp/stability-native-legacy-saturation-control-client.log"
+      },
+      {
+        "name": "native_ack_queue_stall_recovery",
+        "status": "passed",
+        "details": "Native WebSocketPeer with max_queued_packets=128 held exactly one packet for 32.003s, then recovered 640 ticks forward",
+        "native_result": {
+          "initial_tick": 16,
+          "max_queued_packets": 1,
+          "mode": "ack",
+          "packet_limit": 128,
+          "queued_tick": 18,
+          "reason": "ACK queue remained bounded and resumed at current state",
+          "recovery_latency_seconds": 0.0989999999999966,
+          "recovery_state_seconds": 32.005,
+          "recovery_tick_jump": 640,
+          "stall_seconds": 32.003,
+          "status": "passed"
+        },
+        "client_log": "/tmp/stability-native-ack-client.log"
+      },
+      {
+        "name": "negotiated_snapshot_backpressure",
+        "status": "passed",
+        "details": "32.001s without recv/commands queued exactly one snapshot; consuming without ACK kept gate closed; ACK jumped 648 ticks to current state in 0.042s",
+        "server_version": "0.1.2",
+        "stall_seconds": 32.001,
+        "queued_snapshots": 1,
+        "snapshots_after_drain_without_ack": 0,
+        "drained_bytes": 1376,
+        "simulation_ticks_per_second": 19.968,
+        "recovery_tick_jump": 648,
+        "recovery_state_seconds": 32.403,
+        "recovery_latency_seconds": 0.042
+      },
+      {
+        "name": "invalid_ack_cannot_unlock_or_corrupt",
+        "status": "passed",
+        "details": "13 malformed/future/stale/replayed ACK variants kept one snapshot in flight; exact ACK alone released the next fresh snapshot; state unchanged",
+        "invalid_variants": [
+          "missing",
+          "null",
+          "bool",
+          "string",
+          "array",
+          "object",
+          "fractional",
+          "negative",
+          "nonfinite",
+          "huge",
+          "future",
+          "stale",
+          "replayed_ack"
+        ]
+      },
+      {
+        "name": "ack_reconnect_and_damage_authority",
+        "status": "passed",
+        "details": "Reconnect with an unacknowledged old snapshot reset flow control, retained identity/86 HP, and resumed combat; forged damage dealt only 14, double attack hit cooldown, forged state and boolean movement changed nothing",
+        "resumed_player_id": "p1",
+        "attacker_hp": 86,
+        "target_hp": 72,
+        "authoritative_melee_damage": 14
+      },
+      {
+        "name": "real_sixty_second_session_expiry",
+        "status": "passed",
+        "details": "Slot remained reserved at 58s and expired after 60.085s; old token rejected, new ID/token admitted with 100 HP/0 wins, survivor score retained and next round started",
+        "configured_ttl_seconds": 60.0,
+        "measured_expiry_seconds": 60.085,
+        "reservation_check_seconds": 58,
+        "expired_player_id": "p1",
+        "replacement_player_id": "p3"
+      }
+    ],
+    "status": "passed",
+    "started_utc": "2026-10-01T23:09:52Z",
+    "server_script": "/workspace/shared/clanwar-phase1-recovered/godot-duel/scripts/server.gd",
+    "legacy_control_script": "/workspace/shared/clanwar-phase1-recovered/godot-duel/scripts/server.gd",
+    "selected_cases": [
+      "legacy",
+      "flow",
+      "ttl",
+      "native-legacy",
+      "native-ack"
+    ],
+    "passed_count": 7,
+    "duration_seconds": 66.857
+  },
+  "critical_timeline": {
+    "suite": "bounded-critical-timeline-real-websocket",
+    "tests": [
+      {
+        "name": "hello_and_clock_validation_legacy_compatibility",
+        "status": "passed",
+        "details": "Boolean-only capability negotiation, pre-hello/unnegotiated ACK rejection, finite numeric clock echo and no-clock ping compatibility passed; legacy connection received no critical packets"
+      },
+      {
+        "name": "critical_negotiation_independent_of_snapshot_ack",
+        "status": "passed",
+        "details": "Critical channel negotiates independently while ordinary legacy snapshots continue at10Hz"
+      },
+      {
+        "name": "four_start_window_without_critical_acks",
+        "status": "passed",
+        "details": "Both players' simultaneous cast/dash starts produced four ordered active timelines before expiry with no critical ACK and an old snapshot still blocked",
+        "initial_phase_ack_seq": 3,
+        "delivered_sequences": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "max_pending_critical_frames": 4,
+        "telegraphs": 2,
+        "dashes": 2,
+        "minimum_conservative_remaining_seconds": 0.1722
+      },
+      {
+        "name": "invalid_ack_and_expired_dirty_coalescing",
+        "status": "passed",
+        "details": "Full four-packet window queued nothing on expiry;13 invalid ACK variants and a duplicate phase ACK could not unlock it; exact outstanding ACK cumulatively released predecessors and rebuilt one empty current state",
+        "invalid_variants": [
+          "missing",
+          "null",
+          "boolean",
+          "string",
+          "array",
+          "object",
+          "fractional",
+          "negative",
+          "zero",
+          "huge",
+          "future",
+          "stale",
+          "nonfinite"
+        ],
+        "cumulative_ack_seq": 6,
+        "rebuilt_seq": 8,
+        "expired_cues_replayed": 0
+      },
+      {
+        "name": "critical_inputs_have_no_gameplay_authority",
+        "status": "passed",
+        "details": "Forged timelines, boolean coordinates and dash cooldown bypass attempts were rejected without generating accepted cues or changing HP"
+      },
+      {
+        "name": "pause_resume_rebases_active_windows",
+        "status": "passed",
+        "details": "Pause cleared wall-clock cues; after waiting beyond the original deadline, resume rebuilt the frozen cast deadline and the rejoined connection started with sequence1 current state",
+        "original_expiry": 3.717,
+        "resumed_expiry": 4.401
+      },
+      {
+        "name": "snapshot_only_skips_entire_cast",
+        "status": "passed",
+        "details": "Held old snapshot credit through a real 0.4s cast; next state had a launched bolt but no warning; unchanged bolt dealt 24 damage",
+        "blocked_tick": 62,
+        "recovery_tick": 76,
+        "skipped_warning": true
+      },
+      {
+        "name": "critical_delivery_bypasses_snapshot_credit",
+        "status": "passed",
+        "details": "Received an active warning with time remaining while the old ordinary snapshot was unacknowledged; natural expiry cleared it and the authoritative bolt still dealt 24",
+        "blocked_tick": 62,
+        "critical_tick": 62,
+        "request_to_cue_seconds": 0.0073,
+        "conservative_remaining_seconds": 0.3927
+      },
+      {
+        "name": "join_countdown_play_timelines",
+        "status": "passed",
+        "details": "Immediate initial timeline and distinct countdown/play changes were delivered independently of ordinary snapshots",
+        "phases": [
+          "waiting",
+          "countdown",
+          "playing",
+          "playing",
+          "playing"
+        ]
+      },
+      {
+        "name": "forfeit_rejoin_and_rematch_phase_updates",
+        "status": "passed",
+        "details": "With the original ordinary snapshot still blocked, critical phase covered pause, six-second forfeit, finished-state rejoin, round2 countdown and play"
+      }
+    ],
+    "status": "passed",
+    "evidence_scope": "real protocol delivery and expiry; not browser-frame proof",
+    "server_script": "/workspace/shared/clanwar-phase1-recovered/godot-duel/scripts/server.gd",
+    "started_utc": "2026-10-01T23:09:51Z",
+    "passed_count": 10,
+    "duration_seconds": 14.074
+  },
+  "browser_gate": "Required on exact commit before rollout; separate CI artifact"
 }
