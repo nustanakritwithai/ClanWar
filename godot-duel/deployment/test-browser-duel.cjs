@@ -4,7 +4,7 @@ const net = require('node:net');
 const vm = require('node:vm');
 const { test } = require('node:test');
 const {
-  appendBounded, avatarScreen, commonSnapshot, createLineReader, groundScreen, observePublicSnapshots, safeLine,
+  appendBounded, avatarScreen, commonSnapshot, criticalCueEvidence, readCriticalDiagnostics, createLineReader, groundScreen, observePublicSnapshots, safeLine,
   startTcpProxy, validateRematchSnapshot, validateStallRecovery, STABILITY_ROUNDS, CONSUMER_STALL_MS,
 } = require('./browser-duel.cjs');
 
@@ -97,6 +97,109 @@ test('observer retains bounded snapshot/event/transport history and sanitized ex
   assert.equal(observer.qa.snapshotsReceived, 400);
   assert(!JSON.stringify(observer.qa).includes('private-token'));
   assert.equal(observer.outgoing, 0);
+});
+
+test('critical packet observer retains only bounded authoritative cue metadata and negotiation', () => {
+  const observer = makeObserver();
+  observer.packet({ type: 'welcome', token: 'do-not-retain', critical_timeline: true });
+  assert.equal(observer.qa.criticalTimelineNegotiated, true);
+  for (let seq = 1; seq <= 100; seq++) observer.packet({
+    type: 'critical_timeline', seq, tick: seq * 2, server_time: 10, round_number: 11, phase: 'playing', token: 'do-not-retain',
+    telegraphs: [{ id: 't1', owner: 'p1', x: 0, z: 0, dx: 1, dz: 0, expires_at: 10.4, token: 'do-not-retain' }],
+    dashes: [{ owner: 'p2', x: 1, z: 0, dx: -1, dz: 0, expires_at: 10.18, token: 'do-not-retain' }],
+  });
+  assert.equal(observer.qa.criticalTimelines.length, 64);
+  assert.equal(observer.qa.criticalTimelines[0].seq, 37);
+  assert.equal(observer.qa.criticalTimelines.at(-1).telegraphs[0].expires_at, 10.4);
+  assert.equal(observer.qa.criticalTimelines.at(-1).dashes[0].owner, 'p2');
+  assert(!JSON.stringify(observer.qa).includes('do-not-retain'));
+  assert.equal(observer.qa.snapshot, null, 'Critical packets must not replace position snapshots');
+  assert.equal(observer.outgoing, 0);
+});
+
+test('post-draw diagnostics are read-only, allow-listed and bounded independently of packet history', () => {
+  const cue = { id: 't1', owner: 'p1', seq: 1, round_number: 11, server_time_upper: 10.1, expires_at: 10.4, frame: 42, token: 'do-not-retain' };
+  const source = { telegraphs: Array.from({ length: 100 }, () => ({ ...cue })), dashes: [{ ...cue }], expired_cues_skipped: 2, server_time_upper: 10.2, token: 'do-not-retain' };
+  const context = { window: { __duelQA: { criticalTimelineNegotiated: true, criticalTimelines: [], frameHistory: [], longTasks: [] }, __duelVisualDiagnostics: source } };
+  vm.createContext(context);
+  const result = vm.runInContext(`(${readCriticalDiagnostics.toString()})()`, context);
+  assert.equal(result.visual.telegraphs.length, 64);
+  assert.equal(result.visual.expired_cues_skipped, 2);
+  assert.equal(result.visual.server_time_upper, 10.2);
+  assert.equal(result.visual.dashes[0].id, undefined);
+  assert(!JSON.stringify(result).includes('do-not-retain'));
+  assert.equal(source.telegraphs.length, 100, 'Reading must not mutate renderer evidence');
+});
+
+function cueFixture(kind = 'telegraphs') {
+  const expires = kind === 'dashes' ? 10.18 : 10.4;
+  const cue = { ...(kind === 'telegraphs' ? { id: 't1' } : {}), owner: 'p1', x: 0, z: 0, dx: 1, dz: 0, expires_at: expires };
+  const packet = { at: 1000, seq: 8, tick: 201, server_time: 10, round_number: 11, phase: 'playing', telegraphs: [], dashes: [] };
+  packet[kind] = [cue];
+  const visual = { telegraphs: [], dashes: [], expired_cues_skipped: 0, server_time_upper: 10.1 };
+  visual[kind] = [{ ...(kind === 'telegraphs' ? { id: 't1' } : {}), owner: 'p1', seq: 8, round_number: 11, server_time_upper: 10.1, expires_at: expires, frame: 51 }];
+  return { state: { timelines: [packet], visual, frameHistory: [], longTasks: [] },
+    fence: { started_at: 999, seq: 7, tick: 200, round: 11, frame: 50, expired_cues_skipped: 0 } };
+}
+
+test('telegraph and dash proof each require authoritative delivery plus matching valid post-draw evidence', () => {
+  for (const kind of ['telegraphs', 'dashes']) {
+    const { state, fence } = cueFixture(kind);
+    const result = criticalCueEvidence(kind, 'p1', state, fence);
+    assert.equal(result.status, 'passed');
+    assert.equal(result.rendered.seq, result.delivered.seq);
+    assert(result.rendered.server_time_upper < result.delivered.expires_at);
+    const noPacket = structuredClone(state);
+    noPacket.timelines = [];
+    assert.equal(criticalCueEvidence(kind, 'p1', noPacket, fence).status, 'missing_network_timeline');
+    const noDraw = structuredClone(state);
+    noDraw.visual[kind] = [];
+    assert.equal(criticalCueEvidence(kind, 'p1', noDraw, fence).status, 'delivered_without_valid_postdraw_proof');
+  }
+});
+
+test('critical proof rejects stale, wrong-owner/seq/id, fabricated expiry, and expired post-draw records', () => {
+  const mutations = [
+    s => { s.visual.telegraphs[0].owner = 'p2'; },
+    s => { s.visual.telegraphs[0].seq = 7; },
+    s => { s.visual.telegraphs[0].round_number = 10; },
+    s => { s.visual.telegraphs[0].id = 't2'; },
+    s => { s.visual.telegraphs[0].frame = 50; },
+    s => { s.visual.telegraphs[0].frame = 51.5; },
+    s => { s.visual.telegraphs[0].server_time_upper = 9.9; },
+    s => { s.visual.telegraphs[0].server_time_upper = 10.4; },
+    s => { s.visual.telegraphs[0].server_time_upper = 10.5; },
+    s => { s.visual.telegraphs[0].server_time_upper = NaN; },
+    s => { s.visual.telegraphs[0].expires_at = 11; },
+    s => { s.timelines[0].at = 998; },
+    s => { s.timelines[0].seq = 7; },
+    s => { s.timelines[0].tick = 199; },
+    s => { s.timelines[0].round_number = 10; },
+    s => { s.timelines[0].phase = 'paused'; },
+    s => { s.timelines[0].telegraphs[0].expires_at = 10; },
+  ];
+  for (const mutate of mutations) {
+    const { state, fence } = cueFixture();
+    mutate(state);
+    assert.notEqual(criticalCueEvidence('telegraphs', 'p1', state, fence).status, 'passed');
+  }
+});
+
+test('failed cue diagnostics separate missing network, expired render, and a frame gap covering its whole lifetime', () => {
+  const { state, fence } = cueFixture('dashes');
+  state.visual.dashes = [];
+  state.visual.server_time_upper = 10.3;
+  state.visual.expired_cues_skipped = 1;
+  const expired = criticalCueEvidence('dashes', 'p1', state, fence);
+  assert.equal(expired.status, 'expired_without_postdraw_proof');
+  assert.equal(expired.expired_cues_skipped_delta, 1);
+  assert.equal(expired.hardware_render_block, false);
+  state.frameHistory = [{ at: 1200, durationMs: 220 }];
+  const blocked = criticalCueEvidence('dashes', 'p1', state, fence);
+  assert.equal(blocked.status, 'frame_gap_covers_cue_lifetime');
+  assert.equal(blocked.hardware_render_block, true);
+  state.frameHistory = [{ at: 1100, durationMs: 20 }];
+  assert.equal(criticalCueEvidence('dashes', 'p1', state, fence).hardware_render_block, false);
 });
 
 test('shared snapshot proof rejects mismatches and old observations after reconnect', () => {

@@ -1,7 +1,7 @@
 {
-  "server_version": "0.1.1",
+  "server_version": "0.1.2",
   "godot": "4.6.3",
-  "server_sha256": "c3852183978453cef11192849009465ac1e5a34acd93f5a1ad6f8401aec8f61a",
+  "server_sha256": "d128ddf07aeadec8ae7125ce0efd970084746f5010328385e44812c14d3cd80b",
   "status": "passed",
   "authority": {
     "suite": "authoritative-pvp-real-websocket",
@@ -19,7 +19,7 @@
       {
         "name": "authoritative_movement_and_forgery",
         "status": "passed",
-        "details": "Movement obeys 4.5m/s (1.575m sampled); forged HP/wins/damage ignored; remote movement matches"
+        "details": "Movement obeys 4.5m/s (1.350m sampled); forged HP/wins/damage ignored; remote movement matches"
       },
       {
         "name": "malformed_and_finite_validation",
@@ -94,11 +94,11 @@
     ],
     "status": "passed",
     "engine": "Godot 4.6.3",
-    "port": 33985,
+    "port": 59987,
     "server_script": "scripts/server.gd",
     "transport": "real loopback WebSocket",
-    "started_utc": "2026-10-01T21:50:50Z",
-    "duration_seconds": 30.764,
+    "started_utc": "2026-10-01T22:43:28Z",
+    "duration_seconds": 30.431,
     "passed_count": 17
   },
   "stability": {
@@ -113,8 +113,8 @@
         "stall_seconds": 14.001,
         "queued_snapshots": 140,
         "browser_packet_limit": 128,
-        "first_tick": 6,
-        "last_tick": 284
+        "first_tick": 4,
+        "last_tick": 282
       },
       {
         "name": "native_legacy_packet_queue_saturation",
@@ -133,12 +133,12 @@
           "stall_seconds": 14.007,
           "status": "passed"
         },
-        "legacy_control_log": "/workspace/shared/clanwar-phase1-recovered/godot-duel/qa/stability-native-legacy-saturation-control-client.log"
+        "legacy_control_log": "/tmp/stability-native-legacy-saturation-control-client.log"
       },
       {
         "name": "native_ack_queue_stall_recovery",
         "status": "passed",
-        "details": "Native WebSocketPeer with max_queued_packets=128 held exactly one packet for 32.007s, then recovered 640 ticks forward",
+        "details": "Native WebSocketPeer with max_queued_packets=128 held exactly one packet for 32.000s, then recovered 640 ticks forward",
         "native_result": {
           "initial_tick": 14,
           "max_queued_packets": 1,
@@ -147,26 +147,26 @@
           "queued_tick": 16,
           "reason": "ACK queue remained bounded and resumed at current state",
           "recovery_latency_seconds": 0.0910000000000011,
-          "recovery_state_seconds": 31.999,
+          "recovery_state_seconds": 31.989,
           "recovery_tick_jump": 640,
-          "stall_seconds": 32.007,
+          "stall_seconds": 32.0,
           "status": "passed"
         },
-        "client_log": "/workspace/shared/clanwar-phase1-recovered/godot-duel/qa/stability-native-ack-client.log"
+        "client_log": "/tmp/stability-native-ack-client.log"
       },
       {
         "name": "negotiated_snapshot_backpressure",
         "status": "passed",
-        "details": "32.001s without recv/commands queued exactly one snapshot; consuming without ACK kept gate closed; ACK jumped 648 ticks to current state in 0.035s",
-        "server_version": "0.1.1",
+        "details": "32.001s without recv/commands queued exactly one snapshot; consuming without ACK kept gate closed; ACK jumped 648 ticks to current state in 0.050s",
+        "server_version": "0.1.2",
         "stall_seconds": 32.001,
         "queued_snapshots": 1,
         "snapshots_after_drain_without_ack": 0,
-        "drained_bytes": 1376,
-        "simulation_ticks_per_second": 20.0,
+        "drained_bytes": 1375,
+        "simulation_ticks_per_second": 19.968,
         "recovery_tick_jump": 648,
-        "recovery_state_seconds": 32.4,
-        "recovery_latency_seconds": 0.035
+        "recovery_state_seconds": 32.41,
+        "recovery_latency_seconds": 0.05
       },
       {
         "name": "invalid_ack_cannot_unlock_or_corrupt",
@@ -200,16 +200,16 @@
       {
         "name": "real_sixty_second_session_expiry",
         "status": "passed",
-        "details": "Slot remained reserved at 58s and expired after 60.103s; old token rejected, new ID/token admitted with 100 HP/0 wins, survivor score retained and next round started",
+        "details": "Slot remained reserved at 58s and expired after 60.102s; old token rejected, new ID/token admitted with 100 HP/0 wins, survivor score retained and next round started",
         "configured_ttl_seconds": 60.0,
-        "measured_expiry_seconds": 60.103,
+        "measured_expiry_seconds": 60.102,
         "reservation_check_seconds": 58,
         "expired_player_id": "p1",
         "replacement_player_id": "p3"
       }
     ],
     "status": "passed",
-    "started_utc": "2026-10-01T21:50:50Z",
+    "started_utc": "2026-10-01T22:43:28Z",
     "server_script": "/workspace/shared/clanwar-phase1-recovered/godot-duel/scripts/server.gd",
     "legacy_control_script": "/workspace/shared/clanwar-phase1-recovered/godot-duel/scripts/server.gd",
     "selected_cases": [
@@ -220,7 +220,103 @@
       "native-ack"
     ],
     "passed_count": 7,
-    "duration_seconds": 67.245
+    "duration_seconds": 66.975
+  },
+  "critical_timeline": {
+    "suite": "bounded-critical-timeline-real-websocket",
+    "tests": [
+      {
+        "name": "hello_and_clock_validation_legacy_compatibility",
+        "status": "passed",
+        "details": "Boolean-only capability negotiation, pre-hello/unnegotiated ACK rejection, finite numeric clock echo and no-clock ping compatibility passed; legacy connection received no critical packets"
+      },
+      {
+        "name": "critical_negotiation_independent_of_snapshot_ack",
+        "status": "passed",
+        "details": "Critical channel negotiates independently while ordinary legacy snapshots continue at10Hz"
+      },
+      {
+        "name": "one_inflight_one_dirty_current_state",
+        "status": "passed",
+        "details": "Three changes behind one outstanding critical packet coalesced into one sequence advance containing only the current two telegraphs and two dashes",
+        "first_seq": 4,
+        "coalesced_seq": 5,
+        "telegraphs": 2,
+        "dashes": 2
+      },
+      {
+        "name": "invalid_ack_and_expired_dirty_coalescing",
+        "status": "passed",
+        "details": "13 malformed/stale/future variants and duplicate prior ACK could not release newer credit; exact ACK rebuilt one empty current timeline, never replaying expired cues",
+        "invalid_variants": [
+          "missing",
+          "null",
+          "boolean",
+          "string",
+          "array",
+          "object",
+          "fractional",
+          "negative",
+          "zero",
+          "huge",
+          "future",
+          "stale",
+          "nonfinite"
+        ]
+      },
+      {
+        "name": "critical_inputs_have_no_gameplay_authority",
+        "status": "passed",
+        "details": "Forged timelines, boolean coordinates and dash cooldown bypass attempts were rejected without generating accepted cues or changing HP"
+      },
+      {
+        "name": "pause_resume_rebases_active_windows",
+        "status": "passed",
+        "details": "Pause cleared wall-clock cues; after waiting beyond the original deadline, resume rebuilt the frozen cast deadline and the rejoined connection started with sequence1 current state",
+        "original_expiry": 3.714,
+        "resumed_expiry": 4.397
+      },
+      {
+        "name": "snapshot_only_skips_entire_cast",
+        "status": "passed",
+        "details": "Held old snapshot credit through a real 0.4s cast; next state had a launched bolt but no warning; unchanged bolt dealt 24 damage",
+        "blocked_tick": 62,
+        "recovery_tick": 76,
+        "skipped_warning": true
+      },
+      {
+        "name": "critical_delivery_bypasses_snapshot_credit",
+        "status": "passed",
+        "details": "Received an active warning with time remaining while the old ordinary snapshot was unacknowledged; natural expiry cleared it and the authoritative bolt still dealt 24",
+        "blocked_tick": 62,
+        "critical_tick": 62,
+        "request_to_cue_seconds": 0.0084,
+        "conservative_remaining_seconds": 0.3916
+      },
+      {
+        "name": "join_countdown_play_timelines",
+        "status": "passed",
+        "details": "Immediate initial timeline and distinct countdown/play changes were delivered independently of ordinary snapshots",
+        "phases": [
+          "waiting",
+          "countdown",
+          "playing",
+          "playing",
+          "playing"
+        ]
+      },
+      {
+        "name": "forfeit_rejoin_and_rematch_phase_updates",
+        "status": "passed",
+        "details": "With the original ordinary snapshot still blocked, critical phase covered pause, six-second forfeit, finished-state rejoin, round2 countdown and play"
+      }
+    ],
+    "status": "passed",
+    "evidence_scope": "real protocol delivery and expiry; not browser-frame proof",
+    "server_script": "/workspace/shared/clanwar-phase1-recovered/godot-duel/scripts/server.gd",
+    "started_utc": "2026-10-01T22:47:34Z",
+    "passed_count": 10,
+    "duration_seconds": 14.086
   },
   "browser_gate": "Required on exact commit before rollout; separate CI artifact"
 }

@@ -1,4 +1,4 @@
-# Lantern Vale Duel wire protocol (v1, server 0.1.1)
+# Lantern Vale Duel wire protocol (v1, server 0.1.2)
 
 A local-first, server-authoritative **two-player PvP prototype**. Both players have the same 100 HP, movement speed and three actions. There are no NPCs, loot, levels, paid advantages or client-authored damage values.
 
@@ -20,7 +20,7 @@ Simulation is fixed 20 Hz. Public snapshots are offered at up to 10 Hz. Inputs c
 
 ## Client messages
 
-Each message is one UTF-8 JSON **text** WebSocket frame containing an object. Additional fields have no authority and are ignored. Actions are processed only when the phase is `playing`, except `hello`, `ping`, `ready` and `snapshot_ack`.
+Each message is one UTF-8 JSON **text** WebSocket frame containing an object. Additional fields have no authority and are ignored. Actions are processed only when the phase is `playing`, except `hello`, `ping`, `ready`, `snapshot_ack` and `critical_ack`.
 
 | Action | Example | Meaning |
 |---|---|---|
@@ -31,7 +31,7 @@ Each message is one UTF-8 JSON **text** WebSocket frame containing an object. Ad
 | Aether bolt | `{"type":"skill","x":2.0,"z":1.0}` | Aim toward endpoint from current position; 0.4 s stationary-origin telegraph, 9 m/s projectile, 0.8 m hit radius, 24 damage, 3 s cooldown |
 | Dash | `{"type":"dash","x":2.0,"z":1.0}` | Direction toward endpoint; exactly 3 m over 0.18 s, clamped to bounds; 4 s cooldown; invulnerable while `dashing` |
 | Rematch | `{"type":"ready"}` | Mark ready in `finished`/`waiting`; both connected players must be ready |
-| Ping | `{"type":"ping"}` | Application-level `pong`, distinct from WebSocket control ping |
+| Ping | `{"type":"ping","clock":123.5}` | Application-level `pong`; optional finite numeric `clock` is echoed unchanged for clock-bound sampling |
 
 Aim endpoints choose a direction, not a destination length. A non-zero direction is required for skill/dash. A dash lasts at most 0.18 s and does not teleport; its final simulation step can be shorter than 50 ms. Movement destination may be changed during a dash, but does not change its committed direction or 3 m travel. Skills launch from the telegraphed origin, even if the caster moves before launch. Projectiles are segment-tested to avoid tunneling, affect only the opponent, stop after one hit and expire after 3.5 s or leaving the arena margin. A dodged projectile passes through the invulnerable duelist. Valid melee strikes consume their cooldown even if the opponent is dashing.
 
@@ -40,7 +40,7 @@ Aim endpoints choose a direction, not a destination length. A non-zero direction
 ### Welcome (private to this connection)
 
 ```json
-{"type":"welcome","id":"p1","token":"48_HEX_CHARACTERS","resumed":false,"tick_rate":20,"snapshot_rate":10}
+{"type":"welcome","id":"p1","token":"48_HEX_CHARACTERS","resumed":false,"tick_rate":20,"snapshot_rate":10,"snapshot_ack":true,"critical_timeline":true,"server_version":"0.1.2","server_time":2.1}
 ```
 
 Store token locally for reconnect. Tokens are never included in public snapshots or events. Reusing a token while its player is still connected returns `token_in_use`. This prevents accidental duplicate-session takeover; it is not account authentication.
@@ -89,7 +89,7 @@ Error reasons: `invalid_json`, `invalid_type`, `text_required`, `packet_too_larg
 ## Bounded delivery (0.1.1, backward compatible)
 
 New clients negotiate `"snapshot_ack":true` on hello. Welcome echoes the flag
-and `"server_version":"0.1.1"`. After consuming a snapshot the client sends
+and `"server_version":"0.1.2"`. After consuming a snapshot the client sends
 `{"type":"snapshot_ack","tick":123}` with that exact snapshot's tick.
 Initial and resumed state arrive on the next normal broadcast (within 100 ms);
 only that global broadcast constructs snapshots, so a tick names one identical
@@ -110,6 +110,65 @@ before publishing the new client to gain the bound for Web clients.
 This fixes producer/consumer imbalance when a browser's main thread is stalled:
 10 Hz for 32 seconds used to produce over 300 messages for a 128-packet queue.
 It does not claim to improve slow-device rendering speed or eliminate frame stalls.
+
+## Bounded critical timeline (optional, server 0.1.2)
+
+Negotiate `"critical_timeline":true` in `hello` (independently of
+`"snapshot_ack":true`). `welcome` echoes both negotiated booleans, includes
+`server_version` and monotonic `server_time`, and immediately supplies a current
+critical timeline for a new or resumed connection. Both capability flags must
+be JSON booleans; omitting either retains that channel's legacy behavior.
+
+```json
+{
+  "type":"critical_timeline", "seq":4, "tick":123, "server_time":6.2,
+  "round_number":1, "phase":"playing",
+  "telegraphs":[{"id":"t1","owner":"p2","x":6.0,"z":0.0,"dx":-1.0,"dz":0.0,"expires_at":6.6}],
+  "dashes":[{"owner":"p1","x":-6.0,"z":0.0,"dx":1.0,"dz":0.0,"expires_at":6.38}]
+}
+```
+
+This is a complete, current critical state, not a reliable history of actions.
+Accepted cast/dash, countdown, play, pause, resume, round end, session reset,
+and natural cue expiry trigger an update independently of ordinary snapshot
+credit. Each connection has at most **one critical packet in flight plus one
+dirty bit**. Further changes set that bit, without storing packets or cues.
+The receiver sends `{"type":"critical_ack","seq":4}` after consuming the
+packet. Only the exact outstanding per-connection sequence releases its credit;
+if dirty, the server immediately builds the latest state. Expired cues are never
+replayed. A duplicate last ACK is harmless. Malformed, stale, future or
+unnegotiated ACKs return `invalid_critical_ack` and cannot release credit.
+The sequence starts at 1 on each connection; `tick` remains the global
+simulation tick but is not a critical-event ID. Ordinary snapshot ticks still
+identify one globally constructed snapshot, regardless of critical updates.
+
+At most two telegraphs and two dashes can be active (two players and unchanged
+cooldowns). Coordinates/directions come exclusively from accepted server state.
+`expires_at` is absolute server-monotonic seconds, constructed from the current
+remaining simulation duration. Deadlines respect the fixed 50 ms simulation
+step; they do not lengthen the 0.4 s telegraph or 0.18 s dash. Non-playing packets
+have empty arrays: paused effects remain frozen internally, and resume rebuilds
+new deadlines from their remaining duration. Clients clear critical visuals
+outside `playing`, filter already-expired entries and expire active entries
+locally instead of keeping them until the next snapshot or critical packet.
+
+For a conservative server-clock upper bound, record the local monotonic hello
+send time and pair it with `welcome.server_time`. An optional
+`{"type":"ping","clock":LOCAL_SEND_TIME}` returns the same finite numeric
+`clock` plus `server_time` in `pong`; invalid values return `invalid_clock` (or
+`invalid_json` for non-JSON numeric syntax). No-clock pings retain their original
+response. The echo has no gameplay authority. Matching a response to its send
+time bounds server clock from above without assuming a symmetric RTT; clients
+can add a small margin for simulation quantization, and must not render a cue
+whose expiry is already behind that conservative clock. A packet cannot make a
+frame that takes longer than the warning window physically render on time.
+
+This channel fixes a distinct omission in snapshot-only backpressure: an old
+unacknowledged snapshot can cover an entire 0.4 s cast, and the next snapshot
+contains only the launched projectile. The critical channel sends a currently
+active warning while that ordinary snapshot is still blocked. Holding critical
+credit may still coalesce an entire warning away; it deliberately never creates
+a backlog or a late fake warning to hide client stalls.
 
 ## Round and reconnection lifecycle
 
@@ -137,8 +196,11 @@ These are local-prototype guardrails, not a security audit or anti-cheat guarant
 
 ```sh
 python tests/integration.py
+python tests/critical_timeline.py
 ```
 
 The test runner starts a **fresh native Godot server on an isolated ephemeral loopback port**, uses two real simultaneous Python WebSocket clients, and stops only its own process. It does not reset the visual UI server. Results: `qa/server-test-report.json`; server output: `qa/server-test.log`. Uses Python package `websockets`.
 
-Godot APIs: [WebSocketPeer](https://docs.godotengine.org/en/stable/classes/class_websocketpeer.html), [TCPServer](https://docs.godotengine.org/en/stable/classes/class_tcpserver.html).
+The critical-timeline suite uses fresh isolated real-WebSocket servers to compare snapshot-only omission with independent on-time critical delivery, validate coalescing/ACK bounds, pause/resume/expiry, and confirm input/clock validation. It is protocol evidence, not proof of actual browser frames. Results: `qa/critical-timeline-report.json`.
+
+Godot APIs: [Time](https://docs.godotengine.org/en/stable/classes/class_time.html), [WebSocketPeer](https://docs.godotengine.org/en/stable/classes/class_websocketpeer.html), [TCPServer](https://docs.godotengine.org/en/stable/classes/class_tcpserver.html).

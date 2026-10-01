@@ -1,4 +1,4 @@
-# Phase 1 stability release, server 0.1.1
+# Phase 1 stability release, server 0.1.2
 
 ## Reproduced failure and correction
 
@@ -80,3 +80,20 @@ published from `150855df62d2b322bd8a91af317c9253bd204a3e`.
 The static publication still combines all legacy output at `/` and the Godot
 client at `/godot-duel/`. There are no new accounts, paid services, firewall
 changes, extra public endpoints, or reboot/crash supervision in this phase.
+
+## Critical timelines (0.1.2)
+
+A latest-state snapshot stream can miss an entire short cast between samples.
+The controlled tests reproduce this with an old snapshot still awaiting ACK.
+Critical cast/dash timelines now have independent sequence/ACK credit: one
+packet in flight and one dirty flag, rebuilt from current active state when
+released. No historical event queue accumulates. Pause/end clear active cues;
+resume rebuilds deadlines from frozen remaining durations.
+
+The client uses the server timestamp paired with its own hello/ping send time
+as a conservative server-clock upper bound. It renders only still-current cue
+windows, ignoring delayed/expired warnings. The browser gate matches delivered
+cue sequence/identity/expiry to a completed render-frame record on both clients,
+in addition to the existing damage, HP OCR and match-result checks. It records
+packet/frame/expiry evidence and fails if the rendering budget cannot show a
+cue before its deadline; no gameplay window is lengthened to make CI pass.

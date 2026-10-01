@@ -87,6 +87,8 @@ jobs:
           if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' godot-duel/qa/ci-ui-layout.log; then exit 1; fi
           godot --headless --path godot-duel --script res://tests/client_behavior.gd 2>&1 | tee godot-duel/qa/ci-client-behavior.log
           if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' godot-duel/qa/ci-client-behavior.log; then exit 1; fi
+          godot --headless --path godot-duel --script res://tests/client_critical.gd 2>&1 | tee godot-duel/qa/ci-client-critical.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' godot-duel/qa/ci-client-critical.log; then exit 1; fi
           godot --headless --path godot-duel --script res://tests/ui_input.gd 2>&1 | tee godot-duel/qa/ci-ui-input.log
           if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' godot-duel/qa/ci-ui-input.log; then exit 1; fi
           godot --headless --path godot-duel --script res://tests/camera_fit.gd 2>&1 | tee godot-duel/qa/ci-camera-fit.log
@@ -101,6 +103,7 @@ jobs:
           python -m pip install --disable-pip-version-check --only-binary=:all: 'websockets==16.0'
           python godot-duel/tests/integration.py --godot "$(command -v godot)"
           python godot-duel/tests/stability.py --godot "$(command -v godot)" --report godot-duel/qa/stability-report.json
+          python godot-duel/tests/critical_timeline.py --godot "$(command -v godot)"
 
       - name: Export and validate the single-thread Compatibility client
         shell: bash
@@ -162,6 +165,8 @@ jobs:
             godot-duel/qa/server-test.log
             godot-duel/qa/stability*.json
             godot-duel/qa/stability*.log
+            godot-duel/qa/critical*.json
+            godot-duel/qa/critical*.log
           if-no-files-found: warn
           retention-days: 7
 

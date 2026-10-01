@@ -78,8 +78,8 @@ async function startTcpProxy(targetPort) {
 function observePublicSnapshots() {
   const NativeWebSocket = window.WebSocket;
   const qa = window.__duelQA = {
-    snapshot: null, history: [], phases: [], transport: [], events: [], frameGaps: [], frameSamples: [], longTasks: [],
-    maxRafGapMs: 0, maxLongTaskMs: 0, snapshotsReceived: 0, maxSnapshotGapMs: 0, snapshotAckNegotiated: false,
+    snapshot: null, history: [], phases: [], transport: [], events: [], frameGaps: [], frameSamples: [], frameHistory: [], longTasks: [], criticalTimelines: [],
+    maxRafGapMs: 0, maxLongTaskMs: 0, snapshotsReceived: 0, maxSnapshotGapMs: 0, snapshotAckNegotiated: false, criticalTimelineNegotiated: false,
   };
   const keep = (list, value, limit) => { list.push(value); if (list.length > limit) list.splice(0, list.length - limit); };
   let lastFrame = performance.now();
@@ -88,6 +88,7 @@ function observePublicSnapshots() {
     const gap = now - lastFrame;
     qa.maxRafGapMs = Math.max(qa.maxRafGapMs, gap);
     keep(qa.frameSamples, gap, 600);
+    keep(qa.frameHistory, { at: performance.timeOrigin + now, durationMs: gap }, 2400);
     if (gap > 250) keep(qa.frameGaps, { at: performance.timeOrigin + now, durationMs: gap }, 200);
     lastFrame = now;
     requestAnimationFrame(frame);
@@ -117,9 +118,21 @@ function observePublicSnapshots() {
         if (packet.type === 'welcome') {
           // Negotiated capability only. No identity, credentials, or raw packet.
           qa.snapshotAckNegotiated = packet.snapshot_ack === true;
+          qa.criticalTimelineNegotiated = packet.critical_timeline === true;
         }
         if (packet.type === 'error' && packet.reason === 'invalid_resume_token') {
           keep(qa.events, { event: 'session_expired', at: Date.now() }, 100);
+        }
+        if (packet.type === 'critical_timeline') {
+          // Critical deadlines are a separate channel from coalesced position
+          // snapshots. Retain only the public cue schema, never raw packets.
+          keep(qa.criticalTimelines, {
+            at: Date.now(), seq: packet.seq, tick: packet.tick, server_time: packet.server_time,
+            round_number: packet.round_number, phase: packet.phase,
+            telegraphs: (Array.isArray(packet.telegraphs) ? packet.telegraphs : []).slice(0, 16).map(c => ({ id: c.id, owner: c.owner, x: c.x, z: c.z, dx: c.dx, dz: c.dz, expires_at: c.expires_at })),
+            dashes: (Array.isArray(packet.dashes) ? packet.dashes : []).slice(0, 2).map(c => ({ owner: c.owner, x: c.x, z: c.z, dx: c.dx, dz: c.dz, expires_at: c.expires_at })),
+          }, 64);
+          return;
         }
         if (packet.type !== 'snapshot') return;
         const snap = {
@@ -143,6 +156,56 @@ function observePublicSnapshots() {
       });
     }
   };
+}
+
+// Executed read-only in the browser. Post-draw evidence is emitted only by the
+// real Godot renderer; the harness cannot create, replay, or extend a cue.
+function readCriticalDiagnostics() {
+  const qa = window.__duelQA;
+  const source = window.__duelVisualDiagnostics;
+  const numeric = value => Number.isFinite(value) ? value : null;
+  const records = (key, withId) => (Array.isArray(source?.[key]) ? source[key] : []).slice(-64).map(c => ({
+    ...(withId ? { id: typeof c.id === 'string' ? c.id : null } : {}),
+    owner: typeof c.owner === 'string' ? c.owner : null,
+    seq: numeric(c.seq), round_number: numeric(c.round_number), server_time_upper: numeric(c.server_time_upper),
+    expires_at: numeric(c.expires_at), frame: numeric(c.frame),
+  }));
+  return {
+    negotiated: qa?.criticalTimelineNegotiated === true,
+    timelines: qa?.criticalTimelines || [],
+    visual: { telegraphs: records('telegraphs', true), dashes: records('dashes', false),
+      expired_cues_skipped: numeric(source?.expired_cues_skipped), server_time_upper: numeric(source?.server_time_upper) },
+    frameHistory: qa?.frameHistory || [], longTasks: qa?.longTasks || [],
+  };
+}
+
+// A packet is necessary but insufficient. Require a matching post-draw record
+// while the authoritative cue is still valid, and exclude all pre-command proof.
+function criticalCueEvidence(kind, owner, state, fence) {
+  assert(['telegraphs', 'dashes'].includes(kind));
+  const delivered = [];
+  for (const packet of state.timelines) {
+    if (!(packet.at >= fence.started_at && packet.seq > fence.seq && packet.tick >= fence.tick && packet.round_number === fence.round && packet.phase === 'playing')) continue;
+    for (const cue of packet[kind]) {
+      if (cue.owner !== owner) continue;
+      delivered.push({ ...cue, seq: packet.seq, tick: packet.tick, received_at: packet.at, server_time: packet.server_time });
+    }
+  }
+  const rendered = (state.visual[kind] || []).filter(c => c.owner === owner && c.frame > fence.frame);
+  for (const cue of delivered) {
+    if (!(Number.isFinite(cue.server_time) && Number.isFinite(cue.expires_at) && cue.expires_at > cue.server_time)) continue;
+    const proof = rendered.find(c => c.seq === cue.seq && c.round_number === fence.round && (kind !== 'telegraphs' || c.id === cue.id) &&
+      c.expires_at === cue.expires_at && Number.isInteger(c.frame) &&
+      Number.isFinite(c.server_time_upper) && c.server_time_upper >= cue.server_time && c.server_time_upper < cue.expires_at);
+    if (proof) return { owner, status: 'passed', delivered: cue, rendered: proof };
+  }
+  if (!delivered.length) return { owner, status: 'missing_network_timeline', delivered: [], rendered };
+  const missedFrame = delivered.find(cue => cue.expires_at > cue.server_time && state.frameHistory.some(frame =>
+    frame.at - frame.durationMs <= cue.received_at && frame.at >= cue.received_at + 1000 * (cue.expires_at - cue.server_time)));
+  const expired = delivered.every(cue => Number.isFinite(state.visual.server_time_upper) && state.visual.server_time_upper >= cue.expires_at);
+  return { owner, status: missedFrame ? 'frame_gap_covers_cue_lifetime' : expired ? 'expired_without_postdraw_proof' : 'delivered_without_valid_postdraw_proof',
+    hardware_render_block: Boolean(missedFrame), delivered, rendered,
+    expired_cues_skipped_delta: Math.max(0, (state.visual.expired_cues_skipped || 0) - fence.expired_cues_skipped) };
 }
 
 function commonSnapshot(ah, bh, phase, roundNumber, minTick = -1, predicate = () => true) {
@@ -252,7 +315,7 @@ async function main() {
   fs.mkdirSync(out, { recursive: true });
   const report = {
     status: 'running', scope: 'Two real exported Web clients; local HTTP + isolated Godot server; 10 bidirectional combat/rematch cycles and real transport interruption/session expiry',
-    required_rounds: STABILITY_ROUNDS, completed_rounds: 0, checks: [], timeline: [], expected_transport_errors: [],
+    required_rounds: STABILITY_ROUNDS, completed_rounds: 0, checks: [], timeline: [], expected_transport_errors: [], cast_windows: [],
     browser_topology: 'two independent concurrent Chromium processes', browser_versions: [],
   };
   const failures = [];
@@ -404,7 +467,7 @@ async function main() {
   }
 
   async function diagnostics(page) {
-    return page.evaluate(() => {
+    const base = await page.evaluate(() => {
       const qa = window.__duelQA;
       const client = window.__duelClientDiagnostics;
       const safeClient = {};
@@ -416,6 +479,45 @@ async function main() {
         maxRafGapMs: qa?.maxRafGapMs, maxLongTaskMs: qa?.maxLongTaskMs, frameGaps: qa?.frameGaps, frameSamples: qa?.frameSamples, longTasks: qa?.longTasks,
         client: safeClient };
     });
+    return { ...base, critical: await page.evaluate(readCriticalDiagnostics) };
+  }
+
+  async function beginCueWindow(kind, round, tick, owners) {
+    const before = await Promise.all(pages.map(page => page.evaluate(readCriticalDiagnostics)));
+    const startedAt = Date.now();
+    const window = { kind, round, started_at: startedAt, status: 'running', owners,
+      fences: before.map(state => ({ started_at: startedAt, round, tick,
+        seq: Math.max(0, ...state.timelines.map(packet => packet.seq)),
+        frame: Math.max(0, ...state.visual[kind].map(cue => cue.frame || 0)),
+        expired_cues_skipped: state.visual.expired_cues_skipped || 0 })), clients: [] };
+    report.cast_windows.push(window);
+    for (const [index, state] of before.entries()) assert(state.negotiated, `Client ${index} did not negotiate critical timelines`);
+    return window;
+  }
+
+  async function verifyCueWindow(window) {
+    const deadline = Date.now() + 20_000;
+    while (Date.now() < deadline) {
+      const states = await Promise.all(pages.map(page => page.evaluate(readCriticalDiagnostics)));
+      window.observed_until = Date.now();
+      window.clients = states.map((state, client) => ({ client,
+        timelines: state.timelines.filter(packet => packet.at >= window.started_at),
+        visual: state.visual,
+        frameHistory: state.frameHistory.filter(frame => frame.at >= window.started_at && frame.at - frame.durationMs <= window.observed_until),
+        longTasks: state.longTasks.filter(task => task.at + task.durationMs >= window.started_at && task.at <= window.observed_until),
+        owners: window.owners.map(owner => criticalCueEvidence(window.kind, owner, state, window.fences[client])),
+      }));
+      if (window.clients.every(client => client.owners.every(owner => owner.status === 'passed'))) {
+        window.status = 'passed';
+        mark('critical_cues_drawn_before_expiry', { kind: window.kind, round: window.round });
+        return;
+      }
+      assertClean();
+      await wait(100);
+    }
+    window.status = 'failed';
+    const missing = window.clients.flatMap(client => client.owners.filter(owner => owner.status !== 'passed').map(owner => `Client${client.client ? 'B' : 'A'}/${owner.owner}: ${owner.status}`));
+    throw new Error(`Missing actual post-draw ${window.kind} proof: ${missing.join('; ')}`);
   }
 
   async function cutClient(index, label) {
@@ -564,11 +666,12 @@ async function main() {
     // Each actual player casts at the other through Q. Public effects must be
     // observed by BOTH clients, and each visible HUD must show the 24 HP hit.
     const spellStart = current;
+    const spellWindow = await beginCueWindow('telegraphs', current.round.number, spellStart.tick, ids);
     mark('both_projectile_commands', { round: current.round.number });
     await Promise.all(pages.map(async (page, i) => { const target = player(spellStart, ids[1 - i]); const point = await groundPoint(page, target.x, target.z); await page.mouse.move(point.x, point.y); await page.keyboard.press('KeyQ'); }));
+    await verifyCueWindow(spellWindow);
     for (const page of pages) {
       for (const id of ids) {
-        await until(page, s => s.tick > spellStart.tick && s.telegraphs.some(t => t.owner === id), 'real Q telegraph from each player', 20_000, true);
         await until(page, s => s.tick > spellStart.tick && s.projectiles.some(p => p.owner === id), 'real Q projectile from each player', 20_000, true);
       }
       await until(page, s => s.players.every(p => p.hp === 76), 'both projectiles damage the other real client');
@@ -579,12 +682,13 @@ async function main() {
       await screenshot(page, `${i ? 'b' : 'a'}-projectile-damage`);
     }
     const dashStart = current;
+    const dashWindow = await beginCueWindow('dashes', current.round.number, dashStart.tick, ids);
     mark('both_dash_commands', { round: current.round.number });
     await Promise.all(pages.map(async (page, i) => { const target = player(dashStart, ids[1 - i]); const point = await groundPoint(page, target.x, target.z); await page.mouse.move(point.x, point.y); await page.keyboard.press('Space'); }));
-    for (const page of pages) for (const id of ids) await until(page, s => s.tick > dashStart.tick && player(s, id).dashing, 'Space triggers real dash state on both clients', 20_000, true);
+    await verifyCueWindow(dashWindow);
     await Promise.all(pages.map(p => until(p, s => s.tick > dashStart.tick && s.players.every(v => !v.dashing && Math.hypot(v.x - player(dashStart, v.id).x, v.z - player(dashStart, v.id).z) >= 2.5), 'both dash positions replicate')));
     current = await equalPublicSnapshot('playing', current.round.number, dashStart.tick, s => s.players.every(p => !p.dashing && Math.hypot(p.x - player(dashStart, p.id).x, p.z - player(dashStart, p.id).z) >= 2.5));
-    report.checks.push({ name: 'both_players_keyboard_projectiles_visible_damage_and_dash', status: 'passed', hp_after_projectiles: [76, 76], snapshot_after_dash: current });
+    report.checks.push({ name: 'both_players_keyboard_projectiles_visible_damage_and_dash', status: 'passed', hp_after_projectiles: [76, 76], snapshot_after_dash: current, visual_cue_windows: ['telegraphs', 'dashes'] });
 
     // A longer outage must forfeit. Reconnect before TTL expiry and prove BOTH
     // actual rendered clients show the same result, with opposite local titles.
@@ -674,6 +778,7 @@ async function main() {
     for (const page of pages) {
       const data = await diagnostics(page);
       assert.equal(data.snapshotAckNegotiated, true, 'Real browser did not negotiate snapshot backpressure');
+      assert.equal(data.critical.negotiated, true, 'Real browser did not negotiate critical timelines');
       assert(Number.isFinite(data.client.max_receive_queue), 'Client queue diagnostics missing');
       assert(data.client.max_receive_queue < 128, 'Client receive queue reached its packet limit');
     }
@@ -704,5 +809,5 @@ async function main() {
   }
 }
 
-module.exports = { appendBounded, avatarScreen, commonSnapshot, createLineReader, groundScreen, observePublicSnapshots, safeLine, startTcpProxy, validateRematchSnapshot, validateStallRecovery, STABILITY_ROUNDS, CONSUMER_STALL_MS };
+module.exports = { appendBounded, avatarScreen, commonSnapshot, criticalCueEvidence, readCriticalDiagnostics, createLineReader, groundScreen, observePublicSnapshots, safeLine, startTcpProxy, validateRematchSnapshot, validateStallRecovery, STABILITY_ROUNDS, CONSUMER_STALL_MS };
 if (require.main === module) main().catch(error => { console.error(safeLine(error.message)); process.exitCode = 1; });
