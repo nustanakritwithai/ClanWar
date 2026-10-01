@@ -1,6 +1,6 @@
 # ClanWar: combined GitHub Pages build
 
-Prepared 2026-10-01. This directory is deployment tooling, not the live site. No push, merge, Pages dispatch, server install, or endpoint verification was performed by this preparation task. The parent task separately approved/pushed a draft branch and later verified the external WSS endpoint with normal TLS validation.
+Updated 2026-10-01. This directory contains the deployment tooling. The dedicated server is deployed; the web client remains gated by the exact-commit CI checks and Pages publication described below.
 
 ## What to add
 
@@ -9,7 +9,7 @@ Prepared 2026-10-01. This directory is deployment tooling, not the live site. No
 3. Copy `godot-duel/deployment/godot-duel-pages.yml` to the repository-root **`.github/workflows/godot-duel-pages.yml`**. This is the only new file outside `godot-duel/`.
 4. Preserve every existing legacy source/config file, including root `package.json`, `package-lock.json`, `vite.config.ts`, `index.html`, `src/`, `public/`, and `render.yaml`.
 
-The default branch verified through GitHub is **`claude/game-file-analysis-a20xup`**, at initial inspection commit `28f1d3d0ab7d0ff8fa3361037c0847d9e4230a18`. The earlier concatenated string ending `a20xup28f1d3d0` is not a branch. No existing `.github/workflows/` was present at inspection. Reconcile with any newer workflow before adding a competing Pages publisher.
+The default branch verified through GitHub is **`claude/game-file-analysis-a20xup`**, at initial inspection commit `28f1d3d0ab7d0ff8fa3361037c0847d9e4230a18`. No existing `.github/workflows/` was present at inspection. Reconcile with any newer workflow before adding a competing Pages publisher.
 
 ## Build and publication behavior
 
@@ -31,21 +31,21 @@ For the normal project-site configuration, the expected URLs are:
 
 These are **expected paths, not confirmed live URLs**. Use the actual `page_url` returned by a successful deployment if a custom domain/base URL differs.
 
-The client accepts a server address in its join form and the URL's `server` query parameter. The parent task verified `wss://157.85.96.139/clanwar/ws` externally with normal TLS validation and is setting it as the client default. This workflow never changes that setting; CI's duel test explicitly overrides it with an isolated loopback server. To prefill the public route explicitly, append:
+The client accepts a server address in its join form and the URL's `server` query parameter. `wss://157.85.96.139/clanwar/ws` is the client default and was verified externally with normal TLS validation. This workflow never changes that setting; CI's duel test explicitly overrides it with an isolated loopback server. To prefill the public route explicitly, append:
 
 ```text
 ?server=wss%3A%2F%2F157.85.96.139%2Fclanwar%2Fws
 ```
 
-An HTTPS client must use a working secure WebSocket route with a publicly trusted certificate matching its IP address or hostname. The reverse proxy must support WebSocket upgrade and reach the Godot service. Never bypass certificate warnings or use an insecure `ws://` public fallback. GitHub Pages serves static files and cannot run the authoritative server. Normal external TLS validation is reported passed by the parent task; public two-client gameplay remains a separate release check and is not established by these isolated CI tests.
+An HTTPS client must use a working secure WebSocket route with a publicly trusted certificate matching its IP address or hostname. The reverse proxy must support WebSocket upgrade and reach the Godot service. Never bypass certificate warnings or use an insecure `ws://` public fallback. GitHub Pages serves static files and cannot run the authoritative server. Two proxy-aware external protocol clients passed same-tick replication, movement, damage, knockout, and rematch/reset/side-swap checks on 2026-10-01. Both test sockets were closed and the 60-second session-retention window elapsed. This establishes public protocol behavior; two visual browser clients remain a separate release check.
 
 ## Git-based VPS source staging
 
-The parent task verified a server-only checkpoint at commit **`f7315ca8f0a12e13f9704710ba506c33fe13b689`**, branch `codex/godot-clanwar-duel`, Draft PR **71**, under `godot-duel/server/`. Full client additions may produce a later commit; keep server staging pinned to an exact approved commit rather than a moving branch.
+The deployed server-only checkpoint is commit **`f7315ca8f0a12e13f9704710ba506c33fe13b689`**, branch `codex/godot-clanwar-duel`, Draft PR **71**, under `godot-duel/server/`. Full client additions may produce a later commit; keep server staging pinned to an exact approved commit rather than a moving branch.
 
-The VPS task can obtain the plain-text server project directly from that GitHub commit, with no Library transfer or bundled binaries. Preserve the existing server project file, `scripts/server.gd`, protocol, and `run-server.cmd` byte-for-byte. If creating a new isolated server directory from the full source tree instead, use the unchanged `scripts/server.gd` and server `project.godot`; the existing `build/server-package/run-server.cmd` is a ready launcher that may be copied into the server project root as an addition. Do not use the client's scene-launching project settings to rewrite the server protocol.
+The plain-text server project can be obtained directly from that GitHub commit, without bundled binaries. Preserve the existing server project file, `scripts/server.gd`, protocol, and `run-server.cmd` byte-for-byte. If creating a new isolated server directory from the full source tree instead, use the unchanged `scripts/server.gd` and server `project.godot`; the existing `build/server-package/run-server.cmd` is a ready launcher that may be copied into the server project root as an addition. Do not use the client's scene-launching project settings to rewrite the server protocol.
 
-The launcher expects an approved official portable Godot 4.6.3 Windows console runtime at `runtime/Godot_v4.6.3-stable_win64_console.exe`, or an explicitly set `GODOT_EXE`. Its companion ordinary EXE must remain beside it. No runtime is included in the Git staging plan. Starting it binds only **`127.0.0.1:8910`**. The intended isolated proxy path is `/clanwar/ws`; do not expose that loopback port externally, replace other sites, change firewall/security settings, or install persistent supervision as part of this client workflow. Server installation, proxy/TLS changes, and deployment must stay inside the VPS task's granted approval.
+The launcher expects an approved official portable Godot 4.6.3 Windows console runtime at `runtime/Godot_v4.6.3-stable_win64_console.exe`, or an explicitly set `GODOT_EXE`. Its companion ordinary EXE must remain beside it. No runtime is included in the Git staging plan. Starting it binds only **`127.0.0.1:8910`**. The intended isolated proxy path is `/clanwar/ws`; do not expose that loopback port externally, replace other sites, change firewall/security settings, or install persistent supervision as part of this client workflow. Server operations are separate from this static-client workflow. The running server has no automatic reboot/crash supervisor configured.
 
 ## Verification and remaining gates
 
@@ -58,7 +58,7 @@ Preparation checks actually completed locally:
 - Staged the actual seven-file Godot export beside a two-file legacy fixture, preserving the fixture byte-for-byte
 - Mock WebSocket observer test: welcome ignored, unapproved/token fields stripped, no outgoing injection, and retained history capped at 300 snapshots
 
-Not yet established by this preparation task: a complete GitHub-hosted run, the live legacy Vite build, a successful public Pages deployment, public two-client gameplay, or Windows server execution. Local Chromium execution is blocked by the container's process-singleton socket restriction (`Operation not permitted`), including after an escalation attempt. Neither browser gate is counted as locally passing; their JavaScript syntax and workflow wiring have been checked. Browser gameplay must pass on the hosted runner before this can be called fully verified. Actionlint could not be obtained in this environment (the `go` command is not the Go toolchain; direct release download timed out), so YAML validation is structural rather than full Actionlint validation. The runner workflow includes the real build, test, import, export, and browser gates; review their result on the exact pushed commit before merge/publication.
+Remaining release gates at the time of writing: a complete GitHub-hosted run, successful public Pages deployment, and public two-client browser gameplay. The first hosted run already passed the unchanged legacy Vite build, official runtime/template checksums, import, and script checks. Windows server execution and external protocol gameplay have been verified separately. Local Chromium execution is blocked by the container's process-singleton socket restriction (`Operation not permitted`), including after an escalation attempt. Neither browser gate is counted as locally passing; their JavaScript syntax and workflow wiring have been checked. Browser gameplay must pass on the hosted runner before this can be called fully verified. Actionlint could not be obtained in this environment (the `go` command is not the Go toolchain; direct release download timed out), so YAML validation is structural rather than full Actionlint validation. The runner workflow includes the real build, test, import, export, and browser gates; review their result on the exact pushed commit before merge/publication.
 
 The official template archive is about **1.26 GB** compressed. CI verifies that entire archive before extracting only the two required Web templates; do not substitute an unverified mirror or skip checksum checks to reduce download time.
 
